@@ -1,0 +1,29 @@
+# OS X files
+*.DS_Store
+
+# emacs files
+*~
+
+# R session files
+.Rproj.user
+.Rhistory
+*.RData
+*.Rout
+inst/doc
+docs/
+
+# compiled object files
+*.so
+*.slo
+*.lo
+*.o
+*.obj
+
+# package artifacts
+*.tar.gz
+
+# clion files
+.idea/
+
+# documentation by roxygen
+*.Rd

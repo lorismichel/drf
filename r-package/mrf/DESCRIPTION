@@ -1,0 +1,26 @@
+Package: mrf
+Title: Multivariate Random Forests
+Version: 1.0.0
+Authors@R: c(
+    person("Loris", "Michel", role = c("aut", "cre"), email = "michel@stat.math.ethz.ch"),
+    person("Domagoj", "Cevid", role = c("ctb"), email = "cevid@stat.math.ethz.ch")
+    )
+BugReports: https://github.com/lorismichel/mrf/issues
+Description: A package for multvariate random forests
+Depends:
+    R (>= 3.5.0)
+License: GPL-3
+LinkingTo: Rcpp, RcppEigen
+Imports:
+    DiceKriging,
+    lmtest,
+    Matrix,
+    methods,
+    Rcpp (>= 0.12.15),
+    sandwich (>= 2.4-0)
+RoxygenNote: 7.0.1
+Suggests:
+    DiagrammeR,
+    testthat
+SystemRequirements: GNU make
+URL: https://github.com/lorismichel/mrf
