@@ -89,7 +89,7 @@
 #' @useDynLib mrf
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils modifyList
-mrf <- function(X, Y,
+mrf <-               function(X, Y,
                               num.trees = 2000,
                               sample.weights = NULL,
                               clusters = NULL,
@@ -122,7 +122,7 @@ mrf <- function(X, Y,
   all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
                           "honesty.prune.leaves", "alpha", "imbalance.penalty")
 
-  data <- create_data_matrices(X, outcome = Y, sample.weights = sample.weights)
+  data <- create_data_matrices(X, outcome = scale(Y), sample.weights = sample.weights)
 
   args <- list(num.trees = num.trees,
                clusters = clusters,

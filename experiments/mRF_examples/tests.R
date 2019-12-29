@@ -63,6 +63,7 @@ plot(X[,1],unlist(lapply(l_fourier, function(ll) quantile(ll, 0.8))),pch=19)
 # shift in the dependence gaussian
 require(mrf)
 require(ranger)
+
 set.seed(0)
 n <- 1000
 X <- matrix(rnorm(20*n),ncol=20,nrow=n)
