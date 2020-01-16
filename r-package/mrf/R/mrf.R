@@ -172,7 +172,7 @@ mrf <-               function(X, Y,
      forest <- do.call.rcpp(fourier_train, c(data, args))
    }
    
-   class(forest) <- c("regression_forest", "grf")
+   class(forest) <- c("mrf")
    forest[["ci.group.size"]] <- ci.group.size
    forest[["X.orig"]] <- X
    forest[["Y.orig"]] <- Y
@@ -185,9 +185,8 @@ mrf <-               function(X, Y,
    forest
 }
 
-#' Predict with a regression forest
+#' Predict with a mrf forest
 #'
-#' Gets estimates of E[Y|X=x] using a trained regression forest.
 #'
 #' @param object The trained forest.
 #' @param newdata Points at which predictions should be made. If NULL, makes out-of-bag
@@ -195,19 +194,9 @@ mrf <-               function(X, Y,
 #'                Xi using only trees that did not use the i-th training example). Note
 #'                that this matrix should have the number of columns as the training
 #'                matrix, and that the columns must appear in the same order.
-#' @param linear.correction.variables Optional subset of indexes for variables to be used in local
-#'                   linear prediction. If NULL, standard GRF prediction is used. Otherwise,
-#'                   we run a locally weighted linear regression on the included variables.
-#'                   Please note that this is a beta feature still in development, and may slow down
-#'                   prediction considerably. Defaults to NULL.
-#' @param ll.lambda Ridge penalty for local linear predictions
-#' @param ll.weight.penalty Option to standardize ridge penalty by covariance (TRUE),
-#'                            or penalize all covariates equally (FALSE). Defaults to FALSE.
+#' @param type weights
 #' @param num.threads Number of threads used in training. If set to NULL, the software
 #'                    automatically selects an appropriate amount.
-#' @param estimate.variance Whether variance estimates for hat{tau}(x) are desired
-#'                          (for confidence intervals).
-#' @param ... Additional arguments (currently ignored).
 #'
 #' @return Vector of predictions, along with estimates of the error and
 #'         (optionally) its variance estimates. Column 'predictions' contains
@@ -242,80 +231,20 @@ mrf <-               function(X, Y,
 #' r.pred <- predict(r.forest, X.test, estimate.variance = TRUE)
 #' }
 #'
-#' @method predict regression_forest
+#' @method predict mrf
 #' @export
-predict.regression_forest <- function(object, newdata = NULL,
-                                      linear.correction.variables = NULL,
-                                      ll.lambda = NULL,
-                                      ll.weight.penalty = FALSE,
-                                      num.threads = NULL,
-                                      estimate.variance = FALSE,
+predict.mrf <- function(object, 
+                        newdata = NULL,
+                        type = "weights",
+                        num.threads = NULL,
+      
                                       ...) {
-  local.linear <- !is.null(linear.correction.variables)
-
-  # If possible, use pre-computed predictions.
-  if (is.null(newdata) & !estimate.variance & !local.linear & !is.null(object$predictions)) {
-    return(data.frame(
-      predictions = object$predictions,
-      debiased.error = object$debiased.error,
-      excess.error = object$excess.error
-    ))
+  
+  
+  # predict mean
+  w <- get_sample_weights(forest = object, newdata = newdata, num.threads = num.threads)
+  
+  if (type == "weights") {
+    return(list(weights=w, y=object$Y.orig))
   }
-
-  num.threads <- validate_num_threads(num.threads)
-
-  forest.short <- object[-which(names(object) == "X.orig")]
-  X <- object[["X.orig"]]
-  train.data <- create_data_matrices(X, outcome = object[["Y.orig"]])
-
-  if (local.linear) {
-    linear.correction.variables <- validate_ll_vars(linear.correction.variables, ncol(X))
-
-    if (is.null(ll.lambda)) {
-      ll.regularization.path <- tune_ll_regression_forest(
-        object, linear.correction.variables,
-        ll.weight.penalty, num.threads
-      )
-      ll.lambda <- ll.regularization.path$lambda.min
-    } else {
-      ll.lambda <- validate_ll_lambda(ll.lambda)
-    }
-
-    # subtract 1 to account for C++ indexing
-    linear.correction.variables <- linear.correction.variables - 1
-  }
-
-  if (!is.null(newdata)) {
-    data <- create_data_matrices(newdata)
-    validate_newdata(newdata, X)
-    if (!local.linear) {
-      ret <- regression_predict(
-        forest.short, train.data$train.matrix, train.data$sparse.train.matrix, train.data$outcome.index,
-        data$train.matrix, data$sparse.train.matrix, num.threads, estimate.variance
-      )
-    } else {
-      ret <- ll_regression_predict(
-        forest.short, train.data$train.matrix, train.data$sparse.train.matrix, train.data$outcome.index,
-        data$train.matrix, data$sparse.train.matrix, ll.lambda, ll.weight.penalty, linear.correction.variables,
-        num.threads, estimate.variance
-      )
-    }
-  } else {
-    data <- create_data_matrices(X)
-    if (!local.linear) {
-      ret <- regression_predict_oob(
-        forest.short, train.data$train.matrix, train.data$sparse.train.matrix, train.data$outcome.index,
-        num.threads, estimate.variance
-      )
-    } else {
-      ret <- ll_regression_predict_oob(
-        forest.short, train.data$train.matrix, train.data$sparse.train.matrix, train.data$outcome.index,
-        ll.lambda, ll.weight.penalty, linear.correction.variables, num.threads, estimate.variance
-      )
-    }
-  }
-
-  # Convert list to data frame.
-  empty <- sapply(ret, function(elem) length(elem) == 0)
-  do.call(cbind.data.frame, ret[!empty])
 }

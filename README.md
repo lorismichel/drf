@@ -34,7 +34,8 @@ variables, please consult the R [documentation](https://grf-labs.github.io/grf/r
 # univariate mean shift
 require(mrf)
 require(ranger)
-
+require(grf)
+require(spatstat)
 
 set.seed(0)
 n <- 1000
@@ -46,6 +47,9 @@ for (i in 1:n) {
 
 system.time({rf_ranger <- ranger(formula = y~., data = data.frame(y=Y,x=X),
                                             num.trees = 500)})
+                                            
+system.time({rf_grf <- regression_forest(X = X, Y = Y, 
+                                            num.trees = 500)})
 system.time({rf_gini <- mrf(X = X, Y = Y, 
                             num.trees = 500,
                             splitting.rule = "gini")})
@@ -55,9 +59,19 @@ system.time({rf_fourier <- mrf(X = X, Y = Y,
                                              num_features = 50)})
 
 # investigate the behaviour
-plot(X[,1],predict(rf_ranger, data = data.frame(y=Y,x=X))$predictions)
-plot(X[,1],predict(rf_gini, X)$predictions)
-plot(X[,1],predict(rf_fourier, X)$predictions)
+par(mfrow=c(5,1))
+plot(X[,1],Y, main="raw data")
+
+plot(X[,1],predict(rf_ranger, data = data.frame(x=X))$predictions, main="ranger")
+
+wtraining_grf <- get_sample_weights(newdata =  X, forest = rf_grf)
+plot(X[,1],apply(wtraining_grf, 1, function(w) sum(w*Y)), main="grf")
+
+wtraining_fourier <- get_sample_weights(newdata =  X, forest = rf_fourier)
+plot(X[,1],apply(wtraining_fourier, 1, function(w) sum(w*Y)), main="fourier")
+
+wtraining_gini <- get_sample_weights(newdata =  X, forest = rf_gini)
+plot(X[,1],apply(wtraining_gini, 1, function(w) sum(w*Y)), main="gini")
 
 
 # univariate sd shift
@@ -74,10 +88,12 @@ for (i in 1:n) {
 
 system.time({rf_ranger <- ranger(formula = y~., data = data.frame(y=Y,x=X),
                                  num.trees = 500, quantreg = TRUE)})
-system.time({rf_gini <- regression_forest(X = X, Y = Y, 
+system.time({rf_grf <- quantile_forest(X = X, Y = Y, 
+                                          num.trees = 500)})                                 
+system.time({rf_gini <- mrf(X = X, Y = Y, 
                                           num.trees = 500,
                                           splitting.rule = "gini")})
-system.time({rf_fourier <- regression_forest(X = X, Y = Y,
+system.time({rf_fourier <- mrf(X = X, Y = Y,
                                              num.trees = 500, 
                                              splitting.rule = "fourier", 
                                              num_features = 50)})
@@ -86,12 +102,18 @@ system.time({rf_fourier <- regression_forest(X = X, Y = Y,
 require(spatstat)
 wtraining_gini <- get_sample_weights(newdata =  X,forest = rf_gini)
 wtraining_fourier <- get_sample_weights(newdata =  X,forest = rf_fourier)
+
 l_gini <- apply(wtraining_gini, 1, function(w) ewcdf(x = Y[,1], weights = w))
 l_fourier <- apply(wtraining_fourier, 1, function(w) ewcdf(x = Y[,1], weights = w))
 par(mfrow=c(3,1))
-plot(X[,1], predict(rf_ranger, data = data.frame(x=X),type = "quantiles", quantiles = 0.8)$predictions,pch=19)
-plot(X[,1],unlist(lapply(l_gini, function(ll) quantile(ll, 0.8))),pch=19)
-plot(X[,1],unlist(lapply(l_fourier, function(ll) quantile(ll, 0.8))),pch=19)
+
+par(mfrow=c(5,1))
+plot(X[,1], Y, main="raw data",pch=19)
+plot(X[,1], predict(rf_ranger, data = data.frame(x=X),type = "quantiles", quantiles = 0.8)$predictions,pch=19,main="ranger", ylim=c(0.5,2.5))
+plot(X[,1], predict(rf_grf, X, quantiles = 0.8)[,1],main="grf",pch=19, ylim=c(0.5,2.5))
+plot(X[,1],unlist(lapply(l_fourier, function(ll) quantile(ll, 0.8))),pch=19, main="fourier", ylim=c(0.5,2.5))
+plot(X[,1],unlist(lapply(l_gini, function(ll) quantile(ll, 0.8))),pch=19, main="gini", ylim=c(0.5,2.5))
+
 
 
 # shift in the dependence gaussian
