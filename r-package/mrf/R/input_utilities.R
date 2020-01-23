@@ -173,7 +173,7 @@ create_data_matrices <- function(X, outcome = NULL, treatment = NULL,
   }
   if (!isFALSE(sample.weights)) {
     i <- i + 1
-    out[["sample.weight.index"]] <- ncol(X) + ncol(Y) + i
+    out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + i
     if (is.null(sample.weights)) {
       out[["use.sample.weights"]] <- FALSE
     } else {
