@@ -36,7 +36,7 @@ TreeOptions::TreeOptions(uint mtry,
   alpha(alpha),
   imbalance_penalty(imbalance_penalty),
   num_features(num_features),
-  banddwidth(bandwidth){}
+  bandwidth(bandwidth){}
 
 uint TreeOptions::get_mtry() const {
   return mtry;
