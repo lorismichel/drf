@@ -27,7 +27,8 @@ TreeOptions::TreeOptions(uint mtry,
                          double alpha,
                          double imbalance_penalty,
                          size_t num_features,
-                         double bandwidth):
+                         double bandwidth,
+                         unsigned int node_scaling):
   mtry(mtry),
   min_node_size(min_node_size),
   honesty(honesty),
@@ -36,7 +37,8 @@ TreeOptions::TreeOptions(uint mtry,
   alpha(alpha),
   imbalance_penalty(imbalance_penalty),
   num_features(num_features),
-  bandwidth(bandwidth){}
+  bandwidth(bandwidth),
+  node_scaling(node_scaling){}
 
 uint TreeOptions::get_mtry() const {
   return mtry;
@@ -72,6 +74,10 @@ size_t TreeOptions::get_num_features() const {
 
 double TreeOptions::get_bandwidth() const {
   return bandwidth;
+}
+
+unsigned int TreeOptions::get_node_scaling() const {
+  return node_scaling;
 }
 
 } // namespace mrf

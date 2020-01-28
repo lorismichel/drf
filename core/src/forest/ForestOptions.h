@@ -42,7 +42,8 @@ public:
                 const std::vector<size_t>& sample_clusters,
                 uint samples_per_cluster,
                 size_t num_features,
-                double bandwidth);
+                double bandwidth,
+                unsigned int node_scaling);
 
   static uint validate_num_threads(uint num_threads);
 
