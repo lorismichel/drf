@@ -30,10 +30,12 @@ FourierSplittingRule::FourierSplittingRule(size_t max_num_unique_values,
                                                  double alpha,
                                                  double imbalance_penalty,
                                                  size_t dim_outcome,
-                                                 size_t num_features):
+                                                 size_t num_features,
+                                                 double bandwidth):
     alpha(alpha),
     imbalance_penalty(imbalance_penalty),
-    num_features(num_features){
+    num_features(num_features),
+    bandwidth(bandwidth){
   //this->counter = new size_t[max_num_unique_values];
   //this->sums = new double[max_num_unique_values];
   //s this->sums = new double[max_num_unique_values * dim_outcome];
@@ -84,7 +86,7 @@ bool FourierSplittingRule::find_best_split(const Data& data,
  std::vector<std::vector<std::complex<double> > > fourier_features;
  fourier_features.resize(num_features);
  std::default_random_engine generator;
- std::normal_distribution<double> distribution(0.0, 1.0);
+ std::normal_distribution<double> distribution(0.0, 1/bandwidth);
  
  size_t d = data.get_outcome_index().size(); //int d = data[0].size(); //dimensionality of the response
  size_t n = samples[node].size(); //int n = sampleIDs.size(); //number of datapoints in the current node

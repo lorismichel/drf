@@ -32,7 +32,8 @@ public:
                           double alpha,
                           double imbalance_penalty,
                           size_t dim_outcome,
-                          size_t num_features);
+                          size_t num_features,
+                          double bandwidth);
 
   ~FourierSplittingRule();
 
@@ -123,6 +124,7 @@ private:
   double alpha;
   double imbalance_penalty;
   size_t num_features;
+  double bandwidth;
 
   DISALLOW_COPY_AND_ASSIGN(FourierSplittingRule);
 };

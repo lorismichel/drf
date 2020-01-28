@@ -27,7 +27,8 @@ std::unique_ptr<SplittingRule> FourierSplittingRuleFactory::create(const Data& d
       options.get_alpha(),
       options.get_imbalance_penalty(),
       data.get_outcome_index().size(),
-      options.get_num_features()));
+      options.get_num_features(),
+      options.get_bandwidth()));
 }
 
 } // namespace mrf
