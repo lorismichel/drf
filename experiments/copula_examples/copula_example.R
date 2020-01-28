@@ -1,4 +1,5 @@
 # generate Gaussian copula example
+
 d.noise <- 19
 n <- 5000
 
@@ -22,16 +23,17 @@ p_gini <- predict(mRF_gini, newdata = cbind(seq(-1,1,length.out = 15), matrix(0,
 
 # produce plots 
 par(mfrow=c(4,4))
-par(mar=rep(2,4))
+#par(mar=rep(2,4))
 plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
 for (i in 1:nrow(p_fourier$weights)) {
-  plot(col="darkblue", p$y, cex=p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
-}
+  #plot(col="darkblue", p_fourier$y, cex=p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
+  plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
+  }
 
 par(mfrow=c(4,4))
-par(mar=rep(2,4))
+#par(mar=rep(2,4))
 plot(col="black",p_gini$y,pch=19,main="original data",cex=0.2)
 for (i in 1:nrow(p_gini$weights)) {
-  plot(col="darkblue", p$y, cex=p_gini$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
+  plot(col="darkblue", p_gini$y, cex=p_gini$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
 }
 
