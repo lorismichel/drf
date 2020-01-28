@@ -41,7 +41,8 @@ public:
                 uint random_seed,
                 const std::vector<size_t>& sample_clusters,
                 uint samples_per_cluster,
-                size_t num_features);
+                size_t num_features,
+                double bandwidth);
 
   static uint validate_num_threads(uint num_threads);
 
