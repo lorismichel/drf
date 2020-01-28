@@ -49,7 +49,8 @@ Rcpp::List gini_train(Rcpp::NumericMatrix train_matrix,
                             bool compute_oob_predictions,
                             unsigned int num_threads,
                             unsigned int seed,
-                            size_t num_features) {
+                            size_t num_features,
+                            double bandwidth) {
   //std::cout << "regression_trainer will start" << std::endl;
   
   ForestTrainer trainer = gini_trainer(outcome_index.size());
@@ -70,7 +71,7 @@ Rcpp::List gini_train(Rcpp::NumericMatrix train_matrix,
   data->sort();
   //std::cout << "options will start" << std::endl;
   ForestOptions options(num_trees, ci_group_size, sample_fraction, mtry, min_node_size, honesty,
-      honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_threads, seed, clusters, samples_per_cluster, num_features);
+      honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_threads, seed, clusters, samples_per_cluster, num_features, bandwidth);
   //std::cout << "trainer.train will start" << std::endl;
   Forest forest = trainer.train(*data, options);
 
@@ -104,7 +105,8 @@ Rcpp::List fourier_train(Rcpp::NumericMatrix train_matrix,
                       bool compute_oob_predictions,
                       unsigned int num_threads,
                       unsigned int seed,
-                      size_t num_features) {
+                      size_t num_features,
+                      double bandwidth) {
   //std::cout << "regression_trainer will start" << std::endl;
   
   ForestTrainer trainer = fourier_trainer(outcome_index.size());
@@ -125,7 +127,7 @@ Rcpp::List fourier_train(Rcpp::NumericMatrix train_matrix,
   data->sort();
   //std::cout << "options will start" << std::endl;
   ForestOptions options(num_trees, ci_group_size, sample_fraction, mtry, min_node_size, honesty,
-                        honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_threads, seed, clusters, samples_per_cluster, num_features);
+                        honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_threads, seed, clusters, samples_per_cluster, num_features, bandwidth);
   //std::cout << "trainer.train will start" << std::endl;
   Forest forest = trainer.train(*data, options);
   
