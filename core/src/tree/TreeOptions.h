@@ -36,7 +36,9 @@ public:
               bool honesty_prune_leaves,
               double alpha,
               double imbalance_penalty,
-              size_t num_features);
+              size_t num_features,
+              double bandwidth,
+              unsigned int node_scaling);
 
   uint get_mtry() const;
   uint get_min_node_size() const;
@@ -66,6 +68,8 @@ public:
   double get_imbalance_penalty() const;
   
   size_t get_num_features() const;
+  double get_bandwidth() const;
+  unsigned int get_node_scaling() const;
 
 private:
   uint mtry;
@@ -76,6 +80,8 @@ private:
   double alpha;
   double imbalance_penalty;
   size_t num_features;
+  double bandwidth;
+  unsigned int node_scaling;
 };
 
 } // namespace mrf

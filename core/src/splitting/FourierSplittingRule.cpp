@@ -30,10 +30,14 @@ FourierSplittingRule::FourierSplittingRule(size_t max_num_unique_values,
                                                  double alpha,
                                                  double imbalance_penalty,
                                                  size_t dim_outcome,
-                                                 size_t num_features):
+                                                 size_t num_features,
+                                                 double bandwidth,
+                                                 unsigned int node_scaling):
     alpha(alpha),
     imbalance_penalty(imbalance_penalty),
-    num_features(num_features){
+    num_features(num_features),
+    bandwidth(bandwidth),
+    node_scaling(node_scaling){
   //this->counter = new size_t[max_num_unique_values];
   //this->sums = new double[max_num_unique_values];
   //s this->sums = new double[max_num_unique_values * dim_outcome];
@@ -72,7 +76,7 @@ FourierSplittingRule::~FourierSplittingRule() {
 bool FourierSplittingRule::find_best_split(const Data& data,
                                               size_t node,
                                               const std::vector<size_t>& possible_split_vars,
-                                              const std::vector<std::vector<double> >& responses_by_sample, // std::vector<double> -> std::vector<std::vector<double>> 
+                                              std::vector<std::vector<double> >& responses_by_sample, // std::vector<double> -> std::vector<std::vector<double>> 
                                               const std::vector<std::vector<size_t> >& samples,
                                               std::vector<size_t>& split_vars,
                                               std::vector<double>& split_values) {
@@ -84,14 +88,45 @@ bool FourierSplittingRule::find_best_split(const Data& data,
  std::vector<std::vector<std::complex<double> > > fourier_features;
  fourier_features.resize(num_features);
  std::default_random_engine generator;
- std::normal_distribution<double> distribution(0.0, 1.0);
- 
+ std::normal_distribution<double> distribution(0.0, 1.0/(bandwidth*bandwidth));
+  
+
+
  size_t d = data.get_outcome_index().size(); //int d = data[0].size(); //dimensionality of the response
  size_t n = samples[node].size(); //int n = sampleIDs.size(); //number of datapoints in the current node
  std::complex<double> i(0, 1); //imaginary unit
  
  std::vector<double> omega(d, 0);
  
+ // center and scale
+
+ if (node_scaling) {
+
+   for(size_t k = 0; k < d; ++k) {
+     double m = 0.0;
+     double s = 0.0;
+     // center 
+     for(size_t j = 0; j < n; ++j) {
+       m += responses_by_sample[samples[node][j]][k];     
+     }
+     m = m / n;
+     for(size_t j = 0; j < n; ++j) {
+       responses_by_sample[samples[node][j]][k] = responses_by_sample[samples[node][j]][k] - m;
+     }
+     // scale
+     for(size_t j = 0; j < n; ++j) {
+       s += responses_by_sample[samples[node][j]][k] * responses_by_sample[samples[node][j]][k];
+     }
+     s = sqrt(s/n);
+     if (s > 10e-10) {
+       for(size_t j = 0; j < n; ++j) {
+         responses_by_sample[samples[node][j]][k] = responses_by_sample[samples[node][j]][k]/s;
+       }
+     }
+   }
+ }
+
+
  for(size_t l = 0; l < num_features; ++l){
    fourier_features[l].resize(n);
    

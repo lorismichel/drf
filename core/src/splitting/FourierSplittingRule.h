@@ -32,7 +32,9 @@ public:
                           double alpha,
                           double imbalance_penalty,
                           size_t dim_outcome,
-                          size_t num_features);
+                          size_t num_features,
+                          double bandwidth,
+                          unsigned int node_scaling);
 
   ~FourierSplittingRule();
 
@@ -75,7 +77,7 @@ public:
   bool find_best_split(const Data& data,
                        size_t node,
                        const std::vector<size_t>& possible_split_vars,
-                       const std::vector<std::vector<double>>& responses_by_sample, //
+                       std::vector<std::vector<double>>& responses_by_sample, //
                        const std::vector<std::vector<size_t>>& samples,
                        std::vector<size_t>& split_vars,
                        std::vector<double>& split_values);
@@ -123,6 +125,8 @@ private:
   double alpha;
   double imbalance_penalty;
   size_t num_features;
+  double bandwidth;
+  unsigned int node_scaling;
 
   DISALLOW_COPY_AND_ASSIGN(FourierSplittingRule);
 };
