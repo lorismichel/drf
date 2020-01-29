@@ -88,7 +88,7 @@ bool FourierSplittingRule::find_best_split(const Data& data,
  std::vector<std::vector<std::complex<double> > > fourier_features;
  fourier_features.resize(num_features);
  std::default_random_engine generator;
- std::normal_distribution<double> distribution(0.0, 1/bandwidth);
+ std::normal_distribution<double> distribution(0.0, 1.0/(bandwidth*bandwidth));
   
 
 
@@ -117,7 +117,7 @@ bool FourierSplittingRule::find_best_split(const Data& data,
      for(size_t j = 0; j < n; ++j) {
        s += responses_by_sample[samples[node][j]][k] * responses_by_sample[samples[node][j]][k];
      }
-     s = sqrt(s) / n;
+     s = sqrt(s/n);
      if (s > 10e-10) {
        for(size_t j = 0; j < n; ++j) {
          responses_by_sample[samples[node][j]][k] = responses_by_sample[samples[node][j]][k]/s;

@@ -112,8 +112,8 @@ mrf <-               function(X, Y,
                               seed = runif(1, 0, .Machine$integer.max),
                               splitting.rule = "gini",
                               num_features = 1,
-                              bandwidth = 1,
-                              node_scaling = TRUE) {
+                              bandwidth = 1.0,
+                              node_scaling = FALSE) {
   validate_X(X)
   validate_sample_weights(sample.weights, X)
   #Y <- validate_observations(Y, X)
