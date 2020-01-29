@@ -38,10 +38,12 @@ ForestOptions::ForestOptions(uint num_trees,
                              uint random_seed,
                              const std::vector<size_t>& sample_clusters,
                              uint samples_per_cluster,
-                             size_t num_features):
+                             size_t num_features,
+                             double bandwidth,
+                             unsigned int node_scaling):
     ci_group_size(ci_group_size),
     sample_fraction(sample_fraction),
-    tree_options(mtry, min_node_size, honesty, honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_features),
+    tree_options(mtry, min_node_size, honesty, honesty_fraction, honesty_prune_leaves, alpha, imbalance_penalty, num_features, bandwidth, node_scaling),
     sampling_options(samples_per_cluster, sample_clusters) {
 
   this->num_threads = validate_num_threads(num_threads);

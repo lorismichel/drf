@@ -111,7 +111,9 @@ mrf <-               function(X, Y,
                               num.threads = NULL,
                               seed = runif(1, 0, .Machine$integer.max),
                               splitting.rule = "gini",
-                              num_features = 1) {
+                              num_features = 1,
+                              bandwidth = 1,
+                              node_scaling = TRUE) {
   validate_X(X)
   validate_sample_weights(sample.weights, X)
   #Y <- validate_observations(Y, X)
@@ -139,7 +141,9 @@ mrf <-               function(X, Y,
                compute.oob.predictions = compute.oob.predictions,
                num.threads = num.threads,
                seed = seed,
-               num_features = num_features)
+               num_features = num_features, 
+               bandwidth = bandwidth,
+               node_scaling = ifelse(node_scaling, 1, 0))
 
     tuning.output <- NULL
   #  if (!identical(tune.parameters, "none")){
