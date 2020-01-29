@@ -100,7 +100,7 @@ bool FourierSplittingRule::find_best_split(const Data& data,
  
  // center and scale
 
- if (1) {
+ if (node_scaling) {
 
    for(size_t k = 0; k < d; ++k) {
      double m = 0.0;
