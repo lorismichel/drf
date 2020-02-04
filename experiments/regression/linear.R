@@ -17,9 +17,9 @@ t = seq(0, 1, by=0.01)
 plot(t, (1+1/(1+exp(-20*(t - 1/3)))), type='l')
 
 
-mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3)
-mrf_fit2 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=50)
-mrf_fit3 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=200)
+mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=1, node_scaling = TRUE, min.node.size = 30)
+mrf_fit2 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=50, node_scaling = TRUE, min.node.size = 30)
+mrf_fit3 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=200, node_scaling = TRUE, min.node.size = 30)
 grf_fit <- causal_forest(X=X, Y=Y, W=W)
 
 #____________________________________________________

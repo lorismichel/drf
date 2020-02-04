@@ -17,10 +17,10 @@ t = seq(0, 1, by=0.01)
 plot(t, (1+dbeta(t, 2, 4))/4, type='l')
 
 
-mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3)
-mrf_fit2 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=100)
-mrf_fit3 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=200)
-mrf_fit4 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "gini", num_features=200)
+mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3, node_scaling = FALSE, min.node.size = 10)
+mrf_fit2 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=80, node_scaling = FALSE, min.node.size = 10)
+mrf_fit3 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3, node_scaling = TRUE, min.node.size = 10)
+mrf_fit4 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=80, node_scaling = TRUE, min.node.size = 10)
 grf_fit <- causal_forest(X=X, Y=Y, W=W)
 
 #____________________________________________________
@@ -90,7 +90,7 @@ abline(0,0, col='red')
 mean((beta_test - mrf_predictions)^2)
 
 ##
-weights = predict(mrf_fit3, newdata = X_test)$weights
+weights = predict(mrf_fit4, newdata = X_test)$weights
 mrf_predictions = rep(0, n_test)
 for(i in 1:n_test){
   mrf_predictions[i] = lm(Y~W, weights=weights[i,])$coefficients[2]
