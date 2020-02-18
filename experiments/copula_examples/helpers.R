@@ -125,4 +125,3 @@ plotBivariate <- function (x, y = NULL, cex.points = 1, smooth = TRUE, ab = FALS
   }
   par(old.par)
 }
-
