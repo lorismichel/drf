@@ -3,6 +3,8 @@
 # libs
 library(copula)
 library(mrf)
+
+# repro
 set.seed(100)
 
 
@@ -10,20 +12,21 @@ set.seed(100)
 # SC1: normal copula example with N(0,1),Exp(1) marginals, continuous change of cor
 # SC2: tCopula example with N(0,1),N(0,1) marginals, continuous change of cor
 # SC3: tCopula example with N(0,1),N(0,1) marginals, hard change of tails
+# SC4: tCopula complete change case, X1 is tail, X2 is covariance and X3 is marginal
 
 # choice of SC
-SC <- 2
+SC <- 4
 
 # Examples 
-d.noise <- 19
-n       <- 5000
+d <- 19
+n <- 5000
 
-x.active <- runif(0,min = -1, max = 1)
-x.noise <- matrix(runif(n*d.noise, min = -1, max = 1),ncol = d.noise)
+
 
 # constructing the data
+
 # predictors
-X <- cbind(x.active, x.noise)
+X  <- matrix(runif(n*d, min = -1, max = 1),ncol = d)
 # responses
 Y <- t(apply(X, 1, function(xx) {
   
@@ -69,6 +72,25 @@ Y <- t(apply(X, 1, function(xx) {
             # gen
             rMvdc(n = 1, mvdc = mdvT)
             
+          } else if (SC == 4) {
+            
+            # copula
+            tCop <- tCopula(dim=2, xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
+            # margins
+            if (xx[3]<=0) {
+              margins <- c("norm", "norm")
+              paramMargins <- list(list(mean = 0, sd = 1),
+                               list(mean = 0, sd = 1))
+            } else {
+              margins <- c("norm", "exp")
+              paramMargins <- list(list(mean = 0, sd = 1),
+                               list(rate = 1))
+            }
+            mdvT <- mvdc(copula=tCop, margins=margins,
+                         paramMargins=paramMargins)
+            # gen
+            rMvdc(n = 1, mvdc = mdvT)
+            
           }
           }))
 colnames(Y) <- c("Y1", "Y2")
@@ -94,21 +116,33 @@ mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "fourier", nu
 mRF_fourier2 <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "fourier", num_features = 100,  bandwidth = 1, node_scaling = FALSE, min.node.size = 20)
 mRF_gini <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "gini", num_features = 100, bandwidth = 1, min.node.size = 20)
 
+
 # predictions
-p_fourier <- predict(mRF_fourier, newdata = cbind(seq(-1,1,length.out = 15), matrix(0, ncol=d.noise,nrow=15)))
-p_fourier2 <- predict(mRF_fourier2, newdata = cbind(seq(-1,1,length.out = 15), matrix(0, ncol=d.noise,nrow=15)))
-p_gini <- predict(mRF_gini, newdata = cbind(seq(-1,1,length.out = 15), matrix(0, ncol=d.noise,nrow=15)))
+grid <- cbind(expand.grid(seq(-1,1,length.out = 3),seq(-1,1,length.out = 3),seq(-1,1,length.out = 2)),matrix(0,nrow=18,ncol=d-3))
+p_fourier <- predict(mRF_fourier, newdata = grid)
+p_fourier2 <- predict(mRF_fourier2, newdata = grid)
+p_gini <- predict(mRF_gini, newdata = grid)
 
 
 
 ## produce plots for inspection
 
 # fourier 
-par(mfrow=c(4,4))
+par(mfrow=c(3,3))
 #par(mar=rep(2,4))
-plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
-for (i in 1:nrow(p_fourier$weights)) {
-  plot(col="darkblue", p_fourier$y, cex=p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
+#plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
+for (i in 1:9) {
+  plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
+  points(col="darkblue", p_fourier2$y, cex=p_fourier$weights[i,]*300,pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
+  #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
+}
+
+par(mfrow=c(3,3))
+#par(mar=rep(2,4))
+#plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
+for (i in 10:18) {
+  plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
+  points(col="darkblue", p_fourier2$y, cex=p_fourier$weights[i,]*300,pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
   #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
 }
 

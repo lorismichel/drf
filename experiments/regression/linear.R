@@ -17,7 +17,7 @@ t = seq(0, 1, by=0.01)
 plot(t, (1+1/(1+exp(-20*(t - 1/3)))), type='l')
 
 
-mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=1, node_scaling = TRUE, min.node.size = 30)
+mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3, node_scaling = TRUE, min.node.size = 30)
 mrf_fit2 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=50, node_scaling = TRUE, min.node.size = 30)
 mrf_fit3 <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=200, node_scaling = TRUE, min.node.size = 30)
 grf_fit <- causal_forest(X=X, Y=Y, W=W)
@@ -41,7 +41,7 @@ abline(0,1, col='red')
 plot(X[,1], mrf_predictions - beta)
 
 #____________________________________________________
-point = matrix(c(0.35, 0.35, rep(0, p-2)), 1, p) 
+point = matrix(c(0.9, 0.9, rep(0, p-2)), 1, p) 
 #point = matrix(X[1,], 1, p)
 weights = predict(mrf_fit, newdata=point)$weights
 plot(X[,1], X[,2], cex=200*weights[1,], pch=19, asp=1)

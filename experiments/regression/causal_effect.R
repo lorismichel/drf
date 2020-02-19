@@ -1,98 +1,148 @@
 library(grf)
 library(mrf)
+library(ranger)
 
-n = 5000
+n = 6000
 p = 20
 
 #confounding + heterogeneity
 X <- matrix(runif(n*p), nrow=n, ncol=p)
 #W <- rbinom(n, size=1, prob=(1+dbeta(X[, 3], 2, 4))/4)
-W <- abs(4*X[, 3] - 2 + rnorm(n)/3)# + 3*abs(X[,2]-0.5) 
-beta = (1+1/(1+exp(-20*(X[,1] - 1/3))))^2
-Y <- (5*X[,3]  - 1) + 2*sin(4*W)*beta + 0.5*rnorm(n) #+ abs(X[,2]-0.5) 
-
-par(mfrow=c(1,1))
-t = seq(0, 1, by=0.01)
-plot(t, (1+1/(1+exp(-20*(t - 1/3))))^2, type='l')
+W <- abs(0.5 + 2*X[, 3] + 0.5*rnorm(n)) 
+truth <- function(W, X){
+  beta = 3*X[,1]
+  expectation = 3*(X[, 3]-0.5) + sin(3*W)*beta
+  return(expectation)
+}
+Y <- truth(W, X) + X[, 2]*rnorm(n) #+ abs(X[,2]-0.5)
 
 par(mfrow=c(3,1))
 plot(W, Y, col=(1 + (X[, 3]>0.5)))
 plot(W, Y, col=3*(2 + (X[, 1]>0.5)))
-plot(W, Y, col=4*(2 + (X[, 5]>0.5)))
+plot(W, Y, col=4*(2 + (X[, 2]>0.5)))
 
 mrf_fit <- mrf(Y=cbind(Y,W), X=X, splitting.rule = "fourier", num_features=3, node_scaling = FALSE, min.node.size = 20)
+Y_fit <- ranger(y~., data=data.frame(y=Y, w=W, x=X), num.trees=2000, min.node.size = 20)
+Y_fit2 <- mrf(Y=Y, X=cbind(W, X), splitting.rule = "fourier", num_features=3, node_scaling = FALSE, min.node.size = 20)
 
-k=20
-w_do = seq(0, 2, length.out = k)
-causal_effect = rep(0, k)
-N=500
-for(i in sample(1:n, N, replace=TRUE)){
-  fit <- loess(y~w, data=data.frame(y=Y,w=W), weights=as.vector(predict(mrf_fit, newdata=matrix(X[i,], nrow=1, ncol=p))$weights))
-  #which = sample(1:n, 1000, replace=TRUE, prob=as.vector(predict(mrf_fit, newdata=matrix(X[i,], nrow=1, ncol=p))$weights))
-  #fit <- mrf(Y=Y[which], X=cbind(W[which], X[which,5]), splitting.rule="fourier", num_features=3)
-  causal_effect = causal_effect + predict(fit, newdata=w_do)/N
-}
-par(mfrow=c(1,1))
-plot(w_do, causal_effect, type='l', col='red')
-truth = (5*mean(X[,3])  - 1) + 2*sin(4*w_do)*mean(beta)
-lines(w_do, truth, col='black', lty=2)
-fit <- loess(Y~W)
-lines(w_do, predict(fit, newdata = w_do), col='blue', lty=3)
-
-par(mfrow=c(3,2))
-plot(W, Y,xlim=c(0, 3), col=(1 + (X[, 3]>0.5)))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-
-plot(W, Y,xlim=c(0, 3), col=(1 + (X[, 1]>0.5)))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-
-point = matrix(c(0.1, 0.1, 0.6, rep(0, p-3)), 1, p) 
+par(mfrow=c(3,1))
+##############################
+point = matrix(c(0.2, 0.2, 0.2, rep(0, p-3)), 1, p) 
+#point = matrix(X[1,], 1, p)
 weights = predict(mrf_fit, newdata=point)$weights
-plot(W, Y, cex=200*weights[1,], pch=19, xlim=c(0, 3))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y), weights=as.vector(weights)), newdata=sort(W)), col='red')
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-lines(sort(W),  (5*point[1,3]  - 1) + 2*sin(4*sort(W))*(1+1/(1+exp(-20*(point[1,1] - 1/3))))^2, col='black')
-
-point = matrix(c(0.9, 0.1, 0.9, rep(0, p-3)), 1, p)
+plot(X[,1], X[,3], cex=200*weights[1,], pch=19, xlim=c(0,1), ylim=c(0,1))
+points(point[,1], point[,3], col='red', pch=18, cex=3)
+################################
+point = matrix(c(0.2, 0.2, 0.2, rep(0, p-3)), 1, p) 
+#point = matrix(X[1,], 1, p)
 weights = predict(mrf_fit, newdata=point)$weights
-plot(W, Y, cex=200*weights[1,], pch=19, xlim=c(0, 3))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y), weights=as.vector(weights)), newdata=sort(W)), col='red')
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-lines(sort(W),  (5*point[1,3]  - 1) + 2*sin(4*sort(W))*(1+1/(1+exp(-20*(point[1,1] - 1/3))))^2, col='black')
-
-point = matrix(c(0.9, 0.1, 0.6, rep(0, p-3)), 1, p)
+plot(X[,1], X[,2], cex=200*weights[1,], pch=19, xlim=c(0,1), ylim=c(0,1))
+points(point[,1], point[,2], col='red', pch=18, cex=3)
+###############################
+point = matrix(c(0.2, 0.2, 0.2, rep(0, p-3)), 1, p) 
+#point = matrix(X[1,], 1, p)
 weights = predict(mrf_fit, newdata=point)$weights
-plot(W, Y, cex=200*weights[1,], pch=19, xlim=c(0, 3))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y), weights=as.vector(weights)), newdata=sort(W)), col='red')
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-lines(sort(W),  (5*point[1,3]  - 1) + 2*sin(4*sort(W))*(1+1/(1+exp(-20*(point[1,1] - 1/3))))^2, col='black')
+plot(X[,2], X[,3], cex=200*weights[1,], pch=19, xlim=c(0,1), ylim=c(0,1))
+points(point[,1], point[,3], col='red', pch=18, cex=3)
+###############################
 
-point = matrix(c(0.1, 0.1, 0.9, rep(0, p-3)), 1, p)
-weights = predict(mrf_fit, newdata=point)$weights
-plot(W, Y, cex=200*weights[1,], pch=19, xlim=c(0, 3))
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y), weights=as.vector(weights)), newdata=sort(W)), col='red')
-lines(sort(W), predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=sort(W)), col='blue')
-lines(sort(W),  (5*point[1,3]  - 1) + 2*sin(4*sort(W))*(1+1/(1+exp(-20*(point[1,1] - 1/3))))^2, col='black')
-
-# causal_effect = function(obj, w_do){
-#   ret = 0
-#   N=100
-#   for(i in sample(1:n, N, replace=TRUE)){
-#     fit <- loess(y~w, data=data.frame(y=Y,w=W), weights=as.vector(predict(obj, newdata=matrix(X[i,], nrow=1, ncol=p))$weights))
-#     ret = ret + predict(fit, w_do)/N
-#   }
-#   return(ret)
+# k=20
+# w_do = seq(0, 2, length.out = k)
+# causal_effect = rep(0, k)
+# N=500
+# for(i in sample(1:n, N, replace=TRUE)){
+#   fit <- loess(y~w, data=data.frame(y=Y,w=W), weights=as.vector(predict(mrf_fit, newdata=matrix(X[i,], nrow=1, ncol=p))$weights))
+#   #which = sample(1:n, 1000, replace=TRUE, prob=as.vector(predict(mrf_fit, newdata=matrix(X[i,], nrow=1, ncol=p))$weights))
+#   #fit <- mrf(Y=Y[which], X=cbind(W[which], X[which,5]), splitting.rule="fourier", num_features=3)
+#   causal_effect = causal_effect + predict(fit, newdata=w_do)/N
 # }
-# effect = rep(0, k)
-# for(i in 1:k){
-#   print(i)
-#   effect[i] = causal_effect(mrf_fit, w_do[i])
-# }
-# plot(w_do, effect, type='l', col='red', ylim=c(-3,3))
-# truth = (2*mean(X[,3])  - 1) + sin(w_do)*mean(beta)
+# par(mfrow=c(1,1))
+# plot(w_do, causal_effect, type='l', col='red')
+# truth = (5*mean(X[,3])  - 1) + 2*sin(4*w_do)*mean(beta)
 # lines(w_do, truth, col='black', lty=2)
 # fit <- loess(Y~W)
 # lines(w_do, predict(fit, newdata = w_do), col='blue', lty=3)
+
+#plot(W, Y,xlim=c(0, 3), col=(1 + (X[, 3]>0.5)))
+#lines(W_test, predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=W_test), col='blue')
+
+#plot(W, Y,xlim=c(0, 3), col=(1 + (X[, 1]>0.5)))
+#lines(W_test, predict(loess(y~w, data=data.frame(w=W, y=Y)), newdata=W_test), col='blue')
+
+par(mfrow=c(3,3))
+x1 = c(0.1, 0.1, 0.1, 0.5, 0.5, 0.5, 0.9, 0.9, 0.9)
+x2 = rep(0, 9)
+x3 = c(0.1, 0.5, 0.9, 0.1, 0.5, 0.9, 0.1, 0.5, 0.9)
+W_test = matrix(seq(min(W), max(W), length.out=100), ncol=1)
+
+regress <- function(W, Y, weights, W_test){
+  idx = sample(1:length(W), 10000000, prob=as.vector(weights), replace=TRUE)
+  fit = smooth.spline(W[idx], Y[idx], cv=TRUE)$fit
+  return(predict(fit, x=W_test)$y)
+}
+
+for(i in 1:9){
+  point = matrix(c(x1[i], x2[i], x3[i], rep(0, p-3)), 1, p)
+  test = Reduce(rbind, lapply(W_test, function(tmp) return(point)))
+  weights = predict(mrf_fit, newdata=point)$weights
+  plot(W, Y, cex=100*weights[1,], pch=19)
+  lines(W_test, regress(W, Y, weights, W_test), col='red')
+  lines(W_test, regress(W, Y, weights=rep(1, n), W_test), col='blue')
+  lines(W_test, truth(W_test, test), col='green')
+  lines(W_test, predict(Y_fit, data=data.frame(w=W_test, x=test))$predictions, col='pink')
+  lines(W_test, predict(Y_fit2, newdata = cbind(W_test, test))$weights %*% Y, col='purple')
+}
+
+
+
+causal_effect = function(obj, w_do){
+  ret = rep(0, length(w_do))
+  N = 1000
+  cnt=0
+  for(i in sample(1:n, N, replace=TRUE)){
+    print(cnt)
+    cnt = cnt + 1
+    idx = sample(1:length(W), 200000, prob=as.vector(predict(obj, newdata=matrix(X[i,], nrow=1, ncol=p))$weights), replace=TRUE)
+    fit = smooth.spline(W[idx], Y[idx], cv=TRUE)$fit
+    for(j in 1:length(w_do)){
+      ret[j] = ret[j] + predict(fit, x=w_do[j])$y/N
+    }
+  }
+  return(ret)
+}
+
+causal_effect2 = function(obj, w_do){
+  ret = rep(0, length(w_do))
+  N = 1000
+  cnt=0
+  for(i in sample(1:n, N, replace=TRUE)){
+    print(cnt)
+    cnt = cnt + 1
+    fn = predict(obj, newdata = cbind(w_do, Reduce(rbind, lapply(w_do, function(tmp) return(point)))))$weights %*% Y
+    for(j in 1:length(w_do)){
+      ret[j] = ret[j] + fn[j]/N
+    }
+  }
+  return(ret)
+}
+
+k=500
+w_do = seq(0, 3.8, length.out=k)
+effect = rep(0, k)
+ans = rep(0, k)
+effect = 
+for(i in 1:k){
+  ans[i] = mean(truth(w_do[i], X))
+}
+par(mfrow=c(1,1))
+effect = causal_effect(mrf_fit, w_do)
+plot(w_do, effect, type='l', col='red', ylim=c(-3,3))
+lines(w_do, ans, col='green')
+lines(w_do, regress(W, Y, weights=rep(1, n), w_do), col='blue')
+effect2 = causal_effect2(Y_fit2, w_do)
+lines(w_do, effect2, col='purple')
+effect3 = causal_effect2(Y_fit, w_do)
+lines(w_do, effect2, col='purple')
 
 #interventional_dist = function(obj, w_do){
 #  ret_weights = rep(0, n)
