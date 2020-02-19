@@ -163,7 +163,7 @@ bool FourierSplittingRule::find_best_split(const Data& data,
   // Initialize the variables to track the best split variable.
   size_t best_var = 0;
   double best_value = 0;
-  double best_decrease = 0.0;
+  double best_decrease = -1.0;
   //std::cout << "entering the splits" << std::endl;
   
 
