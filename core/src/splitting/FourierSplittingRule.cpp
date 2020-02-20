@@ -446,23 +446,45 @@ void FourierSplittingRule::find_split(const Data& data,
     }
   }
   
+  //std::cout << "variable: " << var << std::endl;
+  //std::cout << "MMD: " << n << std::endl;
   //int sampleID = -1;
   //double best_stat = 0;
   
+  double best_dec = -1;
+  double best_val = 0;
+  double best_dec10 = -1;
+  double best_val10 = 0;
+  
   for(size_t i = 0; i < (n-1); ++i){
-    if(n > 10 && (i+1) < 0.1*n && (n-i-1) < 0.1*n)  {// we ensure at least 10% of datapoints is in each child to ensure logarithmic depth of the tree
+    if(tmp[i].first == tmp[i+1].first)
       continue;
-    } 
-    if (i <= min_child_size || (n-i) <= min_child_size) {
+    if(best_dec < MMD[i]){
+      best_dec = MMD[i];
+      best_val = data.get(samples[node][tmp[i].second], var);
+    }
+    if((i+1) < 0.1*n && (n-i-1) < 0.1*n)  {// we ensure at least 10% of datapoints is in each child to ensure logarithmic depth of the tree
       continue;
     }
-    if(best_decrease < MMD[i]){
-      best_decrease = MMD[i];
-      best_value = data.get(samples[node][tmp[i].second], var);
-      //sampleID = sampleIDs[tmp[i].second];
+    if(best_dec10 < MMD[i]){
+      best_dec10 = MMD[i];
+      best_val10 = data.get(samples[node][tmp[i].second], var);
+    }
+  }
+  
+  if(best_dec10 > -0.5){
+    if(best_decrease < best_dec10){
+      best_decrease = best_dec10;
+      best_value = best_val10;
       best_var = var;
     }
-
+  }
+  else{
+    if(best_decrease < best_dec){
+      best_decrease = best_dec;
+      best_value = best_val;
+      best_var = var;
+    }
   }
   //return make_pair(sampleID, best_stat);
 }

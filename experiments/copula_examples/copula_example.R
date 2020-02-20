@@ -146,6 +146,9 @@ for (i in 10:18) {
   #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
 }
 
+
+
+
 # fourier2
 par(mfrow=c(4,4))
 #par(mar=rep(2,4))
