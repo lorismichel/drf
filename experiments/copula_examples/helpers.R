@@ -1,4 +1,4 @@
-plotBivariate <- function (x, y = NULL, cex.points = 1, smooth = TRUE, ab = FALSE, correl = TRUE,
+plotBivariate <- function (x, y = NULL, cex.points = 1, density.xy, smooth = FALSE, ab = FALSE, correl = TRUE,
                            density = TRUE, ellipse = FALSE, digits = 2, method, cex.cor = 1,
                            title = "Scatter plot + histograms", xlab = NULL, ylab = NULL,
                            smoother = FALSE, nrpoints = 0, xlab.hist = NULL, ylab.hist = NULL,
@@ -50,8 +50,8 @@ plotBivariate <- function (x, y = NULL, cex.points = 1, smooth = TRUE, ab = FALS
                   ylim = ylim, xlab = xlab, ylab = ylab, )
   }
   else {
-    plot(x, y, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab, cex = cex.points,
-         ...)
+    plot(x, y, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab, cex = cex.points,...)
+    contour(density.xy, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
   }
   if (grid)
     grid()
@@ -103,8 +103,9 @@ plotBivariate <- function (x, y = NULL, cex.points = 1, smooth = TRUE, ab = FALS
     d$x <- temp
     if (freq)
       d$x <- d$x * max(yhist$counts/yhist$density, na.rm = TRUE)
-    if (density)
+    if (density) 
       lines(d)
+
   }
   par(mar = c(1, 1, 1, 1))
   if (correl) {
