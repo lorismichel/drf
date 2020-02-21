@@ -20,7 +20,7 @@ set.seed(100)
 
 # at the moment only scenarios 1 and 2 are available
 # choice of SC
-SC <- 4
+SC <- 0
 
 # Examples 
 d <- 10
@@ -186,9 +186,6 @@ if (SC == 0) {
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvNorm)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
-    
-    
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
                           "_TESTPOINT_",
@@ -265,8 +262,6 @@ if (SC == 4) {
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
-    
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
                           "_TESTPOINT_",
@@ -299,7 +294,7 @@ if (SC == 4) {
   for (i in 10:18) {
     #plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
     
-    plot(col="darkblue", p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
+    plot(p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, col="darkblue", asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
     
     # truth
     xx <- grid[i,]
@@ -315,7 +310,7 @@ if (SC == 4) {
     sim.data <- sim.data <- rMvdc(n = 100000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
+    contour(f1, nlevels = 5, col="purple",add = TRUE, lty = 2,lwd=2)
     #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
   }
   
@@ -341,8 +336,6 @@ if (SC == 4) {
     
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
-    
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
     
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
