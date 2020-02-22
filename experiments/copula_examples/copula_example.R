@@ -3,6 +3,10 @@
 # libs
 library(copula)
 library(mrf)
+library(MASS)
+
+# source
+source("./experiments/copula_examples/helpers.R")
 
 # repro
 set.seed(100)
@@ -16,11 +20,11 @@ set.seed(100)
 
 # at the moment only scenarios 1 and 2 are available
 # choice of SC
-SC <- 4
+SC <- 0
 
 # Examples 
 d <- 10
-n <- 5000
+n <- 10000
 
 
 
@@ -101,9 +105,9 @@ colnames(Y) <- c("Y1", "Y2")
 ## fitting the models and getting predictions
 
 # fits
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "fourier", num_features = 3,  bandwidth = 1, node_scaling = FALSE, min.node.size = 20)
-mRF_fourier2 <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "fourier", num_features = 100,  bandwidth = 1, node_scaling = FALSE, min.node.size = 20)
-mRF_gini <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "gini", num_features = 100, bandwidth = 1, min.node.size = 20)
+mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500, splitting.rule = "fourier",
+                   num_features = 100,  bandwidth = 1, node_scaling = FALSE,
+                   min.node.size = 20)
 
 
 # predictions
@@ -113,9 +117,10 @@ if (SC == 0) {
   grid <- cbind(expand.grid(seq(-1, 1,length.out = 3),seq(-0.7,0.7,length.out = 3),seq(-1,1,length.out = 2)),matrix(0,nrow=18,ncol=d-3))
 }
 
+
+# get predictions
 p_fourier <- predict(mRF_fourier, newdata = grid)
-p_fourier2 <- predict(mRF_fourier2, newdata = grid)
-p_gini <- predict(mRF_gini, newdata = grid)
+
 
 
 
@@ -132,14 +137,14 @@ if (SC == 0) {
   
   par(mfrow=c(3,3))
   for (i in 1:9) {
-    plot(p_fourier$y, pch=19,main = paste0("X1=", 
-                                           grid[i,1],
-                                           ", X2=", 
-                                           grid[i,2]), 
-         cex=0.2,col="grey")
+    # plot(p_fourier$y, pch=19,main = paste0("X1=", 
+    #                                        grid[i,1],
+    #                                        ", X2=", 
+    #                                        grid[i,2]), 
+    #      cex=0.2,col="grey")
     
-    points(col="darkblue", p_fourier2$y, 
-           cex=p_fourier$weights[i,]*300,
+    plot(col="darkblue", p_fourier$y, 
+           cex=p_fourier$weights[i,]^{0.5},
            pch=19, asp=1, main=paste0("X1=",grid[i,1],3, 
                                       ", X2=",grid[i,2],3))
     
@@ -181,9 +186,6 @@ if (SC == 0) {
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvNorm)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
-    
-    
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
                           "_TESTPOINT_",
@@ -215,9 +217,9 @@ if (SC == 4) {
   
   par(mfrow=c(3,3))
   for (i in 1:9) {
-    plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
+    #plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
     
-    points(col="darkblue", p_fourier2$y, cex=p_fourier$weights[i,]*300,pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
+    plot(col="darkblue", p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
     
     # truth
     xx <- grid[i,]
@@ -260,8 +262,6 @@ if (SC == 4) {
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
-    
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
                           "_TESTPOINT_",
@@ -292,9 +292,9 @@ if (SC == 4) {
   #par(mar=rep(2,4))
   #plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
   for (i in 10:18) {
-    plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
+    #plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
     
-    points(col="darkblue", p_fourier2$y, cex=p_fourier$weights[i,]*300,pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
+    plot(p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, col="darkblue", asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
     
     # truth
     xx <- grid[i,]
@@ -310,7 +310,7 @@ if (SC == 4) {
     sim.data <- sim.data <- rMvdc(n = 100000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
     
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
+    contour(f1, nlevels = 5, col="purple",add = TRUE, lty = 2,lwd=2)
     #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
   }
   
@@ -336,8 +336,6 @@ if (SC == 4) {
     
     sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
     f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
-    
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
     
     png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
                           SC, 
