@@ -453,10 +453,10 @@ png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_"
   lines(x, get_hsic(mRF_gini, x), col='red', lty=2)
 dev.off()
 
-# heatmap of hsic
-# plot two scenarios change of marginals but plot of kernels
-# gaussian or take the the t (correlation lines, hsic)
-# real data 
+# - heatmap of hsic
+# - plot two scenarios change of marginals but plot of kernels
+# - gaussian or take the the t (correlation lines, hsic)
+# - real data 
 
 
 

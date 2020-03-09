@@ -1,4 +1,4 @@
-# RF1 dataset
+# RF2 dataset
 
 # RF 
 # The river flow datasets concern the prediction of river network flows for 48 h in the future
@@ -25,7 +25,7 @@ require(mrf)
 source("./experiments/mtr/helpers.R")
 
 # 
-d <- loadMTRdata(dataset.name = "RF1")
+d <- loadMTRdata(dataset.name = "RF2")
 
 
 # fit an mrf

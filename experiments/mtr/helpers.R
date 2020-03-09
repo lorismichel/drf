@@ -119,6 +119,10 @@ loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets
     # could we do it better?
     dataset <- na.omit(dataset)
     return(list(X = as.matrix(dataset[,c(names(dataset)[!grepl(names(dataset), pattern = "48H")])]), Y = as.matrix(dataset[,names(dataset)[grepl(names(dataset), pattern = "48H")]])))
+  } else if (dataset.name == "RF2") {
+    # could we do it better?
+    dataset <- na.omit(dataset)
+    return(list(X = as.matrix(dataset[,c(names(dataset)[!grepl(names(dataset), pattern = "48H")])]), Y = as.matrix(dataset[,names(dataset)[grepl(names(dataset), pattern = "48H")]])))
   } else if (dataset.name == "slump") {
     return(list(X = as.matrix(dataset[,1:7]), Y = as.matrix(dataset[,-c(1:7)])))
   } else if (dataset.name == "andro") {
@@ -132,6 +136,8 @@ loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets
   }
   else if (dataset.name == "atp7d") {
     #return(list(X = as.matrix(dataset[,-c(17:30)]), Y = as.matrix(dataset[,c(17:30)])))
+  } else if (dataset.name == "jura") {
+    return(list(X = as.matrix(dataset[,-c(16:18)]), Y = as.matrix(dataset[,c(16:18)])))
   }
 }
 
