@@ -5,6 +5,8 @@ library(sf)
 library(maps)
 library(data.table)
 
+us.map <- map_data("world", region = c('USA'))
+
 # defining thresholds and variables
 unhealthy_thresholds = c(9.5, 76, 101, 0.071, 155, 35.5) #threshold value for "Unhealthy for sensitive groups"
 moderate_thresholds = c(4.5, 36, 54, 0.055, 55, 12.1) #threshold value for "Moderate"
@@ -19,10 +21,12 @@ airQuCat <- function(y) {
 }
 
 # loading data and subsampling
-load('~/Downloads/air_data.RData')
+#load('~/Downloads/air_data.RData')
+load('~/Documents/projects/heterogeneity/air_data/computed_data/air_data.RData')
 air_data <- air_data[, -c(7,8)]
+
 omit <- data.table(na.omit(air_data))
-omit <- omit[sample(1:nrow(omit), size = 5000, replace = FALSE),]
+#omit <- omit[sample(1:nrow(omit), size = 5000, replace = FALSE),]
 Y <- omit[,c(13:18)]
 
 # categories
@@ -30,7 +34,7 @@ cat <- apply(Y,1,airQuCat)
 
 
 # first modelling
-X <- data.frame(omit[,c("Elevation","Land.Use","Location.Setting")])
+X <- data.frame(omit[,c('Latitude', 'Longitude', "Elevation","Land.Use","Location.Setting")])
 X$Land.Use <- factor(X$Land.Use)
 X$Location.Setting <- factor(X$Location.Setting)
 X <- model.matrix(~.-1, data = X)
@@ -38,35 +42,44 @@ X <- model.matrix(~.-1, data = X)
 mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, 
            splitting.rule = "fourier", num_features = 3)
 
-# OOB (can be expansive without subsampling)
-wOOB_fourier <- get_sample_weights(mRF_fourier)
+# OOB (can be expensive without subsampling)
+#wOOB_fourier <- get_sample_weights(mRF_fourier)
+site_data <- unique(air_data[,c('Latitude', 'Longitude', "Elevation","Land.Use","Location.Setting")])
+wOOB_fourier <- predict(mRF_fourier, newdata=model.matrix(~.-1, data = site_data))$weights
 
 # get predictions for probabilites
 pR_fourier_good     <- apply(wOOB_fourier, 1, function(w) sum(w[cat=="good"]))
 pR_fourier_moderate <- apply(wOOB_fourier, 1, function(w) sum(w[cat=="moderate"]))
-pR_fourier_unhealty <- apply(wOOB_fourier, 1, function(w) sum(w[cat=="unhealthy"]))
+pR_fourier_unhealthy <- apply(wOOB_fourier, 1, function(w) sum(w[cat=="unhealthy"]))
 
-omit$pR_fourier_good     <- pR_fourier_good
-omit$pR_fourier_moderate <- pR_fourier_moderate
-omit$pR_fourier_unhealty <- pR_fourier_unhealty
-
-
+site_data$pR_fourier_good     <- pR_fourier_good
+site_data$pR_fourier_moderate <- pR_fourier_moderate
+site_data$pR_fourier_unhealthy <- pR_fourier_unhealthy
 
 
-e <- ggplot(omit, aes(x=Longitude, y=Latitude, color=Elevation)) + 
-  geom_point(size=1) + scale_color_viridis_c(option='magma') +
+
+e <- ggplot(site_data, aes(x=Longitude, y=Latitude, color=Elevation)) + 
+  geom_point(size=0.8) + scale_color_viridis_c(option='magma') +
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
+  coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
-p1 <- ggplot(omit, aes(x=Longitude, y=Latitude, color=pR_fourier_good)) + 
-  geom_point(size=1) + scale_color_viridis_c(option='magma') +
+p1 <- ggplot(site_data, aes(x=Longitude, y=Latitude, color=pR_fourier_good)) + 
+  geom_point(size=0.8) + scale_color_viridis_c(option='magma') +
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
+  coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
-p2 <- ggplot(omit, aes(x=Longitude, y=Latitude, color=pR_fourier_moderate)) + 
-  geom_point(size=1) + scale_color_viridis_c(option='magma') +
+p2 <- ggplot(site_data, aes(x=Longitude, y=Latitude, color=pR_fourier_moderate)) + 
+  geom_point(size=0.8) + scale_color_viridis_c(option='magma') +
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
+  coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
-p3 <- ggplot(omit, aes(x=Longitude, y=Latitude, color=pR_fourier_unhealty)) + 
-  geom_point(size=1) + scale_color_viridis_c(option='magma') +
+p3 <- ggplot(site_data, aes(x=Longitude, y=Latitude, color=pR_fourier_unhealthy)) + 
+  geom_point(size=0.8) + scale_color_viridis_c(option='magma') +
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
+  coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
 require(gridExtra)
@@ -74,11 +87,11 @@ grid.arrange(e, p1, p2, p3,
              nrow = 2, ncol = 2)
 
 
-ggplot(omit, aes(x=Elevation, y=pR_fourier_unhealty)) + 
+ggplot(site_data, aes(x=Elevation, y=pR_fourier_unhealthy)) + 
   geom_point(size=1) + scale_color_viridis_c(option='magma') + facet_wrap(~Land.Use) +
   theme_bw()
 
-ggplot(omit, aes(x=Elevation, y=pR_fourier_unhealty)) + 
+ggplot(site_data, aes(x=Elevation, y=pR_fourier_unhealthy)) + 
   geom_point(size=1) + scale_color_viridis_c(option='magma') + facet_wrap(~Location.Setting) +
   theme_bw()
 
@@ -93,7 +106,7 @@ ggplot(omit, aes(x=Elevation, y=pR_fourier_unhealty)) +
 #   geom_hline(yintercept=moderate_thresholds['PM10'], linetype='dashed', color='yellow') +
 #   geom_vline(xintercept=unhealthy_thresholds['PM2.5'], linetype='dashed', color='red') +
 #   geom_hline(yintercept=unhealthy_thresholds['PM10'], linetype='dashed', color='red') +
-#   coord_cartesian(xlim=c(0, 100), ylim = c(0,500))# + 
+#   coord_cartesian(xlim=c(0, 100), ylim = c(0,500))# +
 #  # theme_bw()
 # 
 # plot(air_data[idx,]$Longitude, air_data[idx,]$Latitude)
