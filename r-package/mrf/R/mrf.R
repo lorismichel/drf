@@ -241,14 +241,75 @@ predict.mrf <- function(object,
                         newdata = NULL,
                         type = "weights",
                         num.threads = NULL,
-      
                                       ...) {
   
   
-  # predict mean
-  w <- get_sample_weights(forest = object, newdata = newdata, num.threads = num.threads)
+  # get weights
+  w <- get_sample_weights(forest = object, 
+                          newdata = newdata, 
+                          num.threads = num.threads)
   
   if (type == "weights") {
-    return(list(weights=w, y=object$Y.orig))
-  }
+    
+    return(list(weights = w, 
+                y = object$Y.orig))
+    
+  } else if (type == "means") {
+    
+    means <- t(apply(w, 1, function(ww) ww%*%y))
+    colnames(means) <- colnames(object$Y.orig)
+    return(list(means = t(apply(w,1,function(ww) ww%*%y))))
+    
+  } else if (type == "sds") {
+    
+    means <- t(apply(w, 1, function(ww) ww%*%y))
+    means2 <- t(apply(w, 1, function(ww) ww%*%(y^2)))
+    colnames(means) <- colnames(object$Y.orig)
+    return(list(sds = sqrt(means2-(means)^2)))
+    
+  } else if (type == "functional") {
+    
+    add.param <- list(...)
+    functional.val <- t(apply(y, 1, function(yy) add.param$f(yy)))
+    return(list(functional = functional.val))
+    
+  } else if (type == "predictionRegions") {
+    
+       if (ncol(object$Y.orig) != 2) {
+         stop("only valid for 2 dimensional response.")
+       } 
+       if (nrow(w) != 1) {
+         stop("only valid for 1 observation.")
+       }
+    
+       add.param <- list(...)
+     
+       Ys <- y[sample(1:nrow(y), 
+                      add.param$nsim, 
+                      replace = TRUE, 
+                      prob = w),] 
+      
+       d <- MASS::kde2d(Ys[,1], 
+                        Ys[,2], 
+                        n = add.param$n, 
+                        h = add.param$h)
+       
+       unlisted.z <- as.numeric(d$z) / sum(d$z) 
+       sorted.z <- sort(unlisted.z, decreasing = TRUE)
+       cum.sorted.z <- cumsum(sorted.z)
+       id <- which(cum.sorted.z >= (1-add.param$alpha))[1]
+       
+       if (!is.null(colnames(object$Y.orig))) {
+         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
+                 drawlabels = FALSE, 
+                 xlab = colnames(object$Y.orig)[1], ylab = colnames(object$Y.orig)[2])
+       } else {
+         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
+                 drawlabels = FALSE, 
+                 xlab = expression(Y[1]), ylab = expression(Y[2]))
+       }
+       
+       grid <- expand.grid(d$x, d$y)
+       points(grid[,1], grid[,2], cex = d$z)
+  } 
 }
