@@ -241,7 +241,8 @@ predict.mrf <- function(object,
                         newdata = NULL,
                         type = "weights",
                         num.threads = NULL,
-                                      ...) {
+                        n.sim = NULL,
+                        ...) {
   
   
   # get weights
@@ -256,60 +257,70 @@ predict.mrf <- function(object,
     
   } else if (type == "means") {
     
-    means <- t(apply(w, 1, function(ww) ww%*%y))
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
     colnames(means) <- colnames(object$Y.orig)
-    return(list(means = t(apply(w,1,function(ww) ww%*%y))))
+    return(list(means = t(apply(w,1,function(ww) ww%*%object$Y.orig))))
     
   } else if (type == "sds") {
     
-    means <- t(apply(w, 1, function(ww) ww%*%y))
-    means2 <- t(apply(w, 1, function(ww) ww%*%(y^2)))
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
     colnames(means) <- colnames(object$Y.orig)
     return(list(sds = sqrt(means2-(means)^2)))
     
   } else if (type == "functional") {
     
     add.param <- list(...)
-    functional.val <- t(apply(y, 1, function(yy) add.param$f(yy)))
+    functional.val <- t(apply(object$Y.orig, 1, function(yy) add.param$f(yy)))
+    if (length(add.param$f(object$Y.ori[1,]))==1) {
+      functional.val <- t(functional.val)
+    }
     return(list(functional = functional.val))
     
-  } else if (type == "predictionRegions") {
+  } else if (type == "predictionRegion") {
     
        if (ncol(object$Y.orig) != 2) {
          stop("only valid for 2 dimensional response.")
        } 
        if (nrow(w) != 1) {
-         stop("only valid for 1 observation.")
+         stop("prediction region only valid for 1 observation.")
        }
     
        add.param <- list(...)
      
-       Ys <- y[sample(1:nrow(y), 
-                      add.param$nsim, 
-                      replace = TRUE, 
-                      prob = w),] 
-      
-       d <- MASS::kde2d(Ys[,1], 
-                        Ys[,2], 
-                        n = add.param$n, 
-                        h = add.param$h)
-       
-       unlisted.z <- as.numeric(d$z) / sum(d$z) 
-       sorted.z <- sort(unlisted.z, decreasing = TRUE)
-       cum.sorted.z <- cumsum(sorted.z)
-       id <- which(cum.sorted.z >= (1-add.param$alpha))[1]
+       Ys <- object$Y.orig[sample(1:nrow(object$Y.orig), 
+                           n.sim, 
+                           replace = TRUE, 
+                           prob = as.numeric(w)),] 
        
        if (!is.null(colnames(object$Y.orig))) {
-         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
-                 drawlabels = FALSE, 
-                 xlab = colnames(object$Y.orig)[1], ylab = colnames(object$Y.orig)[2])
+          graphics::smoothScatter(Ys[,1], Ys[,2], ...)
        } else {
-         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
-                 drawlabels = FALSE, 
-                 xlab = expression(Y[1]), ylab = expression(Y[2]))
+          graphics::smoothScatter(Ys[,1], Ys[,2], ...)
        }
-       
-       grid <- expand.grid(d$x, d$y)
-       points(grid[,1], grid[,2], cex = d$z)
+      
+       # d <- MASS::kde2d(Ys[,1], 
+       #                  Ys[,2], 
+       #                  n = add.param$n, 
+       #                  h = add.param$h)
+       # 
+       # unlisted.z <- as.numeric(d$z) / sum(d$z) 
+       # sorted.z <- sort(unlisted.z, decreasing = TRUE)
+       # cum.sorted.z <- cumsum(sorted.z)
+       # id <- which(cum.sorted.z >= (1-add.param$alpha))[1]
+       # 
+       # if (!is.null(colnames(object$Y.orig))) {
+       #   contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
+       #           drawlabels = FALSE, 
+       #           xlab = colnames(object$Y.orig)[1], ylab = colnames(object$Y.orig)[2])
+       # } else {
+       #   contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
+       #           drawlabels = FALSE, 
+       #           xlab = expression(Y[1]), ylab = expression(Y[2]))
+       # }
+       # grid <- expand.grid(d$x, d$y)
+       # points(grid[,1], grid[,2], cex = d$z)
   } 
 }
+
+
