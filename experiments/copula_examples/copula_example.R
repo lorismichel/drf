@@ -46,7 +46,7 @@ Y <- t(apply(X, 1, function(xx) {
             # copula
             tCop <- tCopula(xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
             # margins
-            if (TRUE | xx[3]<=0) {
+            if (xx[3]<=0) {
               margins <- c("norm", "norm")
               paramMargins <- list(list(mean = 0, sd = 1),
                                list(mean = 0, sd = 1))
