@@ -4,8 +4,10 @@
 library(copula)
 library(mrf)
 library(MASS)
+library(ggplot2)
 
 # source
+setwd('~/Documents/projects/heterogeneity/mrf')
 source("./experiments/copula_examples/helpers.R")
 
 # repro
@@ -20,7 +22,7 @@ set.seed(100)
 SC <- 1
 # dimensions
 d <- 10
-n <- 10000
+n <- 50000
 
 # CONSTRUCTION
 # predictors
@@ -44,7 +46,7 @@ Y <- t(apply(X, 1, function(xx) {
             # copula
             tCop <- tCopula(xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
             # margins
-            if (xx[3]<=0) {
+            if (TRUE | xx[3]<=0) {
               margins <- c("norm", "norm")
               paramMargins <- list(list(mean = 0, sd = 1),
                                list(mean = 0, sd = 1))
@@ -64,9 +66,9 @@ colnames(Y) <- c("Y1", "Y2")
 
 
 ## fitting the models and getting predictions
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500, 
+mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, 
                    splitting.rule = "fourier",
-                   num_features = 100,  
+                   num_features = 3,  
                    bandwidth = 1, 
                    node_scaling = FALSE,
                    min.node.size = 20)
@@ -395,6 +397,7 @@ mRF_gini <- mrf(X = X, Y = Y, num.trees = 500,
    l = nrow(grid)
    ret_corr = rep(0, length(l))
    for(i in 1:l){
+     print(i)
      weights = predict(fit_obj, grid[i,])$weights
      ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights = weights)
    }
@@ -410,13 +413,26 @@ if (SC == 0) {
    lines(x, get_corr(mRF_fourier, x), col='blue', lty=2)
    lines(x, get_corr(mRF_gini, x), col='red', lty=2)
    dev.off()
+} else if (SC == 1) {
+  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
+      width = 1000, height = 1000)
+  grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
+                            seq(-1, 1,length.out = 15), 
+                            -1), 
+                matrix(0,nrow=225,ncol=d-3))
+  names(grid2D)[1:3] <- c('X1', 'X2', 'X3')
+  grid2D$corr <- get_corr_grid(mRF_fourier, grid2D)
+  
+  
+  ggplot(grid2D, aes(x=X1, y=X2))+
+    geom_raster(aes(fill=abs(corr)))+
+    scale_fill_viridis_c(option='B') 
+  
+  #plot(x = grid[grid[,1]==-1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==-1 & grid[,3]==-1],type="l",xlim=c(0,1))
+  #lines(x = grid[grid[,1]==0 & grid[,3]==-1,1], y = cor_grid[grid[,1]==0 & grid[,3]==-1],type="l",col="red")
+  #lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
+  dev.off()
 }
-# } else if (SC == 1) {
-#   cor_grid <- get_corr_grid(mRF_fourier, grid)
-#   plot(x = grid[grid[,1]==-1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==-1 & grid[,3]==-1],type="l",xlim=c(0,1))
-#   lines(x = grid[grid[,1]==0 & grid[,3]==-1,1], y = cor_grid[grid[,1]==0 & grid[,3]==-1],type="l",col="red")
-#   lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
-# }
 
 get_hsic <- function(fit_obj, x_seq){
    require(dHSIC)
@@ -433,18 +449,20 @@ get_hsic <- function(fit_obj, x_seq){
 
 get_hsic_grid <- function(fit_obj, grid){
   require(dHSIC)
-  l = nrow(gridf)
-  ret_corr = rep(0, length(l))
+  l = nrow(grid)
+  ret_hsic = rep(0, l)
   for(i in 1:l){
-    point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
-    weights = predict(fit_obj, point)$weights
+    print(i)
+    point = matrix(grid[i, ], nrow=1)
+    weights = predict(fit_obj, grid[i,])$weights
     which = sample(1:n, 10000, replace=TRUE, prob=as.vector(weights))
-    ret_corr[i] = dhsic(Y[which,1], Y[which,2])
+    ret_hsic[i] = dhsic(Y[which, 1], Y[which, 2])$dHSIC
   }
-  return(ret_corr)
+  return(ret_hsic)
 }
 
-
+if (SC == 0) {
+  
 png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
     width = 1000, height = 1000)
   x = seq(-1, 1, by=0.05)
@@ -453,12 +471,29 @@ png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_"
   lines(x, get_hsic(mRF_gini, x), col='red', lty=2)
 dev.off()
 
-# - heatmap of hsic
+} else if (SC == 1) {
+  
+png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
+    width = 1000, height = 1000)
+  Grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
+                              seq(-1, 1,length.out = 15), 
+                              -1), 
+                  matrix(0,nrow=225,ncol=d-3))
+  names(Grid2D)[1:3] <- c('X1', 'X2', 'X3')
+  Grid2D$HSIC <- get_hsic_grid(mRF_fourier, Grid2D)
+  
+  
+  ggplot(Grid2D, aes(x=X1, y=X2))+
+    geom_raster(aes(fill=HSIC))+
+    scale_fill_viridis_c(option='B') 
+  
+dev.off()
+
+}
+
 # - plot two scenarios change of marginals but plot of kernels
 # - gaussian or take the the t (correlation lines, hsic)
 # - real data 
-
-
 
 
 
