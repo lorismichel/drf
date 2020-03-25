@@ -88,7 +88,7 @@ require(foreign)
 # relative representation of plant and animal species in Slovenian rivers and 16 input attributes
 # that refer to physical and chemical water quality parameters.
 
-loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets/") {
+loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/heterogeneity/mtr-datasets/') {
   dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
   if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
@@ -151,7 +151,7 @@ RMSE_t <- function(Y, Yhat) {
 }
 
 qLoss <- function(y,yhat,alpha) {
-  return(alpha*max(y-yhat,0)+(1-alpha)*max(yhat-y,0))
+  return(mean(alpha*pmax(y-yhat,0)+(1-alpha)*pmax(yhat-y,0)))
 }
 
 generateRandomDirection <- function(dim = 2, nb = 1) {
@@ -170,6 +170,8 @@ runRandomPinballAnalysis <- function(X,
                                      nb_random_directions = 10,
                                      seed = 0,
                                      ...) {
+  
+  Y = scale(Y)
   
   # repro
   set.seed(seed)
@@ -205,5 +207,4 @@ runRandomPinballAnalysis <- function(X,
   }
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
-  
 }
