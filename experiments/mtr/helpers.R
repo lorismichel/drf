@@ -149,3 +149,61 @@ kFoldCV <- function(n, k = 10) {
 RMSE_t <- function(Y, Yhat) {
   return(sqrt(apply((Y-Yhat) * (Y-Yhat),2,mean)))
 }
+
+qLoss <- function(y,yhat,alpha) {
+  return(alpha*max(y-yhat,0)+(1-alpha)*max(yhat-y,0))
+}
+
+generateRandomDirection <- function(dim = 2, nb = 1) {
+  w <- list()
+  for (i in 1:nb) {
+    x <- rnorm(n = dim, mean = 0, sd = 1)
+    w[[i]] <- x/sqrt(sum(x^2))
+  }
+  return(w)
+}
+
+runRandomPinballAnalysis <- function(X, 
+                                     Y, 
+                                     k = 10, 
+                                     alpha_seq = c(.005, .025, .05, .3, .5, .7, .95, .975, .995), 
+                                     nb_random_directions = 10,
+                                     seed = 0,
+                                     ...) {
+  
+  # repro
+  set.seed(seed)
+  
+  # create folds
+  folds <- kFoldCV(n = nrow(X), k = k)
+  
+  # properties of the simulations
+  w <- generateRandomDirection(dim = ncol(Y), nb = nb_random_directions)
+  mrf_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
+  gini_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
+  
+  # CV loop
+  for (kk in 1:k) {
+    
+    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
+    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+    
+    for (i in 1:length(w)) {
+      
+      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
+                          quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
+                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+      
+      for (j in 1:length(alpha_seq)) {
+        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                yhat = yhat_mrf[,j], alpha = alpha_seq[j])/k
+        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
+                                                 yhat = yhat_gini[,j], alpha = alpha_seq[j])/k
+      }
+    }
+  }
+  
+  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
+  
+}

@@ -24,45 +24,11 @@ require(mrf)
 # source
 source("./experiments/mtr/helpers.R")
 
-# 
+# load the data
 d <- loadMTRdata(dataset.name = "RF1")
 
+# run analysis
+res <- runRandomPinballAnalysis(X=d$X, Y=d$Y, k=5, num_features = 100)
 
-# fit an mrf
-mRF <- mrf(X = d$X, Y = d$Y[,c(4,8)], splitting.rule = "fourier", num_features = 3)
-
-# variable importance
-plot(factor(colnames(d$X)),as.numeric(variable_importance(mRF)))
-
-
-pairs(d$Y)
-plot(d$Y[,c(4)],d$Y[,c(8)],col=cut(d$X[,"SCLM7__0"],breaks = 5, labels = FALSE)+1,pch=19)
-# kfold validation
-folds <- kFoldCV(n = nrow(d$X), k = 5)
-
-RMSE_t_mat <- matrix(0,nrow=2, ncol=ncol(d$Y))
-colnames(RMSE_t_mat) <- colnames(d$Y)
-
-# fourier
-for (k in 1:5) {
-  mRF <- mrf(X = d$X[-folds[[k]],], Y = d$Y[-folds[[k]],], splitting.rule = "fourier", num_features = 100)
-  p_fourier <- predict(mRF, newdata = d$X[folds[[k]],])
-  Yhat <- sapply(1:ncol(p_fourier$y), function(d) apply(p_fourier$weights, 1, function(w) sum(w*p_fourier$y[,d])))
-  RMSE_t_mat[1,] <- RMSE_t_mat[1,] + RMSE_t(d$Y[folds[[k]],],Yhat)/10
-  print(k)
-}
-
-# gini
-for (k in 1:5) {
-  mRF <- mrf(X = d$X[-folds[[k]],], Y = d$Y[-folds[[k]],], splitting.rule = "gini")
-  p_gini <- predict(mRF, newdata = d$X[folds[[k]],])
-  Yhat <- sapply(1:ncol(p_gini$y), function(d) apply(p_gini$weights, 1, function(w) sum(w*p_gini$y[,d])))
-  RMSE_t_mat[2,] <- RMSE_t_mat[2,] + RMSE_t(d$Y[folds[[k]],],Yhat)/10
-  print(k)
-}
-
-# see the results 
-print(RMSE_t_mat)
-
-
-
+# save results
+save(res, file = "./experiments/mtr/data/RF1.Rdata")
