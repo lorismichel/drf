@@ -14,8 +14,8 @@ plotBivariate <- function (x, y = NULL, cex.points = 1, density.xy, smooth = FAL
       ylab = colnames(x)[2]
     }
     else {
-      xlab = "V1"
-      ylab = "V2"
+      xlab = expression(Y[1])
+      ylab = expression(Y[2])
     }
   }
   if (is.null(y)) {
@@ -51,7 +51,7 @@ plotBivariate <- function (x, y = NULL, cex.points = 1, density.xy, smooth = FAL
   }
   else {
     plot(x, y, xlim = xlim, ylim = ylim, xlab = xlab, ylab = ylab, cex = cex.points,...)
-    contour(density.xy, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
+    contour(density.xy, nlevels = 5, col="brown",add =TRUE, lty = 1,lwd=3)
   }
   if (grid)
     grid()

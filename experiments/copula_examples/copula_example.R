@@ -17,12 +17,14 @@ set.seed(100)
 
 # PARAMS
 # choice of SC
-SC <- 1
+SC <- 0
+
 # dimensions
-d <- 10
+d <- 5
 n <- 10000
 
 # CONSTRUCTION
+
 # predictors
 X  <- matrix(runif(n*d, min = -1, max = 1),ncol = d)
 # responses
@@ -72,6 +74,18 @@ mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500,
                    min.node.size = 20)
 
 
+# plot pooled data in case of SC = 0
+if (SC == 0) {
+  png(filename = paste0("./experiments/copula_examples/plots/PLOT_POOLED_",
+                        SC, 
+                        ".png"), 
+      width = 400, height = 400)
+  par(mfrow=c(1,1))
+  par(mar=rep(4.7,4))
+  plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1,cex=0.1)
+  dev.off()
+}
+
 # get predictions on a grid
 if (SC == 0) {
   grid <- cbind(seq(-1,1, length.out = 9), 
@@ -88,6 +102,9 @@ p_fourier <- predict(mRF_fourier, newdata = grid)
 
 ## produce plots for inspection
 if (SC == 0) {
+  
+  # repro
+  set.seed(100)
   
   # look at kernels
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_KERNEL_SC_",
@@ -151,23 +168,26 @@ if (SC == 0) {
                           "_TESTPOINT_",
                           i, 
                           ".png"),
-        width = 1000)
-    
+        width = 400, height = 400)
+    par(mar=c(5.1, 5.1, 4.1, 2.1))
     plotBivariate(correl = FALSE,
                   col="darkblue", 
                   density.xy = f1,
+                  main=parse(text=paste0("~X[1] ==", xx[1])),
                   x = y.sample[,1], 
                   y = y.sample[,2], 
-                  cex.points = 0.5, 
-                  asp=1,pch=19)
+                  cex.points = 0.1, 
+                  xlim = c(-4.3,4.3), 
+                  ylim = c(-4.3,4.3),
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1,cex.main=2,font.main=1,font.axis=1,font.lab=1)
     dev.off()
   }
 }
   
-
-
 if (SC == 1) {
   
+  # repro
+  set.seed(10)
   
   # look at kernels
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_KERNEL_SC_",
@@ -227,15 +247,19 @@ if (SC == 1) {
                           "_TESTPOINT_",
                           i, 
                           ".png"),
-        width = 1000)
-    
+        width = 500, height = 500)
+    par(mar=c(5.1, 5.1, 4.1, 2.1))
     plotBivariate(correl = FALSE,
                   col="darkblue", 
+                  main = parse(text=paste0("~X[1] ==", xx[1], "~X[2] ==", xx[2], "~X[3] ==", xx[3])),
                   density.xy = f1,
                   x = y.sample[,1], 
                   y = y.sample[,2], 
-                  cex.points = 0.5, 
-                  asp=1)
+                  xlim = c(-4.2,4.2),
+                  ylim = c(-4.2,4.2),
+                  cex.points = 0.1, 
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1,
+                  font.main=1,cex.main=2,font.axis=1,font.lab=1)
     dev.off()
   }
   
@@ -309,67 +333,14 @@ if (SC == 1) {
                   density.xy = f1,
                   x = y.sample[,1], 
                   y = y.sample[,2], 
-                  cex.points = 0.5, 
-                  asp=1)
+                  main = parse(text=paste0("~X[1] ==", xx[1], "~X[2] ==", xx[2], "~X[3] ==", xx[3])),
+                  cex.points = 0.1, 
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1,cex.main=2,font.main=1,font.axis=1,font.lab=1)
     dev.off()
   }
 }
 
-
-# prediction regions, density estimate only valid in two dimensions
-
-predRegion <- function(y, w, nsim = 10000) {
-  if (ncol(y)!=2) {
-    stop("only valid for 2 dimenensional response.")
-  }
-  
-  require(MASS)
-  
-  Ys <- y[sample(1:nrow(y), nsim, replace = TRUE, prob = w),] 
-  
-  
-  d <- MASS::kde2d(Ys[,1], Ys[,2], n = 25, h = c(width.SJ(Ys[,1]), width.SJ(Ys[,2])))
-  
-  unlisted.z <- as.numeric(d$z) / sum(d$z) 
-  sorted.z <- sort(unlisted.z, decreasing = TRUE)
-  cum.sorted.z <- cumsum(sorted.z)
-  id <- which(cum.sorted.z >= (1-alpha))[1]
-  contour(d$x,d$y,d$z, levels = sorted.z[id] * sum(d$z), drawlabels = FALSE)
-  grid <- expand.grid(d$x, d$y)
-  points(grid[,1], grid[,2], cex = d$z)
-}
-
-
-
-if (SC == 0) {
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_PREDICTION_REGION_SC_", SC, ".png"), 
-      width = 1500, height = 1500)
-  par(mfrow=c(3,3))
-  for (i in 1:9) {
-    predRegion(y = p_fourier$y, w = p_fourier$weights[i,])
-  }
-  dev.off()
-} else if (SC == 1) {
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_PREDICTION_REGION_SC_", SC, "_1.png"), 
-      width = 1500, height = 1500)
-  par(mfrow=c(3,3))
-  for (i in 1:9) {
-    predRegion(y = p_fourier$y, w = p_fourier$weights[i,])
-  }
-  dev.off()
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_PREDICTION_REGION_SC_", SC, "_2.png"), 
-      width = 1500, height = 1500)
-  par(mfrow=c(3,3))
-  for (i in 10:18) {
-    predRegion(y = p_fourier$y, w = p_fourier$weights[i,])
-  }
-  dev.off()
-}
-
-
-
-
-# independence 
+# comparison with gini for corr and hsic
 
 mRF_gini <- mrf(X = X, Y = Y, num.trees = 500, 
                    splitting.rule = "gini",
@@ -377,46 +348,61 @@ mRF_gini <- mrf(X = X, Y = Y, num.trees = 500,
                    node_scaling = FALSE,
                    min.node.size = 20)
 
-
- get_corr <- function(fit_obj, x_seq){
-   require(wCorr)
-   l = length(x_seq)
-   ret_corr = rep(0, length(l))
-   for(i in 1:l){
-     point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
-     weights = predict(fit_obj, point)$weights
-     ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights=weights)
-   }
-   return(ret_corr)
- }
- 
- get_corr_grid <- function(fit_obj, grid){
-   require(wCorr)
-   l = nrow(grid)
-   ret_corr = rep(0, length(l))
-   for(i in 1:l){
-     weights = predict(fit_obj, grid[i,])$weights
-     ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights = weights)
-   }
-   return(ret_corr)
- }
+### helpers functions (! need to be defined here since using variables defined in this file)
+get_corr <- function(fit_obj, x_seq){
+  require(wCorr)
+  l = length(x_seq)
+  ret_corr = rep(0, length(l))
+  for(i in 1:l){
+    point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
+    weights = predict(fit_obj, point)$weights
+    ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights=weights)
+  }
+  return(ret_corr)
+}
+get_corr_grid <- function(fit_obj, grid){
+  require(wCorr)
+  l = nrow(grid)
+  ret_corr = rep(0, length(l))
+  for(i in 1:l){
+    weights = predict(fit_obj, grid[i,])$weights
+    ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights = weights)
+  }
+  return(ret_corr)
+}
  
 if (SC == 0) {
    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
-       width = 1000, height = 1000)
+       width = 500, height = 500)
+   par(mar=c(5.1, 5.3, 4.1, 2.1))
    x = seq(-1, 1, by=0.03)
    par(mfrow=c(1,1))
-   plot(x, x, type='l')
-   lines(x, get_corr(mRF_fourier, x), col='blue', lty=2)
-   lines(x, get_corr(mRF_gini, x), col='red', lty=2)
+   plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(hat(rho)(X[1])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1,lwd=2,lty=2)
+   lines(x, get_corr(mRF_fourier, x), col='blue', lty=2, lwd=3)
+   lines(x, get_corr(mRF_gini, x), col='red', lty=2, lwd=3)
    dev.off()
+} else if (SC == 1) {
+  require(ggplot2)
+  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
+      width = 1000, height = 1000)
+  grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
+                              seq(-1, 1,length.out = 15), 
+                              -1), 
+                  matrix(0,nrow=225,ncol=d-3))
+  names(grid2D)[1:3] <- c('X1', 'X2', 'X3')
+  grid2D$corr <- get_corr_grid(mRF_fourier, grid2D)
+  
+  
+  ggplot(grid2D, aes(x=X1, y=X2))+
+    geom_raster(aes(fill=abs(corr)))+
+    scale_fill_viridis_c(option='B') 
+  
+  #plot(x = grid[grid[,1]==-1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==-1 & grid[,3]==-1],type="l",xlim=c(0,1))
+  #lines(x = grid[grid[,1]==0 & grid[,3]==-1,1], y = cor_grid[grid[,1]==0 & grid[,3]==-1],type="l",col="red")
+  #lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
+  dev.off()
 }
-# } else if (SC == 1) {
-#   cor_grid <- get_corr_grid(mRF_fourier, grid)
-#   plot(x = grid[grid[,1]==-1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==-1 & grid[,3]==-1],type="l",xlim=c(0,1))
-#   lines(x = grid[grid[,1]==0 & grid[,3]==-1,1], y = cor_grid[grid[,1]==0 & grid[,3]==-1],type="l",col="red")
-#   lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
-# }
+
 
 get_hsic <- function(fit_obj, x_seq){
    require(dHSIC)
@@ -430,28 +416,55 @@ get_hsic <- function(fit_obj, x_seq){
    }
    return(ret_corr)
 }
-
 get_hsic_grid <- function(fit_obj, grid){
   require(dHSIC)
-  l = nrow(gridf)
-  ret_corr = rep(0, length(l))
+  l = nrow(grid)
+  ret_hsic = rep(0, l)
   for(i in 1:l){
-    point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
-    weights = predict(fit_obj, point)$weights
+    print(i)
+    point = matrix(grid[i, ], nrow=1)
+    weights = predict(fit_obj, grid[i,])$weights
     which = sample(1:n, 10000, replace=TRUE, prob=as.vector(weights))
-    ret_corr[i] = dhsic(Y[which,1], Y[which,2])
+    ret_hsic[i] = dhsic(Y[which, 1], Y[which, 2])$dHSIC
   }
-  return(ret_corr)
+  return(ret_hsic)
 }
 
-
-png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
-    width = 1000, height = 1000)
+if (SC == 0) {
+  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
+    width = 500, height = 500)
   x = seq(-1, 1, by=0.05)
+  par(mar=c(5.1, 5.3, 4.1, 2.1))
   par(mfrow=c(1,1))
-  plot(x, get_hsic(mRF_fourier, x), col='blue', lty=2, type='l', ylim=c(0, 0.06))
-  lines(x, get_hsic(mRF_gini, x), col='red', lty=2)
+  plot(x, get_hsic(mRF_fourier, x), col='blue', lwd=3, xlab=expression(X[1]),ylab="HSIC",type='l', ylim=c(0, 0.06),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1)
+  lines(x, get_hsic(mRF_gini, x), col='red', lwd = 3)
 dev.off()
+} else if (SC == 1) {
+  
+  
+  Grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
+                              seq(-1, 1,length.out = 15), 
+                              -1), 
+                  matrix(0,nrow=225,ncol=d-3))
+  names(Grid2D)[1:3] <- c('X1', 'X2', 'X3')
+  Grid2D$HSIC <- get_hsic_grid(mRF_fourier, Grid2D)
+  
+  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
+      width = 500, height = 500)
+  
+  ggplot(Grid2D, aes(x=X1, y=X2))+
+    labs(x=expression(X[1]),y=expression(X[2])) +
+    theme(
+      legend.title = element_text(size = 14),
+      legend.text = element_text(size = 10),
+      axis.title = element_text(size = 14)
+    ) +
+    geom_raster(aes(fill=HSIC))+
+    scale_fill_viridis_c(option='C') 
+  
+  dev.off()
+  
+}
 
 # - heatmap of hsic
 # - plot two scenarios change of marginals but plot of kernels
