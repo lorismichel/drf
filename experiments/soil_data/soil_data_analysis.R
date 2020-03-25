@@ -5,154 +5,131 @@ require(data.table)
 require(mrf)
 require(ggplot2)
 
+# source
+source("./experiments/soil_data/soil_data_preprocessing.R")
+
 # repro
 set.seed(1)
 
 # loading the data
-soil <- fread("~/Downloads/data_for_ETH.csv")
-dim(soil)
+# data
+d <- loadSoilData()
 
-
-# defining responses and covariates
-X <- as.matrix(soil[,-c(1:4)])
-Y <- matrix(cbind(soil$ph0_30, soil$sand0_30, soil$silt0_30),ncol=3)
+# defining responses and covariates 
+X <- as.matrix(d$soil_data[,-c("id","id_prof","ph0_30","sand0_30","silt0_30")])
+Y <- matrix(cbind(d$soil_data$ph0_30, d$soil_data$sand0_30, d$soil_data$silt0_30), ncol=3)
 
 # fitting mrf
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "fourier", num_features = 3)
-mRF_gini <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "gini")
+mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "fourier", 
+                   num_features = 3)
+mRF_gini    <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "gini")
 
-# variable importance
-plot(factor(colnames(X)),mrf::variable_importance(RF))
+# predictions
+cond.cor   <- predict(object = mRF_fourier, 
+                      type = "cor")
+cond.mean  <- predict(object = mRF_fourier, 
+                      type = "mean")
+cond.sd    <- predict(object = mRF_fourier, 
+                      type = "sd")
 
-## summary of Y
-summary(Y)
+# predictions
+d$soil_data$cond.mean_1 <- cond.mean$mean[,1]
+d$soil_data$cond.mean_2 <- cond.mean$mean[,2]
+d$soil_data$cond.mean_3 <- cond.mean$mean[,3]
 
-## OOB
-wOOB_fourier <- mrf::get_sample_weights(forest = mRF_fourier)
-wOOB_gini <- mrf::get_sample_weights(forest = mRF_gini)
+d$soil_data$cond.corr_12 <- cond.cor$cor[,1,2]
+d$soil_data$cond.corr_13 <- cond.cor$cor[,1,3]
+d$soil_data$cond.corr_23 <- cond.cor$cor[,2,3]
 
-# given 
-getRegionProb <- function(w, y, t = c(8, 200, 200), direction = c(">", ">", ">")) {
-  text <- paste0("y[,", 1:ncol(y), "]", direction, t)
-  b <- c()
-  for (i in 1:ncol(y)) {
-    b <- cbind(b, eval(parse(text=text[i])))
-  }
-  ind <- apply(b, 1, function(bb) sum(bb)==length(bb))
-  apply(w, 1, function(ww) sum(ww[ind]))
-}
+d$soil_data$cond.sd_1 <- cond.sd$sd[,1]
+d$soil_data$cond.sd_2 <- cond.sd$sd[,2]
+d$soil_data$cond.sd_3 <- cond.sd$sd[,3]
 
-# 
-cor(Y)
+# plots of responses
+m <- match(d$geo_data$id, d$soil_data$id)
 
+d$soil_data[,cond.mean_1_com:= mean(cond.mean_1),by="id"]
+d$soil_data[,cond.mean_2_com:= mean(cond.mean_2),by="id"]
+d$soil_data[,cond.mean_3_com:= mean(cond.mean_3),by="id"]
 
+d$soil_data[,cond.sd_1_com:= mean(cond.sd_1),by="id"]
+d$soil_data[,cond.sd_2_com:= mean(cond.sd_2),by="id"]
+d$soil_data[,cond.sd_3_com:= mean(cond.sd_3),by="id"]
 
+d$soil_data[,cond.corr_12_com:= mean(cond.corr_12),by="id"]
+d$soil_data[,cond.corr_13_com:= mean(cond.corr_13),by="id"]
+d$soil_data[,cond.corr_23_com:= mean(cond.corr_23),by="id"]
 
-# look at correlation matrix
-getCondCorr <- function(y, w, id1 = 1, id2 = 2){
-  require(wCorr)
-  ret_corr <- numeric(nrow(w))
-  for(i in 1:nrow(w)){
-    ret_corr[i] = weightedCorr(y[,id1], y[,id2], weights=w[i,])
-  }
-  return(ret_corr)
-}
+d$geo_data$cond.mean_1_com <- d$soil_data$cond.mean_1_com[m]
+d$geo_data$cond.mean_2_com <- d$soil_data$cond.mean_2_com[m]
+d$geo_data$cond.mean_3_com <- d$soil_data$cond.mean_3_com[m]
 
+d$geo_data$cond.sd_1_com <- d$soil_data$cond.sd_1_com[m]
+d$geo_data$cond.sd_2_com <- d$soil_data$cond.sd_2_com[m]
+d$geo_data$cond.sd_3_com <- d$soil_data$cond.sd_3_com[m]
 
-getCondMean <- function(y, w){
-  require(wCorr)
-  cond_mean <- matrix(nrow=nrow(y), ncol=ncol(y))
-  for(i in 1:nrow(w)){
-    cond_mean[i,] = apply(y,2,function(yy) sum(yy*w[i,]))
-  }
-  return(cond_mean)
-}
+d$geo_data$cond.corr_12_com <- d$soil_data$cond.corr_12_com[m]
+d$geo_data$cond.corr_13_com <- d$soil_data$cond.corr_13_com[m]
+d$geo_data$cond.corr_23_com <- d$soil_data$cond.corr_23_com[m]
 
+m1 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.mean_1_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='mean') +
+  coord_map()
 
+m2 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.mean_2_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='mean') +
+  coord_map()
 
-condCorr_12 <- getCondCorr(y = Y, w = wOOB, id1 = 1, id2 = 2)
-condCorr_13 <- getCondCorr(y = Y, w = wOOB, id1 = 1, id2 = 3)
-condCorr_23 <- getCondCorr(y = Y, w = wOOB, id1 = 2, id2 = 3)
-soil$condCorr_12 <- condCorr_12
-soil$condCorr_13 <- condCorr_13
-soil$condCorr_23 <- condCorr_23
+m3 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.mean_3_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='mean') +
+  coord_map()
 
-condMeans <- getCondMean(y = Y, w = wOOB)
-soil$condMean_1 <- condMeans[,1]
-soil$condMean_2 <- condMeans[,2]
-soil$condMean_3 <- condMeans[,3]
+s1 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.sd_1_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='sd') +
+  coord_map()
 
-condSds <- sqrt(getCondMean(y = Y^2, w = wOOB) - (condMeans^2))
-soil$condSd_1 <- condSds[,1]
-soil$condSd_2 <- condSds[,2]
-soil$condSd_3 <- condSds[,3]
+s2 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.sd_2_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='sd') +
+  coord_map()
 
-m1 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condMean_1)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+s3 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.sd_3_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='sd') +
+  coord_map()
 
-m2 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condMean_2)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+c1 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.corr_12_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='correlation') +
+  coord_map()
 
-m3 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condMean_3)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+c2 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.corr_13_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='correlation') +
+  coord_map()
 
-s1 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condSd_1)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
-
-s2 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condSd_2)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
-
-s3 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condSd_3)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
-
-c1 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condCorr_12)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
-
-c2 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=condCorr_13)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+c3 <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = cond.corr_23_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  labs(fill='correlation') +
+  coord_map()
 
 
-c3 <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, fill=condCorr_23)) +
-  #scale_color_gradient() +
-  geom_raster(aes(fill = condCorr_23)) +
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
 
+
+png("./experiments/soil_data/Plots/PLOT_SOIL_COND_QUANTITIES.png", width = 700, height = 700)
 require(gridExtra)
 grid.arrange(m1, m2, m3,
              s1, s2, s3,
@@ -160,6 +137,8 @@ grid.arrange(m1, m2, m3,
             # layout_matrix = rbind(c(1, 3, 4),
             #                       c(4, 5, 6)),
              nrow = 3, ncol=3)
+dev.off()
+
 
 
 # comparing with independent fits
@@ -174,78 +153,85 @@ RF_fourier_1 <- mrf(X = X, Y = Y[,1,drop=FALSE], num.trees = 2000, splitting.rul
 RF_fourier_2 <- mrf(X = X, Y = Y[,2,drop=FALSE], num.trees = 2000, splitting.rule = "fourier", num_features = 3)
 RF_fourier_3 <- mrf(X = X, Y = Y[,3,drop=FALSE], num.trees = 2000, splitting.rule = "fourier", num_features = 3)
 
-
-# get weigths OOB marginally
-wOOB_gini_1 <- get_sample_weights(RF_gini_1)
-wOOB_gini_2 <- get_sample_weights(RF_gini_2)
-wOOB_gini_3 <- get_sample_weights(RF_gini_3)
-
-wOOB_fourier_1 <- get_sample_weights(RF_fourier_1)
-wOOB_fourier_2 <- get_sample_weights(RF_fourier_2)
-wOOB_fourier_3 <- get_sample_weights(RF_fourier_3)
-
-
-th <- c(quantile(soil$ph0_30, 0.5),quantile(soil$sand0_30, 0.6),quantile(soil$silt0_30, 0.5))
+# which split
+th <- c(quantile(d$soil_data$ph0_30, 0.5),
+        quantile(d$soil_data$sand0_30, 0.6),
+        quantile(d$soil_data$silt0_30, 0.5))
+# which direction
 directions <- c(">", ">", ">")
 
-pR_gini_1 <- getRegionProb(w = wOOB_gini_1, y = Y[,1,drop=FALSE], t = th[1], direction = directions[1])
-pR_gini_2 <- getRegionProb(w = wOOB_gini_1, y = Y[,2,drop=FALSE], t = th[2], direction = directions[2])
-pR_gini_3 <- getRegionProb(w = wOOB_gini_1, y = Y[,3,drop=FALSE], t = th[3], direction = directions[3])
+# marginal prob
+pR_fourier_1 <- as.numeric(predict(RF_fourier_1, type = "functional", f = function(y) y[1]>th[1])$functional)
+pR_fourier_2 <- as.numeric(predict(RF_fourier_2, type = "functional", f = function(y) y[1]>th[2])$functional)
+pR_fourier_3 <- as.numeric(predict(RF_fourier_3, type = "functional", f = function(y) y[1]>th[3])$functional)
 
-pR_fourier_1 <- getRegionProb(w = wOOB_fourier_1, y = Y[,1,drop=FALSE], t = th[1], direction = directions[1])
-pR_fourier_2 <- getRegionProb(w = wOOB_fourier_1, y = Y[,2,drop=FALSE], t = th[2], direction = directions[2])
-pR_fourier_3 <- getRegionProb(w = wOOB_fourier_1, y = Y[,3,drop=FALSE], t = th[3], direction = directions[3])
+pR_gini_1 <- as.numeric(predict(RF_gini_1, type = "functional", f = function(y) y[1]>th[1])$functional)
+pR_gini_2 <- as.numeric(predict(RF_gini_2, type = "functional", f = function(y) y[1]>th[2])$functional)
+pR_gini_3 <- as.numeric(predict(RF_gini_3, type = "functional", f = function(y) y[1]>th[3])$functional)
 
-
+# joint prob
 pR_gini <- pR_gini_1 * pR_gini_2* pR_gini_3
-pR_fourier <- pR_fourier_1 * pR_fourier_2* pR_fourier_3
+pR_fourier <- pR_fourier_1 * pR_fourier_2 * pR_fourier_3
 
 
 
 
 
 # plotting resulting probabilitie
-soil$prob_mrf_fourier <- getRegionProb(wOOB_fourier, Y, t = th, direction = c(">",">",">"))
-soil$prob_mrf_gini <- getRegionProb(wOOB_gini, Y, t = th, direction = c(">",">",">"))
-soil$prob_indep_gini <- pR_gini
-soil$prob_indep_fourier <- pR_fourier
+d$soil_data$prob_mrf_fourier <- as.numeric(predict(mRF_fourier, type = "functional", f = function(y) y[1]>th[1] & y[2]>th[2] & y[3]>th[3])$functional)
+d$soil_data$prob_mrf_gini <- as.numeric(predict(mRF_gini, type = "functional", f = function(y) y[1]>th[1] & y[2]>th[2] & y[3]>th[3])$functional)
+d$soil_data$prob_indep_gini <- pR_gini
+d$soil_data$prob_indep_fourier <- pR_fourier
 
-pt_mrf_fourier <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=prob_mrf_fourier)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+d$soil_data[,prob_mrf_fourier_com:= mean(prob_mrf_fourier),by="id"]
+d$soil_data[,prob_mrf_gini_com:= mean(prob_mrf_gini),by="id"]
+d$soil_data[,prob_indep_fourier_com:= mean(prob_indep_fourier),by="id"]
+d$soil_data[,prob_indep_gini_com:= mean(prob_indep_gini),by="id"]
 
-pt_mrf_gini <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=prob_mrf_gini)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
+d$geo_data$prob_mrf_fourier_com <- d$soil_data$prob_mrf_fourier_com[m]
+d$geo_data$prob_mrf_gini_com <- d$soil_data$prob_mrf_gini_com[m]
+d$geo_data$prob_indep_fourier_com <- d$soil_data$prob_indep_fourier_com[m]
+d$geo_data$prob_indep_gini_com <- d$soil_data$prob_indep_gini_com[m]
 
-pt_indep_gini <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=prob_indep_gini)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
 
-pt_indep_fourier <- ggplot(soil, aes(x = X, y = Y)) +
-  #geom_polygon(aes(group = group), alpha=0.3) +
-  geom_point(data=soil, size=0.7, aes(x=X, y=Y, color=prob_indep_fourier)) + 
-  scale_color_viridis_c(option='magma') +
-  # coord_cartesian(xlim=c(-170, -60)) +
-  theme_bw()
 
+pt_mrf_fourier <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = prob_mrf_fourier_com, x = long, y = lat, group = group)) +
+  labs(fill='Probabilities') +
+  theme_void() +
+  coord_map()
+
+pt_mrf_gini <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = prob_mrf_gini_com, x = long, y = lat, group = group)) +
+  theme_void() + 
+  coord_map()
+
+pt_indep_gini <- ggplot() + 
+  geom_polygon(data = d$geo_data, aes(fill = prob_indep_gini_com, x = long, y = lat, group = group)) +
+  theme_void() +
+  coord_map()
+
+pt_indep_fourier <- ggplot() +
+  geom_polygon(data = d$geo_data, aes(fill = prob_indep_fourier_com, x = long, y = lat, group = group)) +
+  labs(fill='Probabilities') +
+  theme_void() +
+  coord_map()
+
+png("./experiments/soil_data/Plots/PLOT_SOIL_COND_PROB.png", width = 700, height = 700)
 require(gridExtra)
-grid.arrange(pt_indep_gini, pt_indep_fourier, pt_mrf,
-             pt_mrf_gini,nrow=2,ncol=2)
+grid.arrange(pt_mrf_fourier,
+             pt_indep_gini,
+             nrow=1, ncol=2)
              # layout_matrix = rbind(c(1, 3, 4),
+dev.off()
 
-plot(soil$prob_mrf_fourier,soil$prob_indep_fourier,pch=19)
+png("./experiments/soil_data/Plots/PLOT_SOIL_COND_PROB_SCATTER.png", width = 700, height = 700)
+plot(d$soil_data$prob_mrf_fourier,d$soil_data$prob_indep_fourier,pch=19,xlab="MRF", ylab="indep. RF",xlim=c(0,0.25),ylim=c(0,0.25))
 abline(0,1,col="blue")
-plot(soil$prob_mrf_fourier,soil$prob_mrf_gini,pch=19)
-abline(0,1,col="blue")
-plot(soil$prob_mrf_fourier,soil$prob_indep_fourier,pch=19)
-abline(0,1,col="blue")
+dev.off()
+
+
+
+
+
+
