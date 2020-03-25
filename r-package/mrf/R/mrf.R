@@ -255,27 +255,85 @@ predict.mrf <- function(object,
     return(list(weights = w, 
                 y = object$Y.orig))
     
-  } else if (type == "means") {
+  } else if (type == "mean") {
     
     means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
     colnames(means) <- colnames(object$Y.orig)
-    return(list(means = t(apply(w,1,function(ww) ww%*%object$Y.orig))))
+    return(list(mean = means))
     
-  } else if (type == "sds") {
+  } else if (type == "sd") {
     
     means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
     means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
     colnames(means) <- colnames(object$Y.orig)
-    return(list(sds = sqrt(means2-(means)^2)))
+    return(list(sd = sqrt(means2-(means)^2)))
     
   } else if (type == "functional") {
     
     add.param <- list(...)
-    functional.val <- t(apply(object$Y.orig, 1, function(yy) add.param$f(yy)))
+    functional.t <- t(apply(object$Y.orig, 
+                            1, 
+                            function(yy) add.param$f(yy)))
+    # check length one
     if (length(add.param$f(object$Y.ori[1,]))==1) {
-      functional.val <- t(functional.val)
+      functional.t <- t(functional.t)
+    } else {
+      if (!is.null(add.param$quantiles) && length(add.param$quantiles) > 1) {
+        stop("multiples quantiles cannot be evaluated for multi-dimensional functionals.")
+      }
     }
-    return(list(functional = functional.val))
+    
+    # if no quantiles provided then conditional mean, possibly multi-dimensional
+    if (is.null(add.param$quantiles)) {
+      
+      functional.val <- t(apply(w, 1, function(ww) ww%*%functional.t))
+      
+      if (length(add.param$f(object$Y.ori[1,]))==1) {
+        functional.val <- t(functional.val)
+      }
+      
+      return(list(functional = functional.val))
+      
+    # otherwise if quantile provided then for a uni-dimensional functional quantiles are returned
+    } else {
+      if (length(add.param$f(object$Y.ori[1,]))==1) {
+        functional.val <- t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t, 
+                                                                               w = ww, 
+                                                                               probs = add.param$quantiles)))
+        if (length(add.param$quantiles)==1) {
+          functional.val <- matrix(functional.val,ncol=1)
+        }
+        colnames(functional.val) <- paste("q=", round(add.param$quantiles, 2), sep="")
+      } else {
+        stop("quantile prediction only work for uni-dimensional functionals.")
+      }
+      
+      return(list(functional = functional.val))
+    }
+    
+    
+  } else if (type == "cor") {
+    
+    if (!require(wCorr)) {
+      stop("wCorr package missing.")
+    }
+      
+    cor.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    for (id1 in 1:ncol(object$Y.orig)) {
+      for (id2 in id1:ncol(object$Y.orig)) {
+        if (id1 != id2) {
+          cor.mat[,id2,id1] <- cor.mat[,id1,id2] <- sapply(1:nrow(w), 
+                                                           function(i) {
+                                                             weightedCorr(object$Y.orig[,id1], 
+                                                                          object$Y.orig[,id2], 
+                                                                          method = "pearson", 
+                                                                          weights=as.numeric(w[i,]))
+                                                           })
+        }
+      }
+    }
+    
+    return(list(cor = cor.mat))
     
   } else if (type == "densityEstimate") {
     
@@ -329,7 +387,6 @@ predict.mrf <- function(object,
          contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
                  drawlabels = FALSE,
                  xlab = colnames(object$Y.orig)[1], ylab = colnames(object$Y.orig)[2])
-       } else {
          contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
                  drawlabels = FALSE,
                  xlab = expression(Y[1]), ylab = expression(Y[2]))
@@ -338,5 +395,4 @@ predict.mrf <- function(object,
        points(grid[,1], grid[,2], cex = d$z)
   } 
 }
-
 
