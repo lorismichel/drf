@@ -138,6 +138,62 @@ loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets
     #return(list(X = as.matrix(dataset[,-c(17:30)]), Y = as.matrix(dataset[,c(17:30)])))
   } else if (dataset.name == "jura") {
     return(list(X = as.matrix(dataset[,-c(16:18)]), Y = as.matrix(dataset[,c(16:18)])))
+  } else if (dataset.name %in% c("example1", "example2")) {
+    # PARAMS
+    # choice of SC
+    if (dataset.name == "example1") {
+      SC <- 0
+    } else {
+      SC <- 1
+    }
+    
+    
+    # dimensions
+    d <- 5
+    n <- 10000
+    
+    
+    # CONSTRUCTION
+    
+    # predictors
+    X  <- matrix(runif(n*d, min = -1, max = 1),ncol = d)
+    # responses
+    Y <- t(apply(X, 1, function(xx) {
+      
+      if (SC == 0) {
+        
+        # copula
+        normCop <- normalCopula(param=c(xx[1]), dim = 2)
+        
+        # margins
+        mdvNorm <- mvdc(copula=normCop, margins=c("norm", "norm"),
+                        paramMargins=list(list(mean = 0, sd = 1),
+                                          list(mean = 0, sd = 1)))
+        # gen
+        rMvdc(n = 1, mvdc = mdvNorm)
+      }  else if (SC == 1) {
+        
+        # copula
+        tCop <- tCopula(xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
+        # margins
+        if (xx[3]<=0) {
+          margins <- c("norm", "norm")
+          paramMargins <- list(list(mean = 0, sd = 1),
+                               list(mean = 0, sd = 1))
+        } else {
+          margins <- c("norm", "exp")
+          paramMargins <- list(list(mean = 0, sd = 1),
+                               list(rate = 1))
+        }
+        mdvT <- mvdc(copula=tCop, margins=margins,
+                     paramMargins=paramMargins)
+        # gen
+        rMvdc(n = 1, mvdc = mdvT)
+        
+      }
+    }))
+    colnames(Y) <- c("Y1", "Y2")
+    return(list(X = X, Y = Y))
   }
 }
 
