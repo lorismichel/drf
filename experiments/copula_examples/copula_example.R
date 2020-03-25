@@ -4,8 +4,10 @@
 library(copula)
 library(mrf)
 library(MASS)
+library(ggplot2)
 
 # source
+setwd('~/Documents/projects/heterogeneity/mrf')
 source("./experiments/copula_examples/helpers.R")
 
 # repro
@@ -22,6 +24,7 @@ SC <- 0
 # dimensions
 d <- 5
 n <- 10000
+
 
 # CONSTRUCTION
 
@@ -66,9 +69,9 @@ colnames(Y) <- c("Y1", "Y2")
 
 
 ## fitting the models and getting predictions
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 500, 
+mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, 
                    splitting.rule = "fourier",
-                   num_features = 100,  
+                   num_features = 3,  
                    bandwidth = 1, 
                    node_scaling = FALSE,
                    min.node.size = 20)
@@ -370,7 +373,8 @@ get_corr_grid <- function(fit_obj, grid){
   }
   return(ret_corr)
 }
- 
+
+
 if (SC == 0) {
    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
        width = 500, height = 500)
@@ -382,6 +386,7 @@ if (SC == 0) {
    lines(x, get_corr(mRF_gini, x), col='red', lty=2, lwd=3)
    dev.off()
 } else if (SC == 1) {
+
   require(ggplot2)
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
       width = 1000, height = 1000)
@@ -402,7 +407,6 @@ if (SC == 0) {
   #lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
   dev.off()
 }
-
 
 get_hsic <- function(fit_obj, x_seq){
    require(dHSIC)
@@ -433,6 +437,7 @@ get_hsic_grid <- function(fit_obj, grid){
 if (SC == 0) {
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
     width = 500, height = 500)
+
   x = seq(-1, 1, by=0.05)
   par(mar=c(5.1, 5.3, 4.1, 2.1))
   par(mfrow=c(1,1))
@@ -465,16 +470,3 @@ dev.off()
   dev.off()
   
 }
-
-# - heatmap of hsic
-# - plot two scenarios change of marginals but plot of kernels
-# - gaussian or take the the t (correlation lines, hsic)
-# - real data 
-
-
-
-
-
-
-
-
