@@ -335,64 +335,63 @@ predict.mrf <- function(object,
     
     return(list(cor = cor.mat))
     
-  } else if (type == "densityEstimate") {
+  } else if (type == "cov") {
     
-       if (ncol(object$Y.orig) != 2) {
-         stop("only valid for 2 dimensional response.")
-       } 
-       if (nrow(w) != 1) {
-         stop("prediction region only valid for 1 observation.")
-       }
+    if (!require(wCorr)) {
+      stop("wCorr package missing.")
+    }
     
-       add.param <- list(...)
-     
-       Ys <- object$Y.orig[sample(1:nrow(object$Y.orig), 
-                           n.sim, 
-                           replace = TRUE, 
-                           prob = as.numeric(w)),] 
-       
-       if (!is.null(colnames(object$Y.orig))) {
-          graphics::smoothScatter(Ys[,1], Ys[,2], ...)
-       } else {
-          graphics::smoothScatter(Ys[,1], Ys[,2], ...)
-       }
-       
-   } else if (type == "predictionRegion") {
-         
-      if (ncol(object$Y.orig) != 2) {
-        stop("only valid for 2 dimensional response.")
-      } 
-      if (nrow(w) != 1) {
-        stop("prediction region only valid for 1 observation.")
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
+    sds <- sqrt(means2-(means)^2)
+    cov.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    for (id1 in 1:ncol(object$Y.orig)) {
+      for (id2 in id1:ncol(object$Y.orig)) {
+        if (id1 != id2) {
+          cov.mat[,id2,id1] <- cov.mat[,id1,id2] <- sapply(1:nrow(w), 
+                                                     function(i) {
+                                                       sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
+                                                                                          object$Y.orig[,id2], 
+                                                                                          method = "pearson", 
+                                                                                          weights=as.numeric(w[i,]))
+                                                     })
+        }
       }
-         
-      add.param <- list(...)
-         
-      Ys <- object$Y.orig[sample(1:nrow(object$Y.orig), 
-                                 n.sim, 
-                                 replace = TRUE, 
-                                 prob = as.numeric(w)),] 
-      
-       d <- MASS::kde2d(Ys[,1],
-                        Ys[,2],
-                        n = add.param$n,
-                        h = add.param$h)
-
-       unlisted.z <- as.numeric(d$z) / sum(d$z)
-       sorted.z <- sort(unlisted.z, decreasing = TRUE)
-       cum.sorted.z <- cumsum(sorted.z)
-       id <- which(cum.sorted.z >= (1-add.param$alpha))[1]
-
-       if (!is.null(colnames(object$Y.orig))) {
-         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
-                 drawlabels = FALSE,
-                 xlab = colnames(object$Y.orig)[1], ylab = colnames(object$Y.orig)[2])
-         contour(d$x, d$y, d$z, levels = sorted.z[id] * sum(d$z),
-                 drawlabels = FALSE,
-                 xlab = expression(Y[1]), ylab = expression(Y[2]))
-       }
-       grid <- expand.grid(d$x, d$y)
-       points(grid[,1], grid[,2], cex = d$z)
+    }
+    
+    return(list(cov = cov.mat))
+    
+  } else if (type == "predictionRegion") {
+    
+    if (!require(wCorr)) {
+      stop("wCorr package missing.")
+    }
+    
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
+    sds <- sqrt(means2-(means)^2)
+    covs <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    for (id1 in 1:ncol(object$Y.orig)) {
+      for (id2 in id1:ncol(object$Y.orig)) {
+        if (id1 != id2) {
+          covs[,id2,id1] <- covs[,id1,id2] <- sapply(1:nrow(w), 
+                                                           function(i) {
+                                                             sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
+                                                                                                object$Y.orig[,id2], 
+                                                                                                method = "pearson", 
+                                                                                                weights=as.numeric(w[i,]))
+                                                           })
+        }
+      }
+    }
+    
+    funs <- lapply(1:nrow(w), function(i) {
+                    inv.cov <- solve(covs[i,,])
+                    
+                    return(function(y) as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+                  })
+    
+    return(list(predictionRegion=funs))
+       
   } 
 }
-
