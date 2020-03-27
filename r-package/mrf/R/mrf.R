@@ -361,7 +361,7 @@ predict.mrf <- function(object,
     
     return(list(cov = cov.mat))
     
-  } else if (type == "predictionRegion") {
+  } else if (type == "normalPredictionScore") {
     
     if (!require(wCorr)) {
       stop("wCorr package missing.")
