@@ -391,7 +391,7 @@ predict.mrf <- function(object,
                     return(function(y) as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
                   })
     
-    return(list(predictionRegion=funs))
+    return(list(normalPredictionScore=funs))
        
   } 
 }
