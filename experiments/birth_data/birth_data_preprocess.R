@@ -398,8 +398,9 @@ readObservation <- function(l) {
 
 # read line by line saved as a list
 # n specifies the number of rows to read
-l <- readLines(con = "~/Documents/projects/heterogeneity/birth_data/Nat2018PublicUS.c20190509.r20190717.txt",
-               n=20000)
+l <- readLines(con = "~/Documents/projects/heterogeneity/birth_data/Nat2018PublicUS.c20190509.r20190717.txt")
+l = l[sample(1:length(l), 300000, replace=FALSE)]
+l = as.list(l)
 
 # preprocess the data
 # read each line independently
@@ -434,6 +435,7 @@ df$weight_gain_mother[df$weight_gain_mother==99] = NA
 
 levels(df$marital_status_mother)[levels(df$marital_status_mother)=="1"] = "married"
 levels(df$marital_status_mother)[levels(df$marital_status_mother)=="2"] = "unmarried"
+levels(df$marital_status_mother)[levels(df$marital_status_mother)==" "] = NA
 
 df$education_mother = as.numeric(levels(df$education_mother))[df$education_mother]
 df$education_mother[df$education_mother==9] = NA
