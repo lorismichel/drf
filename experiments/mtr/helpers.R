@@ -87,9 +87,13 @@ require(foreign)
 # The Water Quality dataset (Dzeroski et al. 2000) has 14 target attributes that refer to the
 # relative representation of plant and animal species in Slovenian rivers and 16 input attributes
 # that refer to physical and chemical water quality parameters.
+require(copula)
 
 loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets/") {
-  dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
+  if (!dataset.name %in% c("example1","example2")) {
+    dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
+  }
+
   if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
                        "Surface Area",
@@ -149,8 +153,8 @@ loadMTRdata <- function(dataset.name = "atp1d", path = "~/Downloads/mtr-datasets
     
     
     # dimensions
-    d <- 5
-    n <- 10000
+    d <- 20
+    n <- 2000
     
     
     # CONSTRUCTION
@@ -261,5 +265,92 @@ runRandomPinballAnalysis <- function(X,
   }
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
+  
+}
+
+runRandomPinballNLAnalysis <- function(X, 
+                                       Y, 
+                                       k = 10, 
+                                       alpha_seq = c(.005, .025, .05, .3, .5, .7, .95, .975, .995), 
+                                       seed = 0,
+                                       ...) {
+  
+  # repro
+  set.seed(seed)
+  
+  # create folds
+  folds <- kFoldCV(n = nrow(X), k = k)
+  
+  # properties of the simulations
+  mrf_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
+  gini_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
+  
+  # CV loop
+  for (kk in 1:k) {
+    
+    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
+    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+    
+    pairs <- expand.grid(1:ncol(Y),1:ncol(Y))
+    pairs <- pairs[1:(nrow(pairs)/2),]
+    
+    for (i in 1:nrow(pairs)) {
+      
+      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
+                          quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
+      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
+                           quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
+      
+      for (j in 1:length(alpha_seq)) {
+        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]],
+                                                yhat = yhat_mrf[,j], alpha = alpha_seq[j])/k
+        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]], 
+                                                 yhat = yhat_gini[,j], alpha = alpha_seq[j])/k
+      }
+    }
+  }
+  
+  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
+  
+}
+
+runNormalCoverage <- function(X, 
+                              Y, 
+                              k = 10, 
+                              alpha = 0.05,
+                              seed = 0,
+                              ...) {
+  
+  # repro
+  set.seed(seed)
+  
+  # create folds
+  folds <- kFoldCV(n = nrow(X), k = k)
+  
+  scores_CV_mrf <- rep(NA, nrow(X))
+  scores_CV_gini <- rep(NA, nrow(X))
+  # CV loop
+  for (kk in 1:k) {
+    
+    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
+    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+      
+    # get the function for pred
+    preds_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "normalPredictionScore")
+    preds_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "normalPredictionScore")
+      
+    # get the scores
+    scores_mrf <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_mrf$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
+    scores_gini <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_gini$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
+    
+    # save CV scores
+    scores_CV_mrf[folds[[kk]]] <- scores_mrf
+    scores_CV_gini[folds[[kk]]] <- scores_gini
+  }
+  
+  return(list(scores_CV_mrf = scores_CV_mrf, 
+              scores_CV_gini = scores_CV_gini,
+              coverage_mrf = mean(scores_CV_mrf <= qchisq(p = 1-alpha, df = ncol(Y))),
+              coverage_gini = mean(scores_CV_gini <= qchisq(p = 1-alpha, df = ncol(Y)))))
   
 }
