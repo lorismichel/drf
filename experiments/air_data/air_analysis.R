@@ -44,10 +44,11 @@ for(i in 13:18){
 }
 
 #choose target pollutants
-pollutants = c('PM2.5', 'PM10')
+pollutants = c('PM2.5', 'NO2')
 targets = c(paste('max_', pollutants, sep=''))
 dataset <- air_data[-c(13:24)]
 dataset <- cbind(dataset, air_data[, targets])
+dataset <- dataset[!(dataset$State.Name %in% c('Alaska', 'Hawaii')),]
 dataset <- na.omit(dataset) 
 length(unique(dataset$site_id))
 dataset <- dataset[sample(1:nrow(dataset), size = 50000, replace = FALSE),]
@@ -68,6 +69,7 @@ X <- data.frame(dataset[,c('Longitude', 'Latitude', "Elevation","Land.Use","Loca
 X <- dummy_cols(X, remove_selected_columns=TRUE)
 colnames(X)
 
+set.seed(22)
 mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, 
                    splitting.rule = "fourier", num_features = 3, min.node.size = 20)
 
@@ -136,30 +138,40 @@ ggplot(dataset, aes_string(x=targets[1], y=targets[2])) +
   geom_vline(xintercept=moderate_thresholds[pollutants[1]], linetype='dashed', color='green') +
   geom_hline(yintercept=moderate_thresholds[pollutants[2]], linetype='dashed', color='green') +
   geom_vline(xintercept=unhealthy_thresholds[pollutants[1]], linetype='dashed', color='red') +
-  geom_hline(yintercept=unhealthy_thresholds[pollutants[2]], linetype='dashed', color='red')# +
-#coord_cartesian(xlim=c(0, 100), ylim = c(0,500))# +
+  geom_hline(yintercept=unhealthy_thresholds[pollutants[2]], linetype='dashed', color='red') +
+  coord_cartesian(xlim=c(0, 1.05*unhealthy_thresholds[pollutants[1]]), ylim = c(0,1.05*unhealthy_thresholds[pollutants[2]]))# +
+  #coord_cartesian(xlim=c(0, 100), ylim = c(0,500))# +
 # theme_bw()
 
 #all sites position
-ggplot(air_data[idx,], aes(x=Longitude, y=Latitude, color=Elevation)) +
+ggplot(site_data, aes(x=Longitude, y=Latitude, color=Elevation)) +
   geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
   geom_point(size=0.4) + scale_color_viridis_c(option='magma') +
   coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
+ggplot(site_data, aes(x=Longitude, y=Latitude)) + 
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) + 
+  geom_point(aes(color=Land.Use, shape=Location.Setting)) + #scale_color_viridis_c(option='magma') +
+  scale_size_area(max_size=3) +
+  coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
+  theme_bw()
+
 point_description = function(test_point){
-  out = paste(test_point$Longitude[1])
-  out = paste(out, test_point$Latitude[1])
+  out = ''
+  #out = paste(out, test_point$Longitude[1])
+  #out = paste(out, test_point$Latitude[1])
   #  out = paste(out, weekdays(test_point$Date[1]))
   #  out = paste(out, 'month:', month(test_point$Date[1]))
-  out = paste(out, '\n', sep='')
-  out = paste(out, "elevation:", floor(test_point$Elevation[1]))
-  out = paste(out, "land use:", test_point$Land.Use[1])
-  out = paste(out, "setting:", test_point$Location.Setting[1])
+  #out = paste(out, '\n', sep='')
+  out = paste(out, "Elevation:", floor(test_point$Elevation[1]))
+  out = paste(out, "m,", sep='')
+  out = paste(out, "Land use:", test_point$Land.Use[1])
+  out = paste(out, ",", sep='')
+  out = paste(out, "Setting:", test_point$Location.Setting[1])
   
   return(out)
 }
-
 
 #distribution of training sites
 ggplot(site_data[site_data$count!=0,], aes(x=Longitude, y=Latitude)) + 
@@ -169,7 +181,11 @@ ggplot(site_data[site_data$count!=0,], aes(x=Longitude, y=Latitude)) +
   coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
   theme_bw()
 
+#2129
+#1649
+set.seed(23)
 for(idx in sample((1:nrow(site_data))[site_data$count==0], 10, replace=FALSE)){
+  print(idx)
   dataset$weight = wOOB_fourier[idx,]
   site_data$weight <- apply(site_data, 1, function(site) sum(dataset$weight[as.numeric(site['site_id']) == dataset$site_id]))
   
@@ -180,7 +196,7 @@ for(idx in sample((1:nrow(site_data))[site_data$count==0], 10, replace=FALSE)){
     geom_point(aes(size=weight, color=Land.Use, shape=Location.Setting)) +
     scale_size_area(max_size=5) +
     #scale_color_viridis_c(option='magma') +
-    coord_cartesian(xlim=c(-160, -70), ylim=c(18, 65)) +
+    coord_cartesian(xlim=c(-125, -70), ylim=c(24, 50)) +
     ggtitle(point_description(site_data[idx,])) +
     #coord_cartesian(xlim=c(-130, -60), ylim=c(25, 55)) +
     theme_bw()# +
@@ -212,3 +228,144 @@ for(idx in sample((1:nrow(site_data))[site_data$count==0], 10, replace=FALSE)){
 # move to an index
 #map_CO2_2_index <- function(x) con2aqi(pollutant="co",con=x,type="8h")
 #map_S02_2_index <- function(x) con2aqi(pollutant="s02",con=1000*x,type="1h")
+
+
+##############################################################
+# generate plots for paper
+##################################################
+point_description = function(test_point){
+  out = ''
+  #out = paste(out, test_point$Longitude[1])
+  #out = paste(out, test_point$Latitude[1])
+  #  out = paste(out, weekdays(test_point$Date[1]))
+  #  out = paste(out, 'month:', month(test_point$Date[1]))
+  #out = paste(out, '\n', sep='')
+  out = paste(out, "Elevation:", floor(test_point$Elevation[1]))
+  out = paste(out, "m,", sep='')
+  out = paste(out, "Land use:", test_point$Land.Use[1])
+  out = paste(out, ",", sep='')
+  out = paste(out, "Setting:", test_point$Location.Setting[1])
+  
+  return(out)
+}
+levels(site_data$Land.Use)[levels(site_data$Land.Use)=="MILITARY RESERVATION"] <- "MILITARY"
+levels(site_data$Location.Setting)[levels(site_data$Location.Setting)=="URBAN AND CENTER CITY"] <- "URBAN"
+
+idx= 2129
+dataset$weight = wOOB_fourier[idx,]
+site_data$weight <- apply(site_data, 1, function(site) sum(dataset$weight[as.numeric(site['site_id']) == dataset$site_id]))
+
+plot_df1 = site_data[site_data$weight!=0,]
+plot_df1$which = point_description(site_data[idx,])
+annotate_df = data.frame(which=point_description(site_data[idx,]) ,Longitude=site_data[idx,]$Longitude, Latitude=site_data[idx,]$Latitude)
+
+idx= 1649
+dataset$weight = wOOB_fourier[idx,]
+site_data$weight <- apply(site_data, 1, function(site) sum(dataset$weight[as.numeric(site['site_id']) == dataset$site_id]))
+
+plot_df2 = site_data[site_data$weight!=0,]
+plot_df2$which = point_description(site_data[idx,])
+annotate_df = rbind(annotate_df, data.frame(which=point_description(site_data[idx,]) ,Longitude=site_data[idx,]$Longitude, Latitude=site_data[idx,]$Latitude))
+
+plot_df = rbind(plot_df1, plot_df2)
+
+#plot distribution of training sites which get high weight
+gg1 = ggplot(plot_df, aes(x=Longitude, y=Latitude)) +
+  facet_wrap(~which) +
+  geom_polygon(data=us.map, aes(x=long, y=lat, group = group), color='grey', alpha=0.3) +
+  geom_point(aes(size=weight, color=Land.Use, shape=Location.Setting)) + labs(shape="Setting", color="Land use") +
+  scale_size_area(max_size=5) + guides(size=FALSE) + 
+  geom_point(data=annotate_df, aes(x=Longitude, y=Latitude), shape=8, color='black', size=3) + 
+  #scale_color_viridis_c(option='magma') +
+  coord_cartesian(xlim=c(-123.5, -69), ylim=c(25, 49)) +
+  #ggtitle(point_description(site_data[idx,])) +
+  #coord_cartesian(xlim=c(-130, -60), ylim=c(25, 55)) +
+  theme_light() + theme(axis.title.x=element_blank(), axis.title.y=element_blank())
+#theme(legend.position='none')
+plot(gg1)
+
+
+idx= 2129
+dataset$weight = wOOB_fourier[idx,]
+site_data$weight <- apply(site_data, 1, function(site) sum(dataset$weight[as.numeric(site['site_id']) == dataset$site_id]))
+
+subsample = dataset[sample(1:nrow(dataset), 1000, replace=TRUE, prob=dataset$weight),]
+poly1=data.frame(
+  x=c(moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], 100, 100), 
+  y=c(-moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], -moderate_thresholds[pollutants[2]])
+)
+poly2=data.frame(
+  x=c(-moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], -moderate_thresholds[pollutants[1]]),
+  y=c(moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], 100, 100)
+)
+poly3=data.frame(
+  x=c(moderate_thresholds[pollutants[1]], 100, 100, moderate_thresholds[pollutants[1]]),
+  y=c(moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], 100, 100)
+)
+poly4=data.frame(
+  x=c(-100, moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], -100),
+  y=c(-100, -100, moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]])
+)
+gg2 = ggplot(data=dataset[dataset$weight!=0 & dataset$max_NO2 > 0 & dataset$max_PM2.5 > 0, ], aes_string(x=targets[1], y=targets[2])) +
+  geom_jitter(aes(alpha=weight), size=0.5, width=0.1) + guides(alpha=FALSE) +
+  #stat_density2d(data=subsample, aes(alpha=..level.., fill=..level..), size=2, bins=10, geom="polygon") + 
+  #scale_fill_gradient(low = "yellow", high = "red") +
+  #scale_alpha(range = c(0.00, 0.5), guide = FALSE) +
+  geom_density2d(data=subsample, colour="blue", bins=4, alpha=0.7) + 
+  #geom_vline(xintercept=moderate_thresholds[pollutants[1]], linetype='dashed', color='green') +
+  #geom_hline(yintercept=moderate_thresholds[pollutants[2]], linetype='dashed', color='green') +
+  #geom_vline(xintercept=unhealthy_thresholds[pollutants[1]], linetype='dashed', color='red') +
+  #geom_hline(yintercept=unhealthy_thresholds[pollutants[2]], linetype='dashed', color='red') +
+  geom_polygon(poly1, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly2, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly3, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly4, mapping=aes(x=x, y=y), fill='green', alpha=0.12)+
+  coord_cartesian(xlim=c(0, 1.3*moderate_thresholds[pollutants[1]]), ylim = c(0, 1.3*moderate_thresholds[pollutants[2]])) +
+  #coord_cartesian(xlim=c(0, 1.05*unhealthy_thresholds[pollutants[1]]), ylim = c(0, 50)) +
+  #ggtitle(point_description(site_data[idx,])) +
+  theme_light() + labs(x="Fine particulates", y='Nitrogen dioxyde')
+
+plot(gg2)
+
+idx= 1649
+dataset$weight = wOOB_fourier[idx,]
+site_data$weight <- apply(site_data, 1, function(site) sum(dataset$weight[as.numeric(site['site_id']) == dataset$site_id]))
+
+subsample = dataset[sample(1:nrow(dataset), 1000, replace=TRUE, prob=dataset$weight),]
+poly1=data.frame(
+  x=c(moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], 100, 100), 
+  y=c(-moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], -moderate_thresholds[pollutants[2]])
+)
+poly2=data.frame(
+  x=c(-moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], -moderate_thresholds[pollutants[1]]),
+  y=c(moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], 100, 100)
+)
+poly3=data.frame(
+  x=c(moderate_thresholds[pollutants[1]], 100, 100, moderate_thresholds[pollutants[1]]),
+  y=c(moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]], 100, 100)
+)
+poly4=data.frame(
+  x=c(-100, moderate_thresholds[pollutants[1]], moderate_thresholds[pollutants[1]], -100),
+  y=c(-100, -100, moderate_thresholds[pollutants[2]], moderate_thresholds[pollutants[2]])
+)
+gg3 = ggplot(data=dataset[dataset$weight!=0 & dataset$max_NO2 > 0 & dataset$max_PM2.5 > 0, ], aes_string(x=targets[1], y=targets[2])) +
+  geom_jitter(aes(alpha=weight), size=0.5, width=0.1) + guides(alpha=FALSE) +
+  #stat_density2d(data=subsample, aes(alpha=..level.., fill=..level..), size=2, bins=10, geom="polygon") + 
+  #scale_fill_gradient(low = "yellow", high = "red") +
+  #scale_alpha(range = c(0.00, 0.5), guide = FALSE) +
+  geom_density2d(data=subsample, colour="blue", bins=6, alpha=0.7) + 
+  #geom_vline(xintercept=moderate_thresholds[pollutants[1]], linetype='dashed', color='green') +
+  #geom_hline(yintercept=moderate_thresholds[pollutants[2]], linetype='dashed', color='green') +
+  #geom_vline(xintercept=unhealthy_thresholds[pollutants[1]], linetype='dashed', color='red') +
+  #geom_hline(yintercept=unhealthy_thresholds[pollutants[2]], linetype='dashed', color='red') +
+  geom_polygon(poly1, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly2, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly3, mapping=aes(x=x, y=y), fill='red', alpha=0.1)+
+  geom_polygon(poly4, mapping=aes(x=x, y=y), fill='green', alpha=0.12)+
+  coord_cartesian(xlim=c(0, 1.3*moderate_thresholds[pollutants[1]]), ylim = c(0, 1.3*moderate_thresholds[pollutants[2]])) +
+  #coord_cartesian(xlim=c(0, 1.05*unhealthy_thresholds[pollutants[1]]), ylim = c(0, 50)) +
+  #ggtitle(point_description(site_data[idx,])) +
+  theme_light() + labs(x="Fine particulates", y='Nitrogen dioxyde')
+
+plot(gg3)
+
