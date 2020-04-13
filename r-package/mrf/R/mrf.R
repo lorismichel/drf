@@ -385,10 +385,13 @@ predict.mrf <- function(object,
       }
     }
     
+    n <- nrow(object$Y.orig)
+    d <- ncol(object$Y.orig)
+    
     funs <- lapply(1:nrow(w), function(i) {
                     inv.cov <- solve(covs[i,,])
                     
-                    return(function(y) as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+                    return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
                   })
     
     return(list(normalPredictionScore=funs))
