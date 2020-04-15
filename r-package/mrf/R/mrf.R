@@ -361,7 +361,7 @@ predict.mrf <- function(object,
     
     return(list(cov = cov.mat))
     
-  } else if (type == "normalPredictionScore") {
+  }  else if (type == "normalPredictionScore") {
     
     if (!require(wCorr)) {
       stop("wCorr package missing.")
@@ -396,5 +396,27 @@ predict.mrf <- function(object,
     
     return(list(normalPredictionScore=funs))
        
+  }  else if (type == "normalPredictionScore_global") {
+    
+    if (!require(wCorr)) {
+      stop("wCorr package missing.")
+    }
+    
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    
+    add.param <- list(...)
+    input.cov <- add.param$cov.residuals
+  
+    n <- nrow(object$Y.orig)
+    d <- ncol(object$Y.orig)
+    
+    funs <- lapply(1:nrow(w), function(i) {
+      inv.cov <- solve(input.cov)
+      
+      return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+    })
+    
+    return(list(normalPredictionScore_global=funs))
+    
   } 
 }
