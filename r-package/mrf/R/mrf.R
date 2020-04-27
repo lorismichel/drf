@@ -314,84 +314,149 @@ predict.mrf <- function(object,
     
   } else if (type == "cor") {
     
-    if (!require(wCorr)) {
-      stop("wCorr package missing.")
-    }
+    # if (!require(wCorr)) {
+    #   stop("wCorr package missing.")
+    # }
       
     cor.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    for (id1 in 1:ncol(object$Y.orig)) {
-      for (id2 in id1:ncol(object$Y.orig)) {
-        if (id1 != id2) {
-          cor.mat[,id2,id1] <- cor.mat[,id1,id2] <- sapply(1:nrow(w), 
-                                                           function(i) {
-                                                             weightedCorr(object$Y.orig[,id1], 
-                                                                          object$Y.orig[,id2], 
-                                                                          method = "pearson", 
-                                                                          weights=as.numeric(w[i,]))
-                                                           })
-        }
-      }
+    
+    for (i in 1:nrow(w)) {
+      cor.mat[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]), cor = TRUE)$cor
     }
+    # cor.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    # for (id1 in 1:ncol(object$Y.orig)) {
+    #   for (id2 in id1:ncol(object$Y.orig)) {
+    #     if (id1 != id2) {
+    #        cor.mat[,id1,id2] <- sapply(1:nrow(w), 
+    #                                                        function(i) {
+    #                                                          weightedCorr(object$Y.orig[,id1], 
+    #                                                                       object$Y.orig[,id2], 
+    #                                                                       method = "pearson", 
+    #                                                                       weights=as.numeric(w[i,]))
+    #                                                        })
+    #        cor.mat[,id2,id1] <- cor.mat[,id1,id2]
+    #     }
+    #   }
+    # }
     
     return(list(cor = cor.mat))
     
   } else if (type == "cov") {
     
-    if (!require(wCorr)) {
-      stop("wCorr package missing.")
+    #if (!require(wCorr)) {
+    #  stop("wCorr package missing.")
+    #}
+    
+    #means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    #means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
+    #sds <- sqrt(means2-(means)^2)
+    cov.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    
+    for (i in 1:nrow(w)) {
+      cov.mat[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]))$cov
     }
     
-    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-    sds <- sqrt(means2-(means)^2)
-    cov.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    for (id1 in 1:ncol(object$Y.orig)) {
-      for (id2 in id1:ncol(object$Y.orig)) {
-        if (id1 != id2) {
-          cov.mat[,id2,id1] <- cov.mat[,id1,id2] <- sapply(1:nrow(w), 
-                                                     function(i) {
-                                                       sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
-                                                                                          object$Y.orig[,id2], 
-                                                                                          method = "pearson", 
-                                                                                          weights=as.numeric(w[i,]))
-                                                     })
-        }
-      }
-    }
+    # for (id1 in 1:ncol(object$Y.orig)) {
+    #   for (id2 in id1:ncol(object$Y.orig)) {
+    #     if (id1 != id2) {
+    #       
+    #        cov.mat[i,id1,id2] <- sapply(1:nrow(w), 
+    #                                                  function(i) {
+    #                                                    sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
+    #                                                                                       object$Y.orig[,id2], 
+    #                                                                                       method = "pearson", 
+    #                                                                                       weights=as.numeric(w[i,]))
+    #                                                  })
+    #        cov.mat[i,id2,id1] <- cov.mat[i,id1,id2]
+    #     } else {
+    #       cov.mat[i,id2,id1] <- sds[i,id2]*sds[i,id1]
+    #     } 
+    #   }
+    # }
     
     return(list(cov = cov.mat))
     
-  } else if (type == "normalPredictionScore") {
+  }  else if (type == "normalPredictionScore") {
     
-    if (!require(wCorr)) {
-      stop("wCorr package missing.")
-    }
+    # if (!require(wCorr)) {
+    #   stop("wCorr package missing.")
+    # }
     
     means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-    sds <- sqrt(means2-(means)^2)
+    # means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
+    # sds <- sqrt(means2-(means)^2)
+    # covs <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    # for (id1 in 1:ncol(object$Y.orig)) {
+    #   for (id2 in id1:ncol(object$Y.orig)) {
+    #     if (id1 != id2) {
+    #        covs[,id1,id2] <- sapply(1:nrow(w), 
+    #                                function(i) {
+    #                                 sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
+    #                                                                                     object$Y.orig[,id2], 
+    #                                                                                     method = "pearson", 
+    #                                                                                     weights=as.numeric(w[i,]))
+    #                                                        })
+    #        covs[,id2,id1] <- covs[,id1,id2]
+    #     } else {
+    #       covs[,id2,id1] <- sds[i,id2]*sds[i,id1]
+    #     } 
+    #   }
+    # }
+    
     covs <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    for (id1 in 1:ncol(object$Y.orig)) {
-      for (id2 in id1:ncol(object$Y.orig)) {
-        if (id1 != id2) {
-          covs[,id2,id1] <- covs[,id1,id2] <- sapply(1:nrow(w), 
-                                                           function(i) {
-                                                             sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
-                                                                                                object$Y.orig[,id2], 
-                                                                                                method = "pearson", 
-                                                                                                weights=as.numeric(w[i,]))
-                                                           })
-        }
-      }
+    
+    for (i in 1:nrow(w)) {
+      covs[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]))$cov
     }
+    
+    n <- nrow(object$Y.orig)
+    d <- ncol(object$Y.orig)
     
     funs <- lapply(1:nrow(w), function(i) {
                     inv.cov <- solve(covs[i,,])
                     
-                    return(function(y) as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+                    return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
                   })
     
     return(list(normalPredictionScore=funs))
        
+  }  else if (type == "normalPredictionScore_global") {
+    
+    if (!require(wCorr)) {
+      stop("wCorr package missing.")
+    }
+    
+    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+    
+    add.param <- list(...)
+    input.cov <- add.param$cov.residuals
+  
+    n <- nrow(object$Y.orig)
+    d <- ncol(object$Y.orig)
+    
+    funs <- lapply(1:nrow(w), function(i) {
+      inv.cov <- solve(input.cov)
+      
+      return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+    })
+    
+    return(list(normalPredictionScore_global=funs))
+    
+  } else if (type == "ecdf") {
+    
+    if (!require(spatstat)) {
+      stop("spatstat package missing.")
+    }
+    
+    add.param <- list(...)
+    functional.t <- apply(object$Y.orig, 
+                            1, 
+                            function(yy) add.param$f(yy))
+    
+    funs <- lapply(1:nrow(w), function(i) {
+      return(function(y) spatstat::ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
+    })
+    
+    return(list(ecdf=funs))
   } 
 }
