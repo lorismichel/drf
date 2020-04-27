@@ -88,8 +88,13 @@ require(foreign)
 # relative representation of plant and animal species in Slovenian rivers and 16 input attributes
 # that refer to physical and chemical water quality parameters.
 
+require(copula)
+
 loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/heterogeneity/mtr-datasets/') {
-  dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
+  if (!dataset.name %in% c("example1", "example2")) {
+    dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
+  }
+
   if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
                        "Surface Area",
@@ -149,8 +154,8 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/het
     
     
     # dimensions
-    d <- 5
-    n <- 10000
+    d <- 30
+    n <- 2000
     
     
     # CONSTRUCTION
@@ -242,6 +247,7 @@ runRandomPinballAnalysis <- function(X,
   
   # CV loop
   for (kk in 1:k) {
+    print(kk)
     
     mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
     giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")

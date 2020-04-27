@@ -18,7 +18,7 @@ source("./experiments/mtr/helpers.R")
 d <- loadMTRdata(dataset.name = "enb")
 
 # run analysis
-res <- runRandomPinballAnalysis(X=d$X, Y=d$Y, num_features = 100)
+res <- runRandomPinballAnalysis(X=d$X, Y=d$Y, num_features = 3)
 
 # save results
 save(res, file = "./experiments/mtr/data/enb.Rdata")

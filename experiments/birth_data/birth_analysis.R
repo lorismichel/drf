@@ -11,13 +11,13 @@ load("~/Documents/projects/heterogeneity/birth_data/births.dat")
 births = na.omit(births)
 births = births[births$race_mother %in% c('white', 'black', 'asian'), ]
 births = births[births$race_father %in% c('white', 'black', 'asian'), ]
-births = births[sample(1:nrow(births), 50000, replace=FALSE),]
 #births = births[births$plurality==1]
 attach(births)
 
 ###########################################################################
-# exploratory analysisa & visualization
+# exploratory analysis & visualization
 ##########################################################################
+births = births[sample(1:nrow(births), 20000),]
 
 #ggpairs(births)
 
@@ -69,7 +69,6 @@ qplot(age_mother, as.numeric(abnormal_conditions=='yes'), geom=c('jitter', 'smoo
 # fit mrf
 ###########################################################################
 
-
 X = births[,c(
   'race_mother',
   'age_mother',
@@ -96,197 +95,298 @@ Y = births[, c('pregnancy_duration', 'birthweight')]#, 'apgar_5min'
 Y = as.matrix(Y)
 
 point_description = function(test_point){
-  out = paste(test_point$age_mother[1])
-  out = paste(out, test_point$race_mother[1])
-  out = paste(out, test_point$education_mother[1])
-  out = paste(out, test_point$cigarettes_during_pregnancy[1])
+  out = "Mother - age:"
+  out = paste(out, test_point$age_mother[1], sep='')
+  out = paste(out, ', race:', test_point$race_mother[1], sep='')
+  out = paste(out, ', education:', c('<9 grades', '<12 grades', 'high school', 'associate degree', 'bachelor\'s degree', 'master\'s degree', 'doctorate', 'unknown')[test_point$education_mother[1]], sep='')
+  out = paste(out, ', height:', test_point$height_mother[1], "in", sep='')
+  out = paste(out, ', BMI:', test_point$BMI_mother[1], sep='')
+  out = paste(out, ', smoking:', c('no', 'yes')[1+test_point$cigarettes_during_pregnancy[1]])
   
-  out = paste(out, '\n', sep='')
+  out = paste(out, '\nFather - ', sep='')
   
-  out = paste(out, test_point$age_father[1])
-  out = paste(out, test_point$race_father[1])
-  out = paste(out, test_point$education_father[1])
+  out = paste(out, 'age:', test_point$age_father[1], sep='')
+  out = paste(out, ', race:', test_point$race_father[1], sep='')
+  out = paste(out, ', education:', c('<9 grades', '<12 grades', 'high school', 'associate degree', 'bachelor\'s degree', 'master\'s degree', 'doctorate', 'unknown')[test_point$education_father[1]], sep='')
   
-  out = paste(out, '\n', sep='')
+  out = paste(out, '\nBirth - ', sep='')
   
-  out = paste(out, test_point$plurality[1])
-  out = paste(out, test_point$gender[1])
-  out = paste(out, test_point$birth_order[1])
-  out = paste(out, test_point$delivery_method[1])
+  out = paste(out, 'multiplicity:', test_point$plurality[1], sep='')
+  out = paste(out, ', gender:', test_point$gender[1], sep='')
+  out = paste(out, ', birth order:', test_point$birth_order[1], sep='')
+  out = paste(out, ', method:', test_point$delivery_method[1], sep='')
+  out = paste(out, ', prenatal care:', c('no', 'yes')[test_point$precare[1]!=Inf])
   
   return(out)
 }
 
-mrf_fit = mrf(X=X, Y=Y, min.node.size = 20, splitting.rule='fourier', num_features=10)
+set.seed(22)
+train_idx = sample(1:nrow(births), 100000, replace=FALSE)
+mrf_fit = mrf(X=X[train_idx,], Y=Y[train_idx,], min.node.size = 20, splitting.rule='fourier', num_features=10)
 
 ########################################################################
 # check heterogeneous regression
 ########################################################################
-
-compute = function(x, y, weights, x_values){ #homoscedastic fit
-  #   fit <- lm(log(y)~log(x), weights=weights)
-  #   sigmahat = sum(weights*fit$residuals^2)^0.5
-  #   mean = exp(predict(fit, newdata=data.frame(x=x_values)))
-  #   quantile_lo = exp(predict(fit, newdata=data.frame(x=x_values)) + qnorm(0.1)*sigmahat)
-  #   quantile_up = exp(predict(fit, newdata=data.frame(x=x_values)) + qnorm(0.9)*sigmahat)
-  #   return(rbind(mean, quantile_lo, quantile_up))
-  # }  
-  idx = sample(1:length(x), 200000, prob=as.vector(weights), replace=TRUE)
-  fit = smooth.spline(y[idx]~x[idx], cv=TRUE)
-  #fit = smooth.spline(yt~xt, cv=TRUE)
+compute = function(x, y, weights, x_values){ #transform, fit smoother for mean, fit linear functions to residuals for quantiles
+  idx = weights!=0
+  print(sum(idx))
+  x = x[idx]
+  y = y[idx]
+  weights = weights[idx]
   
-  residuals = (y - predict(fit, x=data.frame(x=x))$y$x)
-  sigmahat = sum(weights * residuals^2)^0.5
+  weights = weights * (1 - x/55)^3 #upweight leftmost points
+  weights = weights * (1 + (x>40.5)*3)
   
-  fitted = predict(fit, x=data.frame(x=x_values))$y$x
-  mean = fitted
-  quantile_lo = fitted + qnorm(0.1)*sigmahat
-  quantile_up = fitted + qnorm(0.9)*sigmahat
-  return(rbind(mean, quantile_lo, quantile_up))
+  f_x = function(x){return(log(log(x)))}
+  f_inv_x = function(x){return(exp(exp(x)))}
+  f_y = f_x
+  f_inv_y = f_inv_x
+  
+  xt = f_x(x)
+  yt = f_y(y)
+  
+  fit = smooth.spline(yt~xt, w=weights, df=5)
+  residuals = yt - predict(fit, x=data.frame(x=xt))$y$x
+  
+  library(quantreg)
+  fit_quantile_lo = rq(residuals~xt, weights=weights, tau=0.1)
+  fit_quantile_hi = rq(residuals~xt, weights=weights, tau=0.9)
+  
+  fitted = predict(fit, x=data.frame(x=f_x(x_values)))$y$x
+  mean = f_inv_y(fitted)
+  quantile_lo = f_inv_y(fitted + predict(fit_quantile_lo, newdata=data.frame(xt=f_x(x_values))))
+  quantile_hi = f_inv_y(fitted + predict(fit_quantile_hi, newdata=data.frame(xt=f_x(x_values))))
+  
+  return(rbind(mean, quantile_lo, quantile_hi))
 }
 
-for(i in sample(nrow(X), 5)){
-  #if(X[i, 7]==1){#plurality
+plotdf = births[train_idx, ]
+for(i in sample((1:nrow(X))[-train_idx], 15)){
+  #if(X[i, 7]!=2){#plurality
   # next
   #}
   test_point = X[i,]
   weights = predict(mrf_fit, newdata=matrix(test_point, nrow=1))$weights[1,]
+  
   print(births[i,])
-  births$mrf_weights = weights
+  plotdf$mrf_weights = weights
   
-  x_val = seq(27, 42, length.out=200)
-  out = compute(Y[,1], Y[,2], weights=weights, x_val)
+  x_val = seq(22, 42, length.out=200)
+  out = compute(Y[train_idx,1], Y[train_idx,2], weights=weights, x_val)
   
-  gg=ggplot(births[mrf_weights!=0], aes(x=pregnancy_duration, y=birthweight))+
-    geom_jitter(aes(size=ifelse(mrf_weights==0, NA, mrf_weights^0.5), color=race_mother, shape=gender))+
-    scale_size_area(max_size=2) + guides(size=FALSE)+
+  gg=ggplot(plotdf[plotdf$mrf_weights!=0,], aes(x=pregnancy_duration, y=birthweight))+
+    geom_jitter(aes(size=ifelse(mrf_weights==0, NA, mrf_weights^0.5), color=race_mother, shape=gender), alpha=0.8)+
+    scale_size_area(max_size=3) + guides(size=FALSE, alpha=FALSE)+labs(color='race mother', shape='gender baby')+
     #scale_color_viridis_c(option='magma') +
     ggtitle(point_description(births[i,])) +
-    geom_line(data=data.frame(x=x_val, y=as.vector(out[1,])), aes(x=x, y=y), size=0.5, color='black') +
+    geom_line(data=data.frame(x=x_val, y=as.vector(out[1,])), aes(x=x, y=y), size=0.8, color='black') +
     geom_line(data=data.frame(x=x_val, y=out[2,]), aes(x=x, y=y), size=0.5, color='black', linetype='dashed') +
     geom_line(data=data.frame(x=x_val, y=out[3,]), aes(x=x, y=y), size=0.5, color='black', linetype='dashed') +
     theme_light()+
-    xlim(27,42)+
-    ylim(800,5000)
+    theme(plot.title = element_text(size = 9, face = "italic"))+
+    xlim(22,41)+
+    ylim(400,4700)
   plot(gg)
+  
+  #cat ("Press [enter] to continue")
+  #line <- readline()
 }
 
 ######################################################################
 # compute the causal do quantity
 ######################################################################
-do_preg = seq(27, 42, length.out=200)
-effect1 = rep(0, 200)
-effect2 = rep(0, 200)
+do_preg = seq(20, 42, length.out=200)
+effect1 = matrix(0, nrow=3, ncol=200)
+effect2 = matrix(0, nrow=3, ncol=200)
 
-N = 200
+N = 500
 cnt = 0
-for(i in sample(nrow(X), N)){
+for(i in sample((1:nrow(X))[-train_idx], N)){
   cnt = cnt + 1
   print(cnt)
   
   test_point = X[i,]  
   test_point[21] = 0 
-  test_point[22] = 1 #7 is twin
+  test_point[22] = 1 #female
+  #test_point[7] = 1 #not twin
   weights = predict(mrf_fit, newdata=matrix(test_point, nrow=1))$weights[1,]
-  effect1 = effect1 + compute(Y[,1], Y[,2], weights=weights, do_preg)/N
+  effect1 = effect1 + compute(Y[train_idx,1], Y[train_idx,2], weights=weights, do_preg)/N
   
-  test_point[21] = 1 
-  test_point[22] = 0 #7 is twin
+  test_point[21] = 1 #male
+  test_point[22] = 0 
+  #test_point[7] = 2 #twin
   weights = predict(mrf_fit, newdata=matrix(test_point, nrow=1))$weights[1,]
-  effect2 = effect2 + compute(Y[,1], Y[,2], weights=weights, do_preg)/N
+  effect2 = effect2 + compute(Y[train_idx,1], Y[train_idx,2], weights=weights, do_preg)/N
 }
 
 ggplot() +
-  geom_line(data=data.frame(x=do_preg, y=effect1), aes(x=x, y=y), color='red')+
-  geom_line(data=data.frame(x=do_preg, y=effect2), aes(x=x, y=y), color='blue')
+  geom_line(data=data.frame(x=do_preg, y=effect1[1,]), aes(x=x, y=y), size=0.8, color='red') +
+  geom_line(data=data.frame(x=do_preg, y=effect1[2,]), aes(x=x, y=y), size=0.5, color='red', linetype='dashed') +
+  geom_line(data=data.frame(x=do_preg, y=effect1[3,]), aes(x=x, y=y), size=0.5, color='red', linetype='dashed') +
+  
+  geom_line(data=data.frame(x=do_preg, y=effect2[1,]), aes(x=x, y=y), size=0.8, color='blue') +
+  geom_line(data=data.frame(x=do_preg, y=effect2[2,]), aes(x=x, y=y), size=0.5, color='blue', linetype='dashed') +
+  geom_line(data=data.frame(x=do_preg, y=effect2[3,]), aes(x=x, y=y), size=0.5, color='blue', linetype='dashed') +
+
+  ylim(c(200, 4400)) +
+  xlim(c(22,41)) +
+  theme_light() +
+  xlab('pregnancy length (weeks)')+
+  ylab('birthweight (grams)')# + guides(color)
 
 #################################################################################################################
 # plot conditional fits
 ################################################################################################################
-dset = births[plurality==1,]
-effect1 = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
-dset = births[plurality!=1,]
-effect2 = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
-ggplot() +
-  geom_line(data=data.frame(x=do_preg, y=effect1), aes(x=x, y=y), color='red')+
-  geom_line(data=data.frame(x=do_preg, y=effect2), aes(x=x, y=y), color='blue')
-
 dset = births[gender=='F',]
-effect1 = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
+effect1_cond = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
 dset = births[gender=='M',]
-effect2 = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
+effect2_cond = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
+
+dset = births[plurality==1,]
+effect1_cond = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
+dset = births[plurality==2,]
+effect2_cond = compute(dset$pregnancy_duration, dset$birthweight, weights=rep(1/nrow(dset), nrow(dset)), do_preg)
+
 ggplot() +
-  geom_line(data=data.frame(x=do_preg, y=effect1), aes(x=x, y=y), color='red')+
-  geom_line(data=data.frame(x=do_preg, y=effect2), aes(x=x, y=y), color='blue')
+  #geom_jitter(data=dset, aes(x=pregnancy_duration, y=birthweight))+
+  geom_line(data=data.frame(x=do_preg, y=effect1_cond[1,]), aes(x=x, y=y), color='red') +
+  geom_line(data=data.frame(x=do_preg, y=effect1_cond[2,]), aes(x=x, y=y), size=0.5, color='red', linetype='dashed') +
+  geom_line(data=data.frame(x=do_preg, y=effect1_cond[3,]), aes(x=x, y=y), size=0.5, color='red', linetype='dashed') +
+  
+  geom_line(data=data.frame(x=do_preg, y=effect2_cond[1,]), aes(x=x, y=y), color='blue') +
+  geom_line(data=data.frame(x=do_preg, y=effect2_cond[2,]), aes(x=x, y=y), size=0.5, color='blue', linetype='dashed') +
+  geom_line(data=data.frame(x=do_preg, y=effect2_cond[3,]), aes(x=x, y=y), size=0.5, color='blue', linetype='dashed') +
+  
+  ylim(c(200, 4400))
 
 #############################################################################################################
-# testing conditional 1d fits
+# explore conditional 1d fits
 ##########################################################################################################
-compute = function(x, y, weights, x_values){
-  xt = log(x)
-  yt = log(y)
+compute = function(x, y, weights, x_values){ #transform, fit smoothing splines for mean, assume iid gaussian residuals
+  x = x + rnorm(length(x), sd=0.5)
   
-  idx = weights != 0
-  fit = loess(yt[idx]~xt[idx], weights=weights[idx])
+  f_x = function(x){return(log(log(x)))}
+  f_y = f_x#function(x){return(log(x))}
   
-  residuals = (yt[idx] - predict(fit, newdata=data.frame(x=xt[idx])))
-  sd_res = (residuals)^2
-  fit_sd = loess(sd_res~xt[idx], weights=weights[idx])
-  sigmahat = (predict(fit_sd, newdata=log(x_values)))^0.5
+  f_inv_x = function(x){return(exp(exp(x)))}
+  f_inv_y = f_inv_x#function(x){return(exp(x))}
   
-  fitted = predict(fit, newdata=log(x_values))
-  mean = exp(fitted)
-  quantile_lo = exp(fitted + qnorm(0.1)*sigmahat)
-  quantile_up = exp(fitted + qnorm(0.9)*sigmahat)
-  return(rbind(mean, quantile_lo, quantile_up))
-}
-
-compute = function(x, y, weights, x_values){
-  xt = log(log(x))
-  yt = log(log(y))
+  xt = f_x(x)
+  yt = f_y(y)
   
-  idx = sample(1:length(x), 200000, prob=as.vector(weights), replace=TRUE)
-  fit = smooth.spline(yt[idx]~xt[idx], cv=TRUE)
+  fit = smooth.spline(yt~xt, w=weights, df=3)#cv=TRUE)
   #fit = smooth.spline(yt~xt, cv=TRUE)
   
   residuals = (yt - predict(fit, x=data.frame(x=xt))$y$x)
   sigmahat = sum(weights * residuals^2)^0.5
   
-  fitted = predict(fit, x=data.frame(x=log(log(x_values))))$y$x
-  mean = exp(exp(fitted))
-  quantile_lo = exp(exp(fitted + qnorm(0.1)*sigmahat))
-  quantile_up = exp(exp(fitted + qnorm(0.9)*sigmahat))
+  fitted = predict(fit, x=data.frame(x=f_x(x_values)))$y$x
+  mean = f_inv_y(fitted)
+  quantile_lo = f_inv_y(fitted + qnorm(0.1)*sigmahat)
+  quantile_up = f_inv_y(fitted + qnorm(0.9)*sigmahat)
+  
   return(rbind(mean, quantile_lo, quantile_up))
 }
 
-
-compute = function(x, y, weights, x_values){
-  xt = log(x)
-  yt = log(y)
+compute = function(x, y, weights, x_values){ #transform, fit RF and QRF
+  x = x + rnorm(length(x), sd=0.5)
+  f_x = function(x){return(log(log(x)))}
+  f_y = f_x#function(x){return(log(x))}
   
+  f_inv_x = function(x){return(exp(exp(x)))}
+  f_inv_y = f_inv_x#function(x){return(exp(x))}
+  
+  xt = f_x(x)
+  yt = f_y(y)
+  
+  idx = sample(1:length(x), 10000, prob=as.vector(weights), replace=TRUE)
+  fit = mrf(X=matrix(xt[idx], ncol=1), Y=matrix(yt[idx], ncol=1), min.node.size = 10, splitting.rule='fourier', num_features=10, num.trees=5000)
+  
+  fitted = predict(fit, type='mean', newdata=matrix(f_x(x_values), ncol=1))$mean
+  mean = f_inv_y(fitted)
+  weights = predict(fit, newdata=matrix(f_x(x_values), ncol=1))$weights
+  fitted = predict(fit, newdata=matrix(f_x(x_values), ncol=1), type='functional', f=function(y){y[1]}, quantiles=c(0.1, 0.9))
+  quantile_lo = f_inv_y(fitted$functional[,1])
+  quantile_up = f_inv_y(fitted$functional[,2])
+
+  return(rbind(mean, quantile_lo, quantile_up))
+}
+
+compute = function(x, y, weights, x_values){ #transform, fit smoothing splines for mean, assume iid gaussian residuals
   idx = sample(1:length(x), 200000, prob=as.vector(weights), replace=TRUE)
-  fit = smooth.spline(yt[idx]~xt[idx], cv=TRUE)
+  x = x[idx]
+  y = y[idx]
+  x = x + rnorm(length(x), sd=0.2)
+  y = y + rnorm(length(x), sd=10)
   
-  residuals = (yt[idx] - predict(fit, x=data.frame(x=xt[idx]))$y$x)
-  sd_res = (residuals)^2
-  fit_sd = smooth.spline(sd_res~xt[idx], cv=TRUE)
-  sigmahat = (predict(fit_sd, x=data.frame(x=log(x_values)))$y$x)^0.5
+  f_x = function(x){return(log(log(x)))}
+  f_y = f_x#function(x){return(log(x))}
   
-  fitted = predict(fit, x=data.frame(x=log(x_values)))$y$x
-  mean = exp(fitted)
-  quantile_lo = exp(fitted + qnorm(0.1)*sigmahat)
-  quantile_up = exp(fitted + qnorm(0.9)*sigmahat)
+  f_inv_x = function(x){return(exp(exp(x)))}
+  f_inv_y = f_inv_x#function(x){return(exp(x))}
+  
+  xt = f_x(x)
+  yt = f_y(y)
+  
+  library(Iso)
+  #idx = sample(1:length(x), 200000, prob=as.vector(weights), replace=TRUE)
+  fit = isoreg(xt, yt)
+  fit = smooth.spline(fit$yf~sort(fit$x), cv=TRUE)
+  
+  residuals = (yt - predict(fit, x=data.frame(x=xt))$y$x)
+  sigmahat = sum(weights * residuals^2)^0.5
+  
+  fitted = predict(fit, x=data.frame(x=f_x(x_values)))$y$x
+  mean = f_inv_y(fitted)
+  quantile_lo = f_inv_y(fitted + qnorm(0.1)*sigmahat)
+  quantile_up = f_inv_y(fitted + qnorm(0.9)*sigmahat)
+  
   return(rbind(mean, quantile_lo, quantile_up))
 }
 
-x = pregnancy_duration
+compute = function(x, y, weights, x_values){ #transform, fit smootherfor mean, assume gaussian residuals fit variance with smoother
+  #upweight leftmost points
+  weight_mask = 1 - x/55 
+  weights = weights * weight_mask^3
+  weights = weights / sum(weights)
+  
+  f_x = function(x){return(log(log(x)))}
+  f_y = f_x#function(x){return(log(x))}
+  f_inv_x = function(x){return(exp(exp(x)))}
+  f_inv_y = f_inv_x#function(x){return(exp(x))}
+  
+  xt = f_x(x)
+  yt = f_y(y)
+  
+  fit = smooth.spline(yt~xt, w=weights, df=5)#cv=TRUE)
+  fitted = predict(fit, x=data.frame(x=f_x(x_values)))$y$x
+  mean = f_inv_y(fitted)
+  
+  residuals = (yt - predict(fit, x=data.frame(x=xt))$y$x)
+  #sd_res = 1.25 * abs(residuals)
+  #fit_sd = lm(sd_res~xt, weights=weights)
+  #sigmahat = predict(fit_sd, newdata=data.frame(xt=f_x(x_values)))
+  
+  #quantile_lo = f_inv_y(fitted + qnorm(0.1)*sigmahat)
+  #quantile_up = f_inv_y(fitted + qnorm(0.9)*sigmahat)
+  
+  library(quantreg)
+  fit_quantile = rq(residuals~xt, weights=weights, tau=0.1)
+  quantile_lo = f_inv_y(fitted + predict(fit_quantile, newdata=data.frame(xt=f_x(x_values))))
+  fit_quantile = rq(residuals~xt, weights=weights, tau=0.9)
+  quantile_hi = f_inv_y(fitted + predict(fit_quantile, newdata=data.frame(xt=f_x(x_values))))
+  
+  return(rbind(mean, quantile_lo, quantile_hi))
+}
+
+x = pregnancy_duration# + rnorm(50000, sd=0.2)
 y = birthweight
-x_values = seq(20, 43, length.out=200)
-#weights = rep(1/length(x), length(x))
+x_values = seq(18, 43, length.out=200)
+weights = rep(1/length(x), length(x))
 out = compute(x, y, weights, x_values)
 
-qplot(x,y, geom='jitter') + 
+ggplot(data.frame(x=x[weights!=0], y=y[weights!=0]), aes(x=x, y=y)) +
+  geom_jitter() + 
   geom_line(data=data.frame(x=x_values, y=out[1,]), color='red')+
   geom_line(data=data.frame(x=x_values, y=out[2,]), color='red', linetype='dashed')+
   geom_line(data=data.frame(x=x_values, y=out[3,]), color='red', linetype='dashed')
-
