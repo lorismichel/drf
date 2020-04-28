@@ -40,3 +40,4 @@ res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected
 
 
 save(d, res_pinball, res_pinball_nl, res_coverage, file = "./experiments/mtr/data/example1.Rdata")
+
