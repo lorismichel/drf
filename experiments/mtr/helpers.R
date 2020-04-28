@@ -247,7 +247,7 @@ ResRF <- function(X, Y) {
   residuals <- sapply(1:ncol(Y), function(i) Y[,i]-forest.list[[i]]$predictions)
   cov.res <- cov(residuals)
   cor.res <- cor(residuals)
-  return(list(forest.list = forest.list, X = X, Y = Y, cov.res = cov.res, cor.res = cor.res))
+  return(list(forest.list = forest.list, X = X, Y = Y, residuals = residuals, cov.res = cov.res, cor.res = cor.res))
 }
 
 predictKNN <- function(object,
@@ -336,8 +336,8 @@ predictKNN <- function(object,
 
 predictResRF <- function(object,
                          newdata, 
-                         type = "linearFunctional", 
-                         w, 
+                         type = "functional", 
+                         f, 
                          quantiles = NULL) {
   
   
@@ -348,14 +348,26 @@ predictResRF <- function(object,
     
     return(list(mean=means))
     
-  } else if (type == "linearFunctional") {
+  } else if (type == "functional") {
     
-    means.w <- sapply(object$forest.list, function(rf) predict(rf, data.frame(X = newdata))$predictions)%*%w
-    sds.w <- t(w)%*%object$cov.res%*%w
+    #means.w <- sapply(object$forest.list, function(rf) predict(rf, data.frame(X = newdata))$predictions)%*%w
+    #sds.w <- t(w)%*%object$cov.res%*%w
     
-    funs <- sapply(quantiles, function(q) qnorm(p = q, mean = means.w, sd = sds.w))
+    #funs <- sapply(quantiles, function(q) qnorm(p = q, mean = means.w, sd = sds.w))
     
-    return(list(linearFunctional=funs))
+    means <- sapply(object$forest.list, function(rf) predict(rf, data.frame(X = newdata))$predictions)
+    
+    funs <- apply(means, 1, function(m) {
+      s <- m + object$residuals
+      fvals <- apply(s, 1, f)
+      if (is.null(quantiles)) {
+        return(mean(fvals))
+      } else {
+        return(quantile(fvals, probs = quantiles))
+      }
+    })
+    
+    return(list(functional=t(funs)))
   } else if (type == "cov") {
     
     cov.mat <- array(1, dim = c(nrow(newdata), ncol(object$Y), ncol(object$Y)))
@@ -1063,4 +1075,71 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
     #p.val.gini.global = p.val.gini.global)
   ))
 }
+
+W2unif <- function(s) {
+  uq <- qunif(p = c(1:length(s))/(length(s)+1))
+  
+  return(mean((s-uq)^2))
+}
+
+y_train <- d$Y[1:100,]
+y_test <- d$Y[1:10,]
+w_train <- matrix(runif(nrow(y_train)*nrow(y_train)),nrow=nrow(y_train),ncol=nrow(y_train))
+w_test_train <- matrix(runif(nrow(y_test)*nrow(y_train)),nrow=nrow(y_test),ncol=nrow(y_train))
+w_train <- w_train / rowSums(w_train)
+w_test_train <- w_test_train / rowSums(w_test_train)
+k <- function(y1,y2) {exp(-sum((y1-y2)^2))}
+
+# function to compute the RKHS MSE
+computeRKHSgaussMSE <- function(y_test, y_train, w_test, k) {
+  
+  # training kernel
+  k_train <- apply(y_train, 1, function(y1) apply(y_train, 1, function(y2) k(y1,y2)))
+  # cross testing-training kernel
+  k_test_train <- t(apply(y_test, 1, function(y1) apply(y_train, 1, function(y2) k(y1,y2))))
+  
+  # compute the values (biased)
+  vals <- sapply(1:nrow(y_test), function(i) k(y_test[i,],y_test[i,]) - 2*sum(k_test_train[i,]*w_test[i,]) + t(w_test[i,])%*%(k_train%*%w_test[i,]))
+  
+  return(vals)
+}
+
+runRKHSanalysis <- function(X, 
+                            Y,
+                            k = 10, 
+                            seed = 0,
+                            ...) {
+  
+  # repro
+  set.seed(seed)
+  
+  # create folds
+  folds <- kFoldCV(n = nrow(X), k = k)
+  
+  # properties of the simulations
+  mrf_mse <- numeric(nrow(X))
+  gini_mse <- numeric(nrow(X))
+  
+  # CV loop
+  for (kk in 1:k) {
+    
+    print(paste0("CV loop: ", kk))
+    
+    
+    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
+    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+    
+    w_mrf <- predict(mRF, type = "weights", newdata = X[folds[[kk]],])$weights
+    mrf_mse[folds[[kk]]] <- computeRKHSgaussMSE(y_test = Y[folds[[kk]],], y_train = Y[-folds[[kk]],],w_test = w_mrf, k = function(y1,y2) {exp(-sum((y1-y2)^2))})
+    
+    w_gini <- predict(giniRF, type = "weights", newdata = X[folds[[kk]],])$weights
+    gini_mse[folds[[kk]]] <- computeRKHSgaussMSE(y_test = Y[folds[[kk]],], y_train = Y[-folds[[kk]],],w_test = w_gini, k = function(y1,y2) {exp(-sum((y1-y2)^2))})
+    
+  }
+  
+  return(list(mrf_mse = mrf_mse, gini_mse = gini_mse))
+  
+}
+
+
 
