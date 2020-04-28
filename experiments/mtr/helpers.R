@@ -800,13 +800,13 @@ runRandomPinballNLAnalysis <- function(X,
                            quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
       
       for (j in 1:length(alpha_seq)) {
-        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]],
+        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]],
                                                 yhat = yhat_mrf[,j], alpha = alpha_seq[j])/k
-        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]], 
+        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]], 
                                                  yhat = yhat_gini[,j], alpha = alpha_seq[j])/k
-        knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]],
+        knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]],
                                                yhat = yhat_knn[,j], alpha = alpha_seq[j])/k
-        gauss_loss[i,j] <- gauss_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,1]], 
+        gauss_loss[i,j] <- gauss_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]], 
                                                  yhat = yhat_gauss[,j], alpha = alpha_seq[j])/k
         
       }
@@ -1142,4 +1142,57 @@ runRKHSanalysis <- function(X,
 }
 
 
+runCovAnalysis <- function(X, 
+                                       Y,
+                                       seed = 0,
+                           k = 5,
+                                       ...) {
+  
+  # repro
+  set.seed(seed)
+  
+  # create folds
+  folds <- kFoldCV(n = nrow(X), k = k)
+  
+  # properties of the simulations
+  mrf_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
+  gini_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
+  knn_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
+  gauss_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
+  
+  # CV loop
+  for (kk in 1:k) {
+    
+    print(paste0("CV loop: ", kk))
+    
+    
+    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
+    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+    
+    #comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
+    #comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
+    
+    pairs <- expand.grid(1:ncol(Y),1:ncol(Y))
+    pairs <- pairs[1:(nrow(pairs)/2),]
+    
+    for (i in 1:nrow(pairs)) {
+      
+      # yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
+      #                     quantiles = NULL, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
+      # yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
+      #                      quantiles = NULL, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
+      
+      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "cov")$cov
+      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "cov")$cov
 
+      
+        mrf_loss[i,folds[[kk]]] <- (Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]]-yhat_mrf[,pairs[i,1],pairs[i,2]])^2
+        gini_loss[i,folds[[kk]]] <- (Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]]-yhat_gini[,pairs[i,1],pairs[i,2]])^2
+        
+    
+    }
+  }
+  
+  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
+  
+}

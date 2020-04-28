@@ -38,6 +38,7 @@ res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss
 res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
                                   X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
 
+res_cov <- runCovAnalysis(X = d$X, Y = d$Y, k = 5)
 
 save(d, res_pinball, res_pinball_nl, res_coverage, file = "./experiments/mtr/data/example1.Rdata")
 
