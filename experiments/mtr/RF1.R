@@ -36,16 +36,16 @@ selected.sigma <- c(0.1, 0.5, 1, 2)[which.min(lapply(res_hyper_param$gauss, func
 
 # run pinball analysis (l)
 res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
-                                        X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
+                                        X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100, nb_random_directions = 20)
 
-# run pinball analysis (nl)
-res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
-                                             X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
-
-# run coverage analysis 
-res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
-                                  X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
+# # run pinball analysis (nl)
+# res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+#                                              X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
+# 
+# # run coverage analysis 
+# res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+#                                   X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
 
 
 # save results
-save(d, res_pinball, res_pinball_nl, res_coverage, file = "./experiments/mtr/data/RF1.Rdata")
+save(d, res_pinball, file = "./experiments/mtr/data/RF1.Rdata")

@@ -92,7 +92,7 @@ require(KRLS)
 require(copula)
 
 
-loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/heterogeneity/mtr-datasets/') {
+loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets/') {
   if (!dataset.name %in% c("example1", "example2")) {
     dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
   }
@@ -112,6 +112,12 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/het
     names(dataset) <- names.dataset
     
     return(list(X = as.matrix(dataset[,-c(9:10)]), X.knn = scale(as.matrix(dataset[,-c(9:10)])), X.gauss = scale(as.matrix(dataset[,-c(9:10)])), Y = as.matrix(dataset[,c(9:10)])))
+  } else if (dataset.name == "sf1") {
+    
+    
+  } else if (dataset.name == "sf2") {
+    
+    
   } else if (dataset.name == "scpf") {
       dataset <- na.omit(dataset)
       # could we do it better?
@@ -141,10 +147,13 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/het
   } else if (dataset.name == "wq") {
     return(list(X = as.matrix(dataset[,-c(17:30)]), X.knn = scale(as.matrix(dataset[,-c(17:30)])), X.gauss = scale(as.matrix(dataset[,-c(17:30)])), Y = as.matrix(dataset[,c(17:30)])))
   } else if (dataset.name == "atp1d") {
-    #return(list(X = as.matrix(dataset[,-c(17:30)]), Y = as.matrix(dataset[,c(17:30)])))
-  }
-  else if (dataset.name == "atp7d") {
-    #return(list(X = as.matrix(dataset[,-c(17:30)]), Y = as.matrix(dataset[,c(17:30)])))
+    w.s <- apply(dataset, 2, function(x) length(unique(x)))
+    dataset <- dataset[,w.s!=1]
+    return(list(X = as.matrix(dataset[,c(1:370)]), X.knn = scale(as.matrix(dataset[,c(1:370)])), X.gauss = scale(as.matrix(dataset[,c(1:370)])), Y = as.matrix(dataset[,c(371:376)])))
+  } else if (dataset.name == "atp7d") {
+    w.s <- apply(dataset, 2, function(x) length(unique(x)))
+    dataset <- dataset[,w.s!=1]
+    return(list(X = as.matrix(dataset[,c(1:370)]), X.knn = scale(as.matrix(dataset[,c(1:370)])), X.gauss = scale(as.matrix(dataset[,c(1:370)])), Y = as.matrix(dataset[,c(371:376)])))
   } else if (dataset.name == "jura") {
     return(list(X = as.matrix(dataset[,-c(16:18)]), X.knn = scale(as.matrix(dataset[,-c(16:18)])), X.gauss = scale(as.matrix(dataset[,-c(16:18)])), Y = as.matrix(dataset[,c(16:18)])))
   } else if (dataset.name %in% c("example1", "example2")) {
@@ -158,7 +167,7 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Documents/projects/het
     
     
     # dimensions
-    d <- 4
+    d <- 10
     n <- 5000
     
     
@@ -651,7 +660,7 @@ runRandomPinballAnalysis <- function(X,
                                      param.knn,
                                      param.gauss,
                                      k = 10, 
-                                     alpha_seq = c(.005, .025, .05, .3, .5, .7, .95, .975, .995), 
+                                     alpha_seq = c(.005, .025, .05, .1, .3, .5, .7, .9, .95, .975, .995), 
                                      nb_random_directions = 10,
                                      seed = 0,
                                      ...) {
@@ -685,6 +694,12 @@ runRandomPinballAnalysis <- function(X,
   knn_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
   gauss_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
   
+  mrf_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  gini_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  res_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  knn_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  gauss_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  
   # CV loop
   for (kk in 1:k) {
     
@@ -705,13 +720,20 @@ runRandomPinballAnalysis <- function(X,
                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
                            quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_res <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "linearFunctional", 
-                          quantiles = alpha_seq, w = w[[i]])$linearFunctional
+      yhat_res <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
+                          quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
         
       yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
                            quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
                            quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+      
+      # define the qs
+      mrf_q[i,folds[[kk]],] <- yhat_mrf
+      gini_q[i,folds[[kk]],] <- yhat_gini
+      res_q[i,folds[[kk]],] <- yhat_res
+      knn_q[i,folds[[kk]],] <- yhat_knn
+      gauss_q[i,folds[[kk]],] <- yhat_gauss
       
       # define the us
       funs <- predict(mRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
@@ -746,7 +768,9 @@ runRandomPinballAnalysis <- function(X,
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss, res_loss = res_loss,
               knn_loss = knn_loss, gauss_loss = gauss_loss,
-              mrf_u = mrf_u, gini_u = gini_u, knn_u = knn_u, gauss_u = gauss_u))
+              mrf_u = mrf_u, gini_u = gini_u, knn_u = knn_u, gauss_u = gauss_u,
+              w = w,
+              mrf_q = mrf_q, gini_q = gini_q, knn_q = knn_q, gauss_q = gauss_q, res_q = res_q))
   
 }
 
@@ -955,124 +979,143 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   infos <- load(paste0(path, dataset, ".Rdata"))
   
   
-  vec.mse.u.mrf <- list()
-  vec.mse.u.gini <- list()
-  vec.mse.u.knn <- list()
-  vec.mse.u.gauss <- list()
-  # look at prediction in the random pinball
-  for (i in 1:nrow(res_pinball$mrf_u)) {
-    vec.mse.u.mrf[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$mrf_u[i,],x=d$X))$predictions-res_pinball$mrf_u[i,])^2
-    vec.mse.u.gini[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gini_u[i,],x=d$X))$predictions-res_pinball$gini_u[i,])^2
-    vec.mse.u.knn[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$knn_u[i,],x=d$X))$predictions-res_pinball$knn_u[i,])^2
-    vec.mse.u.gauss[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gauss_u[i,],x=d$X))$predictions-res_pinball$gauss_u[i,])^2
-  }
   
-  # computing the Us
-  u.res <- pf(q = res_coverage$scores_CV_res, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  u.mrf <- pf(q = res_coverage$scores_CV_mrf, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  u.gini <- pf(q = res_coverage$scores_CV_gini, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  u.knn <- pf(q = res_coverage$scores_CV_knn, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  u.gauss <- pf(q = res_coverage$scores_CV_gauss, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # look at the quantile loss
+  heter0 <- sapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+                                                 res_pinball$gini_loss[i,],
+                                                 res_pinball$res_loss[i,],
+                                                 res_pinball$knn_loss[i,],
+                                                 res_pinball$gauss_loss[i,])
+  apply(apply(x, 2, function(xx) {v <- rep(0, length(xx)); v[which.min(xx)] <- 1; v}),1,mean)})
+  heter0 <- table(apply(heter0, 2, which.max))/200
   
-  mse.res <- ranger::ranger(u~., data = data.frame(u=u.res,x=d$X))$prediction.error
-  mse.mrf <- ranger::ranger(u~., data = data.frame(u=u.mrf,x=d$X))$prediction.error
-  mse.gini <- ranger::ranger(u~., data = data.frame(u=u.gini,x=d$X))$prediction.error
-  mse.knn <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
-  mse.gauss <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
-  
-  #p.null <- sapply(1:nrep, function(i) ranger::ranger(u~., data = data.frame(u=runif(nrow(d$X)),x=d$X))$prediction.error)
-  
-  #p.res <- (sum(p.null <= mse.res)+1) / (length(p.null)+1)
-  #p.mrf <- (sum(p.null <= mse.mrf)+1) / (length(p.null)+1)
-  #p.gini <- (sum(p.null <= mse.gini)+1) / (length(p.null)+1)
-  #p.knn <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
-  #p.gauss <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
-  #pf(q = res_coverage$scores_CV_gauss, df1 = d, df2 = n-d)
-  
-  
-  ## random pinball
-
-  mean.pinball.mrf <-   mean(res_pinball$mrf_loss - res_pinball$mrf_loss<=0)
-  mean.pinball.gini <-  mean(res_pinball$mrf_loss - res_pinball$gini_loss<=0)
-  mean.pinball.res <-   mean(res_pinball$mrf_loss - res_pinball$res_loss<=0)
-  mean.pinball.knn <-   mean(res_pinball$mrf_loss - res_pinball$knn_loss<=0)
-  mean.pinball.gauss <- mean(res_pinball$mrf_loss - res_pinball$gauss_loss<=0)
-  
-  # max
-  max.pinball.mrf <-  max(apply(res_pinball$mrf_loss, 1, mean))
-  max.pinball.gini <- max(apply(res_pinball$gini_loss, 1, mean))
-  max.pinball.res <- max(apply(res_pinball$res_loss, 1, mean))
-  max.pinball.knn <- max(apply(res_pinball$knn_loss, 1, mean))
-  max.pinball.gauss <- max(apply(res_pinball$gauss_loss, 1, mean))
-  
-  ## random pinball (NL)
-  
-  # mean
-  mean.pinball.nl.mrf <- mean(res_pinball_nl$mrf_loss)
-  mean.pinball.nl.gini <- mean(res_pinball_nl$gini_loss)
-  # mean.pinball.nl.res <- mean(res_pinball_nl$res_loss)
-  mean.pinball.nl.knn <- mean(res_pinball_nl$knn_loss)
-  mean.pinball.nl.gauss <- mean(res_pinball_nl$gauss_loss)
-  
-  # max
-  max.pinball.nl.mrf <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  max.pinball.nl.gini <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  # max.pinball.nl.res <- max(apply(res_pinball_nl$res_loss, 1, max))
-  max.pinball.nl.knn <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  max.pinball.nl.gauss <-max(apply(res_pinball_nl$mrf_loss, 1, max))
-  
-  ## coverage
-  
-  # compute the p-values
-  #p.val.mrf <- permRF(y = res_coverage$scores_CV_mrf, X = d$X, nrep = 100)
-  #p.val.mrf.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
-  #p.val.gini <-permRF(y = res_coverage$scores_CV_gini, X = d$X, nrep = 100)
-  #p.val.gini.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
-  
+  heter1 <- lapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+                                         res_pinball$gini_loss[i,],
+                                         res_pinball$res_loss[i,],
+                                         res_pinball$knn_loss[i,],
+                                         res_pinball$gauss_loss[i,])
+                 apply(x, 2, function(xx) {v <- rep(0, length(xx)); v[which.min(xx)] <- 1; v})})
+  heter1 <- Reduce(heter1, f = function(x,y) x+y)
+  heter1 <- heter1/20
+  # vec.mse.u.mrf <- list()
+  # vec.mse.u.gini <- list()
+  # vec.mse.u.knn <- list()
+  # vec.mse.u.gauss <- list()
+  # # look at prediction in the random pinball
+  # for (i in 1:nrow(res_pinball$mrf_u)) {
+  #   vec.mse.u.mrf[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$mrf_u[i,],x=d$X))$predictions-res_pinball$mrf_u[i,])^2
+  #   vec.mse.u.gini[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gini_u[i,],x=d$X))$predictions-res_pinball$gini_u[i,])^2
+  #   vec.mse.u.knn[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$knn_u[i,],x=d$X))$predictions-res_pinball$knn_u[i,])^2
+  #   vec.mse.u.gauss[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gauss_u[i,],x=d$X))$predictions-res_pinball$gauss_u[i,])^2
+  # }
+  # 
+  # # computing the Us
+  # u.res <- pf(q = res_coverage$scores_CV_res, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # u.mrf <- pf(q = res_coverage$scores_CV_mrf, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # u.gini <- pf(q = res_coverage$scores_CV_gini, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # u.knn <- pf(q = res_coverage$scores_CV_knn, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # u.gauss <- pf(q = res_coverage$scores_CV_gauss, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
+  # 
+  # mse.res <- ranger::ranger(u~., data = data.frame(u=u.res,x=d$X))$prediction.error
+  # mse.mrf <- ranger::ranger(u~., data = data.frame(u=u.mrf,x=d$X))$prediction.error
+  # mse.gini <- ranger::ranger(u~., data = data.frame(u=u.gini,x=d$X))$prediction.error
+  # mse.knn <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
+  # mse.gauss <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
+  # 
+  # #p.null <- sapply(1:nrep, function(i) ranger::ranger(u~., data = data.frame(u=runif(nrow(d$X)),x=d$X))$prediction.error)
+  # 
+  # #p.res <- (sum(p.null <= mse.res)+1) / (length(p.null)+1)
+  # #p.mrf <- (sum(p.null <= mse.mrf)+1) / (length(p.null)+1)
+  # #p.gini <- (sum(p.null <= mse.gini)+1) / (length(p.null)+1)
+  # #p.knn <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
+  # #p.gauss <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
+  # #pf(q = res_coverage$scores_CV_gauss, df1 = d, df2 = n-d)
+  # 
+  # 
+  # ## random pinball
+  # 
+  # mean.pinball.mrf <-   mean(res_pinball$mrf_loss - res_pinball$mrf_loss<=0)
+  # mean.pinball.gini <-  mean(res_pinball$mrf_loss - res_pinball$gini_loss<=0)
+  # mean.pinball.res <-   mean(res_pinball$mrf_loss - res_pinball$res_loss<=0)
+  # mean.pinball.knn <-   mean(res_pinball$mrf_loss - res_pinball$knn_loss<=0)
+  # mean.pinball.gauss <- mean(res_pinball$mrf_loss - res_pinball$gauss_loss<=0)
+  # 
+  # # max
+  # max.pinball.mrf <-  max(apply(res_pinball$mrf_loss, 1, mean))
+  # max.pinball.gini <- max(apply(res_pinball$gini_loss, 1, mean))
+  # max.pinball.res <- max(apply(res_pinball$res_loss, 1, mean))
+  # max.pinball.knn <- max(apply(res_pinball$knn_loss, 1, mean))
+  # max.pinball.gauss <- max(apply(res_pinball$gauss_loss, 1, mean))
+  # 
+  # ## random pinball (NL)
+  # 
+  # # mean
+  # mean.pinball.nl.mrf <- mean(res_pinball_nl$mrf_loss)
+  # mean.pinball.nl.gini <- mean(res_pinball_nl$gini_loss)
+  # mean.pinball.nl.knn <- mean(res_pinball_nl$knn_loss)
+  # mean.pinball.nl.gauss <- mean(res_pinball_nl$gauss_loss)
+  # 
+  # # max
+  # max.pinball.nl.mrf <- max(apply(res_pinball_nl$mrf_loss, 1, max))
+  # max.pinball.nl.gini <- max(apply(res_pinball_nl$mrf_loss, 1, max))
+  # # max.pinball.nl.res <- max(apply(res_pinball_nl$res_loss, 1, max))
+  # max.pinball.nl.knn <- max(apply(res_pinball_nl$mrf_loss, 1, max))
+  # max.pinball.nl.gauss <-max(apply(res_pinball_nl$mrf_loss, 1, max))
+  # 
+  # ## coverage
+  # 
+  # # compute the p-values
+  # #p.val.mrf <- permRF(y = res_coverage$scores_CV_mrf, X = d$X, nrep = 100)
+  # #p.val.mrf.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
+  # #p.val.gini <-permRF(y = res_coverage$scores_CV_gini, X = d$X, nrep = 100)
+  # #p.val.gini.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
+  # 
   
   return(list(
-    mean.pinball.mrf = mean.pinball.mrf,
-    mean.pinball.gini = mean.pinball.gini,
-    mean.pinball.res = mean.pinball.res,
-    mean.pinball.knn = mean.pinball.knn,
-    mean.pinball.gauss = mean.pinball.gauss,
-    
-    max.pinball.mrf = max.pinball.mrf,
-    max.pinball.gini = max.pinball.gini,
-    max.pinball.res = max.pinball.res,
-    max.pinball.knn = max.pinball.knn,
-    max.pinball.gauss = max.pinball.gauss,
-    
-    mean.pinball.nl.mrf = mean.pinball.nl.mrf,
-    mean.pinball.nl.gini = mean.pinball.nl.gini,
-    mean.pinball.nl.knn = mean.pinball.nl.knn,
-    mean.pinball.nl.gauss = mean.pinball.nl.gauss,
-    
-    max.pinball.nl.mrf = max.pinball.nl.mrf,
-    max.pinball.nl.gini = max.pinball.nl.gini,
-    max.pinball.nl.knn = max.pinball.nl.knn,
-    max.pinball.nl.gauss = max.pinball.nl.gauss,
-    
-    coverage.mrf = res_coverage$coverage_mrf, 
-    coverage.gini = res_coverage$coverage_gini, 
-    coverage.res = res_coverage$coverage_res,
-    coverage.knn = res_coverage$coverage_knn,
-    coverage.gauss = res_coverage$coverage_gauss,
-    #coverage.mrf.global = res_coverage$coverage_mrf_global, 
-    #coverage.gini.global = res_coverage$coverage_gini_global 
-    mse.res = mse.res,
-    mse.mrf = mse.mrf,
-    mse.gini = mse.gini,
-    mse.knn = mse.knn,
-    mse.gauss = mse.gauss,
-    vec.mse.u.mrf = vec.mse.u.mrf,
-    vec.mse.u.gini = vec.mse.u.gini,
-    vec.mse.u.knn = vec.mse.u.knn,
-    vec.mse.u.gauss = vec.mse.u.gauss
-    #p.val.mrf = p.val.mrf, 
-    #p.val.mrf.global = p.val.mrf.global,
-    #p.val.gini = p.val.gini,
-    #p.val.gini.global = p.val.gini.global)
+    heter0 = heter0,
+    heter1 = heter1
+    # mean.pinball.mrf = mean.pinball.mrf,
+    # mean.pinball.gini = mean.pinball.gini,
+    # mean.pinball.res = mean.pinball.res,
+    # mean.pinball.knn = mean.pinball.knn,
+    # mean.pinball.gauss = mean.pinball.gauss,
+    # 
+    # max.pinball.mrf = max.pinball.mrf,
+    # max.pinball.gini = max.pinball.gini,
+    # max.pinball.res = max.pinball.res,
+    # max.pinball.knn = max.pinball.knn,
+    # max.pinball.gauss = max.pinball.gauss,
+    # 
+    # mean.pinball.nl.mrf = mean.pinball.nl.mrf,
+    # mean.pinball.nl.gini = mean.pinball.nl.gini,
+    # mean.pinball.nl.knn = mean.pinball.nl.knn,
+    # mean.pinball.nl.gauss = mean.pinball.nl.gauss,
+    # 
+    # max.pinball.nl.mrf = max.pinball.nl.mrf,
+    # max.pinball.nl.gini = max.pinball.nl.gini,
+    # max.pinball.nl.knn = max.pinball.nl.knn,
+    # max.pinball.nl.gauss = max.pinball.nl.gauss,
+    # 
+    # coverage.mrf = res_coverage$coverage_mrf, 
+    # coverage.gini = res_coverage$coverage_gini, 
+    # coverage.res = res_coverage$coverage_res,
+    # coverage.knn = res_coverage$coverage_knn,
+    # coverage.gauss = res_coverage$coverage_gauss,
+    # #coverage.mrf.global = res_coverage$coverage_mrf_global, 
+    # #coverage.gini.global = res_coverage$coverage_gini_global 
+    # mse.res = mse.res,
+    # mse.mrf = mse.mrf,
+    # mse.gini = mse.gini,
+    # mse.knn = mse.knn,
+    # mse.gauss = mse.gauss,
+    # vec.mse.u.mrf = vec.mse.u.mrf,
+    # vec.mse.u.gini = vec.mse.u.gini,
+    # vec.mse.u.knn = vec.mse.u.knn,
+    # vec.mse.u.gauss = vec.mse.u.gauss
+    # #p.val.mrf = p.val.mrf, 
+    # #p.val.mrf.global = p.val.mrf.global,
+    # #p.val.gini = p.val.gini,
+    # #p.val.gini.global = p.val.gini.global)
   ))
 }
 
@@ -1082,13 +1125,13 @@ W2unif <- function(s) {
   return(mean((s-uq)^2))
 }
 
-y_train <- d$Y[1:100,]
-y_test <- d$Y[1:10,]
-w_train <- matrix(runif(nrow(y_train)*nrow(y_train)),nrow=nrow(y_train),ncol=nrow(y_train))
-w_test_train <- matrix(runif(nrow(y_test)*nrow(y_train)),nrow=nrow(y_test),ncol=nrow(y_train))
-w_train <- w_train / rowSums(w_train)
-w_test_train <- w_test_train / rowSums(w_test_train)
-k <- function(y1,y2) {exp(-sum((y1-y2)^2))}
+# y_train <- d$Y[1:100,]
+# y_test <- d$Y[1:10,]
+# w_train <- matrix(runif(nrow(y_train)*nrow(y_train)),nrow=nrow(y_train),ncol=nrow(y_train))
+# w_test_train <- matrix(runif(nrow(y_test)*nrow(y_train)),nrow=nrow(y_test),ncol=nrow(y_train))
+# w_train <- w_train / rowSums(w_train)
+# w_test_train <- w_test_train / rowSums(w_test_train)
+# k <- function(y1,y2) {exp(-sum((y1-y2)^2))}
 
 # function to compute the RKHS MSE
 computeRKHSgaussMSE <- function(y_test, y_train, w_test, k) {

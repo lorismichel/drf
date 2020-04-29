@@ -27,18 +27,25 @@ selected.k <- c(5, 10, 20, sqrt(nrow(d$X.knn)))[which.min(lapply(res_hyper_param
 selected.sigma <- c(0.1, 0.5, 1, 2)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
 
 # run pinball analysis (l)
-res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,nb_random_directions = 20,
                                         X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
 
 # run pinball analysis (nl)
-res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
-                                             X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
+#res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+#                                             X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
 
 # run coverage analysis 
-res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
-                                  X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
+#res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+#                                  X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100)
 
-res_cov <- runCovAnalysis(X = d$X, Y = d$Y, k = 5)
+#res_cov <- runCovAnalysis(X = d$X, Y = d$Y, k = 5)
 
-save(d, res_pinball, res_pinball_nl, res_coverage, file = "./experiments/mtr/data/example1.Rdata")
+#
+#res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 5,
+#                                        X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, alpha_seq = c(0.7, 0.95), 
+#                                        nb_random_directions = 100, num_features = 100)
+
+# res_pinball_nl, res_coverage,
+
+save(d, res_pinball, file = "./experiments/mtr/data/example1.Rdata")
 

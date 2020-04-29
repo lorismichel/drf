@@ -8,6 +8,9 @@ source(file = "./experiments/mtr/jura.R") # ok
 source(file = "./experiments/mtr/scpf.R") # ok
 #source(file = "./experiments/mtr/osales.R") #  out
 source(file = "./experiments/mtr/example1.R") # ok
-#source(file = "./experiments/mtr/RF1.R")
-#source(file = "./experiments/mtr/RF2.R")
+source(file = "./experiments/mtr/atp1d.R")
+source(file = "./experiments/mtr/atp7d.R")
+
+source(file = "./experiments/mtr/RF1.R") # very long
+source(file = "./experiments/mtr/RF2.R") # very long
 
