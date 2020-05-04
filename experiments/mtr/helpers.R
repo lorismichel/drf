@@ -273,16 +273,23 @@ GaussKernel <- function(X, Y) {
   return(list(X = X, Y = Y))
 }
 
-ResRF <- function(X, Y) {
+ResRF <- function(X, Y, fit.mean = FALSE) {
   
   # list of forest
-  forest.list <- apply(Y, 2, function(y) ranger::ranger(y~., data = data.frame(X=X,y=y)))
-  
-  # compute residuals (OOB)
-  residuals <- sapply(1:ncol(Y), function(i) Y[,i]-forest.list[[i]]$predictions)
+  if (fit.mean) {
+    forest.list <- apply(Y, 2, function(y) ranger::ranger(y~., data = data.frame(X=X,y=y)))
+    
+    # compute residuals (OOB)
+    residuals <- sapply(1:ncol(Y), function(i) Y[,i]-forest.list[[i]]$predictions)
+  } else {
+    forest.list <- NULL
+    residuals <- Y
+  }
+   
   cov.res <- cov(residuals)
   cor.res <- cor(residuals)
-  return(list(forest.list = forest.list, X = X, Y = Y, residuals = residuals, cov.res = cov.res, cor.res = cor.res))
+  return(list(forest.list = forest.list, X = X, Y = Y, residuals = residuals, 
+              cov.res = cov.res, cor.res = cor.res, fit.mean = fit.mean))
 }
 
 predictKNN <- function(object,
@@ -391,9 +398,11 @@ predictResRF <- function(object,
     #sds.w <- t(w)%*%object$cov.res%*%w
     
     #funs <- sapply(quantiles, function(q) qnorm(p = q, mean = means.w, sd = sds.w))
-    
-    means <- sapply(object$forest.list, function(rf) predict(rf, data.frame(X = newdata))$predictions)
-    
+    if (object$fit.mean) {
+      means <- sapply(object$forest.list, function(rf) predict(rf, data.frame(X = newdata))$predictions)
+    } else {
+      means <- matrix(0, nrow=nrow(newdata), ncol=ncol(object$Y))
+    }
     funs <- apply(means, 1, function(m) {
       s <- m + object$residuals
       fvals <- apply(s, 1, f)
@@ -613,12 +622,12 @@ hyperParamSelection <-      function(Y,
   knn_loss1 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   knn_loss2 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   knn_loss3 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
-  knn_loss4 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
-  knn_loss5 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
+
   gauss_loss1 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss2 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss3 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss4 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
+  gauss_loss5 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   
   # CV loop
   for (kk in 1:k) {
@@ -635,12 +644,8 @@ hyperParamSelection <-      function(Y,
                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_knn2 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = 10, type = "functional", 
                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_knn3 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = 20, type = "functional", 
+      yhat_knn3 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = sqrt(nrow(X.knn)*(k-1)/k), type = "functional", 
                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_knn4 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = sqrt(nrow(X.knn)*(k-1)/k), type = "functional", 
-                             quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_knn5 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = nrow(X.knn[-folds[[kk]],]), type = "functional", 
-                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       
       yhat_gauss1 <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = 0.1, type = "functional", 
                                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
@@ -650,6 +655,8 @@ hyperParamSelection <-      function(Y,
                                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_gauss4 <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = 2, type = "functional", 
                                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+      yhat_gauss5 <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = 10, type = "functional", 
+                                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       
       for (j in 1:length(alpha_seq)) {
         knn_loss1[i,j] <- knn_loss1[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
@@ -658,10 +665,7 @@ hyperParamSelection <-      function(Y,
                                                 yhat = yhat_knn2[,j], alpha = alpha_seq[j])/k
         knn_loss3[i,j] <- knn_loss3[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                 yhat = yhat_knn3[,j], alpha = alpha_seq[j])/k
-        knn_loss4[i,j] <- knn_loss4[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                yhat = yhat_knn4[,j], alpha = alpha_seq[j])/k
-        knn_loss5[i,j] <- knn_loss5[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                  yhat = yhat_knn5[,j], alpha = alpha_seq[j])/k
+       
         gauss_loss1[i,j] <- gauss_loss1[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                     yhat = yhat_gauss1[,j], alpha = alpha_seq[j])/k
         gauss_loss2[i,j] <- gauss_loss2[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
@@ -669,19 +673,20 @@ hyperParamSelection <-      function(Y,
         gauss_loss3[i,j] <- gauss_loss3[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                     yhat = yhat_gauss3[,j], alpha = alpha_seq[j])/k
         gauss_loss4[i,j] <- gauss_loss4[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                    yhat = yhat_gauss4[,j], alpha = alpha_seq[j])/k}
+                                                    yhat = yhat_gauss4[,j], alpha = alpha_seq[j])/k
+        gauss_loss5[i,j] <- gauss_loss5[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                    yhat = yhat_gauss5[,j], alpha = alpha_seq[j])/k}
     }
   }
   
   return(list(knn=list(knn_loss1 = knn_loss1,
                    knn_loss2 = knn_loss2, 
-                   knn_loss3 = knn_loss3,
-                   knn_loss4 = knn_loss4,
-                   knn_loss5 = knn_loss5),
+                   knn_loss3 = knn_loss3),
               gauss=list(gauss_loss1 = gauss_loss1,
                    gauss_loss2 = gauss_loss2,
                    gauss_loss3 = gauss_loss3,
-                   gauss_loss4 = gauss_loss4)))
+                   gauss_loss4 = gauss_loss4,
+                   gauss_loss5 = gauss_loss5)))
   
 }
 
@@ -722,17 +727,17 @@ runRandomPinballAnalysis <- function(X,
   gauss_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   
   # u matrices
-  mrf_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  gini_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  res_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  knn_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  gauss_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
+  #mrf_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
+  #gini_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
+  #res_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
+  #knn_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
+  #gauss_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
   
-  mrf_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  gini_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  res_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  knn_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  gauss_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  #mrf_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  #gini_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  #res_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  #knn_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
+  #gauss_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
   
   # CV loop
   for (kk in 1:k) {
@@ -747,49 +752,46 @@ runRandomPinballAnalysis <- function(X,
     comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
     comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
     
+    yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
+                        quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
+    yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
+                         quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     # loop over projections
     for (i in 1:length(w)) {
-      
-      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
-                          quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
-                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_res <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-        
       yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
                            quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
                            quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       
       # define the qs
-      mrf_q[i,folds[[kk]],] <- yhat_mrf
-      gini_q[i,folds[[kk]],] <- yhat_gini
-      res_q[i,folds[[kk]],] <- yhat_res
-      knn_q[i,folds[[kk]],] <- yhat_knn
-      gauss_q[i,folds[[kk]],] <- yhat_gauss
+      #mrf_q[i,folds[[kk]],] <- yhat_mrf
+      #gini_q[i,folds[[kk]],] <- yhat_gini
+      #res_q[i,folds[[kk]],] <- yhat_res
+      #knn_q[i,folds[[kk]],] <- yhat_knn
+      #gauss_q[i,folds[[kk]],] <- yhat_gauss
       
       # define the us
-      funs <- predict(mRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
-      mrf_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
+      #funs <- predict(mRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
+      #mrf_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
-      funs <- predict(giniRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
-      gini_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
+      #funs <- predict(giniRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
+      #gini_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
-      funs <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], type = "ecdf", k = param.knn, f = function(y) sum(w[[i]]*y))$ecdf
-      knn_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
+      #funs <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], type = "ecdf", k = param.knn, f = function(y) sum(w[[i]]*y))$ecdf
+      #knn_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
-      funs <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], type = "ecdf", sigma = param.gauss, f = function(y) sum(w[[i]]*y))$ecdf
-      gauss_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
+      #funs <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], type = "ecdf", sigma = param.gauss, f = function(y) sum(w[[i]]*y))$ecdf
+      #gauss_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
       
       
       for (j in 1:length(alpha_seq)) {
         mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                yhat = yhat_mrf[,j], alpha = alpha_seq[j])/k
+                                                yhat = yhat_mrf[[i]][,j], alpha = alpha_seq[j])/k
         gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
-                                                 yhat = yhat_gini[,j], alpha = alpha_seq[j])/k
-        
+                                                 yhat = yhat_gini[[i]][,j], alpha = alpha_seq[j])/k
         res_loss[i,j] <- res_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
                                                  yhat = yhat_res[,j], alpha = alpha_seq[j])/k
         knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
@@ -802,9 +804,9 @@ runRandomPinballAnalysis <- function(X,
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss, res_loss = res_loss,
               knn_loss = knn_loss, gauss_loss = gauss_loss,
-              mrf_u = mrf_u, gini_u = gini_u, knn_u = knn_u, gauss_u = gauss_u,
-              w = w,
-              mrf_q = mrf_q, gini_q = gini_q, knn_q = knn_q, gauss_q = gauss_q, res_q = res_q))
+              #mrf_u = mrf_u, gini_u = gini_u, knn_u = knn_u, gauss_u = gauss_u,
+              w = w))
+              #mrf_q = mrf_q, gini_q = gini_q, knn_q = knn_q, gauss_q = gauss_q, res_q = res_q))
   
 }
 

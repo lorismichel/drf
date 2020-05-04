@@ -36,13 +36,13 @@ if (USE.RES) {
 res_hyper_param <- hyperParamSelection(Y=Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, k = 2)
 
 # best parameters
-selected.k <- c(5, 10, 20, sqrt(nrow(d$X.knn)), nrow(d$X.knn))[which.min(lapply(res_hyper_param$knn, function(res) mean(res)))]
-selected.sigma <- c(0.1, 0.5, 1, 2)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
+selected.k <- c(5, 10, sqrt(nrow(d$X.knn)), nrow(d$X.knn))[which.min(lapply(res_hyper_param$knn, function(res) mean(res)))]
+selected.sigma <- c(0.1, 0.5, 1, 2, 10)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
 
 # run pinball analysis (l)
 res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 20,
-                                        num_features = 100)
+                                        num_features = 10)
 
 # # run pinball analysis (nl)
 # res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
@@ -54,4 +54,4 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
 
 # save results
 #res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, res, file = "./experiments/mtr/data/andro.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/andro.Rdata")
