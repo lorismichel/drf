@@ -93,11 +93,21 @@ require(copula)
 
 
 loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets/') {
-  if (!dataset.name %in% c("example1", "example2")) {
+  if (!dataset.name %in% c("example1", "example2", "air1", "air2")) {
     dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
   }
   
-  if (dataset.name == "enb") {
+  if (dataset.name == "air1") {
+    load(paste0(path, 'air_data_benchmark.Rdata'))
+    set.seed(0)
+    ids <- sample(1:nrow(X), size = 2000, replace = FALSE)
+    return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
+  } else if (dataset.name == "air2") {
+    load(paste0(path, 'air_data_benchmark2.Rdata'))
+    set.seed(0)
+    ids <- sample(1:nrow(X), size = 2000, replace = FALSE)
+    return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
+  } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
                        "Surface Area",
                        "Wall Area",
@@ -112,12 +122,28 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
     names(dataset) <- names.dataset
     
     return(list(X = as.matrix(dataset[,-c(9:10)]), X.knn = scale(as.matrix(dataset[,-c(9:10)])), X.gauss = scale(as.matrix(dataset[,-c(9:10)])), Y = as.matrix(dataset[,c(9:10)])))
+  } else if (dataset.name == "oes97") {
+    
+  } else if (dataset.name == "oes10") {
+    
   } else if (dataset.name == "sf1") {
-    
-    
+    dataset$area_largest <- NULL
+    dataset$`c-class` <-  as.numeric(dataset$`c-class`)
+    dataset$`m-class` <-  as.numeric(dataset$`m-class`)
+    dataset$`x-class` <-  as.numeric(dataset$`x-class`)
+    dataset <- data.frame(dataset, stringsAsFactors = TRUE)
+    X <- model.matrix(~.-1, data = dataset[,-c(10:12)])
+    Y <- dataset[,c(10:12)]
+    return(list(X = X, X.knn = X, X.gauss = X, Y = Y))
   } else if (dataset.name == "sf2") {
-    
-    
+    dataset$area_largest <- NULL
+    dataset$`c-class` <-  as.numeric(dataset$`c-class`)
+    dataset$`m-class` <-  as.numeric(dataset$`m-class`)
+    dataset$`x-class` <-  as.numeric(dataset$`x-class`)
+    dataset <- data.frame(dataset, stringsAsFactors = TRUE)
+    X <- model.matrix(~.-1, data = dataset[,-c(10:12)])
+    Y <- dataset[,c(10:12)]
+    return(list(X = X, X.knn = X, X.gauss = X, Y = Y))
   } else if (dataset.name == "scpf") {
       dataset <- na.omit(dataset)
       # could we do it better?
@@ -240,7 +266,7 @@ generateRandomDirection <- function(dim = 2, nb = 1) {
 
 ## competitors
 KNN <- function(X, Y) {
-  return(list(X = X,Y = Y))
+  return(list(X = X, Y = Y))
 }
 
 GaussKernel <- function(X, Y) {
@@ -266,7 +292,9 @@ predictKNN <- function(object,
                        f = function(y) y[1], 
                        quantiles = NULL) {
   
-  indices <- knn.index.dist(data = object$X, TEST_data = newdata, k = k)$test_knn_idx
+  indices <- knn.index.dist(data = object$X, 
+                            TEST_data = newdata, 
+                            k = min(k, nrow(object$X)-1))$test_knn_idx
   
   if (type == "mean") {
     
@@ -571,7 +599,7 @@ hyperParamSelection <-      function(Y,
     stop("alpha_seq should be at least of length 2.")
   }
   
-  Y = scale(Y)
+  Y <- scale(Y)
   
   # repro
   set.seed(seed)
@@ -586,6 +614,7 @@ hyperParamSelection <-      function(Y,
   knn_loss2 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   knn_loss3 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   knn_loss4 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
+  knn_loss5 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss1 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss2 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
   gauss_loss3 <- matrix(0,nrow=ncol(Y), ncol=length(alpha_seq))
@@ -610,6 +639,8 @@ hyperParamSelection <-      function(Y,
                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       yhat_knn4 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = sqrt(nrow(X.knn)*(k-1)/k), type = "functional", 
                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+      yhat_knn5 <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = nrow(X.knn[-folds[[kk]],]), type = "functional", 
+                              quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
       
       yhat_gauss1 <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = 0.1, type = "functional", 
                                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
@@ -629,6 +660,8 @@ hyperParamSelection <-      function(Y,
                                                 yhat = yhat_knn3[,j], alpha = alpha_seq[j])/k
         knn_loss4[i,j] <- knn_loss4[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                 yhat = yhat_knn4[,j], alpha = alpha_seq[j])/k
+        knn_loss5[i,j] <- knn_loss5[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                  yhat = yhat_knn5[,j], alpha = alpha_seq[j])/k
         gauss_loss1[i,j] <- gauss_loss1[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                     yhat = yhat_gauss1[,j], alpha = alpha_seq[j])/k
         gauss_loss2[i,j] <- gauss_loss2[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
@@ -642,8 +675,9 @@ hyperParamSelection <-      function(Y,
   
   return(list(knn=list(knn_loss1 = knn_loss1,
                    knn_loss2 = knn_loss2, 
-                   knn_loss2 = knn_loss3, 
-                   knn_loss2 = knn_loss4),
+                   knn_loss3 = knn_loss3,
+                   knn_loss4 = knn_loss4,
+                   knn_loss5 = knn_loss5),
               gauss=list(gauss_loss1 = gauss_loss1,
                    gauss_loss2 = gauss_loss2,
                    gauss_loss3 = gauss_loss3,
@@ -669,7 +703,7 @@ runRandomPinballAnalysis <- function(X,
     stop("alpha_seq should be at least of length 2.")
   }
   
-  Y = scale(Y)
+  Y <- scale(Y)
   
   # repro
   set.seed(seed)
@@ -975,7 +1009,6 @@ permRF <- function(y, X, nrep = 100) {
 
 makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   
-  # reading the infos
   infos <- load(paste0(path, dataset, ".Rdata"))
   
   

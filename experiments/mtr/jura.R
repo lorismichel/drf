@@ -1,19 +1,13 @@
-# andro dataset
-
-# ANDRO
-# The Andromeda dataset (Hatzikos et al. 2008) concerns the prediction of future values for
-# six water quality variables (temperature, pH, conductivity, salinity, oxygen, turbidity) in
-# Thermaikos Gulf of Thessaloniki, Greece. Measurements of the target variables are taken
-# from under-water sensors with a sampling interval of 9 seconds and then averaged to get a
-# single measurement for each variable over each day. The specific dataset that we use here
-# corresponds to using a window of 5 days (i.e. features attributes correspond to the values of
-# the six water quality variables up to 5 days in the past) and a lead of 5 days (i.e. we predict
+# jura dataset
 
 # repro
 set.seed(1)
 
 # libs
 require(mrf)
+
+# param
+USE.RES <- TRUE
 
 # source
 source("./experiments/mtr/helpers.R")
@@ -22,15 +16,23 @@ source("./experiments/mtr/helpers.R")
 d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "jura")
 
 # hyper-param selection 
-res_hyper_param <- hyperParamSelection(Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, k = 10)
+res_hyper_param <- hyperParamSelection(Y=Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, k = 10)
+
+
+if (USE.RES) {
+  res <- ResRF(X = d$X, Y = d$Y)
+  Y <- res$residuals
+} else {
+  Y <- d$Y
+}
 
 # best parameters
-selected.k <- c(5, 10, 20, sqrt(nrow(d$X.knn)))[which.min(lapply(res_hyper_param$knn, function(res) mean(res)))]
+selected.k <- c(5, 10, 20, sqrt(nrow(d$X.knn)), nrow(d$X.knn))[which.min(lapply(res_hyper_param$knn, function(res) mean(res)))]
 selected.sigma <- c(0.1, 0.5, 1, 2)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
 
 # run pinball analysis (l)
 res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 10,
-                                        X=d$X, Y=d$Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100, nb_random_directions = 20)
+                                        X=d$X, Y=Y, X.knn = d$X.gauss, X.gauss = d$X.gauss, num_features = 100, nb_random_directions = 20)
 
 # # run pinball analysis (nl)
 # res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 10,
@@ -42,4 +44,4 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
 
 
 # save results  res_pinball_nl, res_coverage,
-save(d, res_pinball, file = "./experiments/mtr/data/jura.Rdata")
+save(d, res_pinball, selected.k , selected.sigma, res, file = "./experiments/mtr/data/jura.Rdata")
