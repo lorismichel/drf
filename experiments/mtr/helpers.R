@@ -101,13 +101,13 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
     load(paste0(path, 'air_data_benchmark.Rdata'))
     set.seed(0)
     #ids <- 1:nrow(X)
-    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
+    ids <- sample(1:nrow(X), size = 1000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "air2") {
     load(paste0(path, 'air_data_benchmark2.Rdata'))
     set.seed(0)
     #ids <- 1:nrow(X)
-    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
+    ids <- sample(1:nrow(X), size = 1000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
@@ -710,6 +710,7 @@ runRandomPinballAnalysis <- function(X,
     stop("alpha_seq should be at least of length 2.")
   }
   
+  # scaling the responses
   Y <- scale(Y)
   
   # repro
@@ -728,45 +729,54 @@ runRandomPinballAnalysis <- function(X,
   knn_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   gauss_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   
-  # u matrices
-  #mrf_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  #gini_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  #res_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  #knn_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  #gauss_u <- matrix(0,nrow=nb_random_directions, ncol=nrow(Y))
-  
-  #mrf_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  #gini_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  #res_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  #knn_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  #gauss_q <- array(0,dim=c(nb_random_directions,  nrow(Y), length(alpha_seq)))
-  
   # CV loop
   for (kk in 1:k) {
     
     print(paste0("CV loop: ", kk))
     
     # two tree methods
+    print("training forests.")
     mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
     giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
     
+    print("training global res.")
     resRF <- ResRF(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],])
+    print("training knn.")
     comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
+    print("training gauss.")
     comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
     
+    print("predict forests.")
     yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
                         quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
                          quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     # loop over projections
-    for (i in 1:length(w)) {
-      yhat_res <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
-                          quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
-                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
-                           quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-      
+    print("predict res.")
+    yhat_res <- mclapply(1:length(w), function(i) {
+      predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
+                               quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+    })
+    
+    print("predict knn.")
+    yhat_knn <- mclapply(1:length(w), function(i) {
+      predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
+                 quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+    })
+    
+    print("predict gauss.")
+    yhat_gauss <- mclapply(1:length(w), function(i) {
+      predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
+                         quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+    })
+    # for (i in 1:length(w)) {
+    #   
+    #   yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
+    #                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+    #   
+    #   yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
+    #                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
+    #   
       # define the qs
       #mrf_q[i,folds[[kk]],] <- yhat_mrf
       #gini_q[i,folds[[kk]],] <- yhat_gini
@@ -788,20 +798,21 @@ runRandomPinballAnalysis <- function(X,
       #gauss_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
       
-      
-      for (j in 1:length(alpha_seq)) {
-        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                yhat = yhat_mrf[[i]][,j], alpha = alpha_seq[j])/k
-        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
-                                                 yhat = yhat_gini[[i]][,j], alpha = alpha_seq[j])/k
-        res_loss[i,j] <- res_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
-                                                 yhat = yhat_res[,j], alpha = alpha_seq[j])/k
-        knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                yhat = yhat_knn[,j], alpha = alpha_seq[j])/k
-        gauss_loss[i,j] <- gauss_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                yhat = yhat_gauss[,j], alpha = alpha_seq[j])/k
-      }
-    }
+      for (i in 1:length(w)) {
+        for (j in 1:length(alpha_seq)) {
+          mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                  yhat = yhat_mrf[[i]][,j], alpha = alpha_seq[j])/k
+          gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
+                                                   yhat = yhat_gini[[i]][,j], alpha = alpha_seq[j])/k
+          res_loss[i,j] <- res_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
+                                                   yhat = yhat_res[[i]][,j], alpha = alpha_seq[j])/k
+          knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                  yhat = yhat_knn[[i]][,j], alpha = alpha_seq[j])/k
+          gauss_loss[i,j] <- gauss_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                  yhat = yhat_gauss[[i]][,j], alpha = alpha_seq[j])/k
+        }
+  }
+    
   }
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss, res_loss = res_loss,
