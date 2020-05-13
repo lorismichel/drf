@@ -4,7 +4,7 @@
 require(foreign)
 require(KernelKnn)
 require(KRLS)
-
+require(parallel)
 
 # atp1d and atp2d
 # The Airline Ticket Price dataset concerns the prediction of airline ticket prices. The rows
@@ -101,13 +101,13 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
     load(paste0(path, 'air_data_benchmark.Rdata'))
     set.seed(0)
     #ids <- 1:nrow(X)
-    ids <- sample(1:nrow(X), size = 1000, replace = FALSE)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "air2") {
     load(paste0(path, 'air_data_benchmark2.Rdata'))
     set.seed(0)
     #ids <- 1:nrow(X)
-    ids <- sample(1:nrow(X), size = 1000, replace = FALSE)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",

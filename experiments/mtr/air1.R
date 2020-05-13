@@ -11,7 +11,7 @@ USE.RES <- TRUE
 source("./experiments/mtr/helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "air1")
+d <- loadMTRdata(path = "/userdata/michello/data/data_drf/mtr-datasets/", dataset.name = "air1")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -30,7 +30,7 @@ selected.sigma <- c(0.1, 0.5, 1, 2, 10)[which.min(lapply(res_hyper_param$gauss, 
 
 # run pinball analysis (l)
 res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,alpha_seq = c(0.1,0.9),
-                                        X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 10,
+                                        X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
 
 # # run pinball analysis (nl)
