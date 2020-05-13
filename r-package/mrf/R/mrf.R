@@ -280,8 +280,8 @@ predict.mrf <- function(object,
     } else {
       if (!is.null(add.param$quantiles) && length(add.param$quantiles) > 1) {
         # do smth optimized
-        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[,j], 
-                                                                                 w = ww, 
+        functional.val <- parallel::mclapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0,j], 
+                                                                                 w = ww[ww!=0], 
                                                                                  probs = add.param$quantiles))))
         #stop("multiples quantiles cannot be evaluated for multi-dimensional functionals.")
         return(list(functional = functional.val))
