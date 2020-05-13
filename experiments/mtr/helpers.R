@@ -313,14 +313,14 @@ predictKNN <- function(object,
     
   } else if (type == "functional") {
 
-    f.vals <- apply(object$Y, 1, f)
+    f.vals <- t(apply(object$Y, 1, f))
     if (is.null(quantiles)) {
       funs <- apply(indices, 1, function(ids) mean(f.vals[ids]))
     } else {
       if (length(quantiles)>1) {
         funs <- t(apply(indices, 1, function(ids) quantile(f.vals[ids], probs = quantiles)))
       } else {
-        funs <- apply(indices, 1, function(ids) quantile(f.vals[ids], probs = quantiles))
+        funs <- t(apply(indices, 1, function(ids) apply(f.vals[ids,], 2, function(x) quantile(x, probs = quantiles))))
       }
       
     }
@@ -482,7 +482,7 @@ predictGaussKernel <- function(object,
     
   } else if (type == "functional") {
     
-    f.vals <- apply(object$Y, 1, f) 
+    f.vals <- t(apply(object$Y, 1, f))
     
     if (is.null(quantiles)) {
       funs <- apply(w, 1, function(ww) sum(f.vals*ww))
@@ -490,7 +490,7 @@ predictGaussKernel <- function(object,
       if (length(quantiles)>1) {
         funs <- t(apply(w, 1, function(ww) spatstat::weighted.quantile(f.vals, w = ww, probs = quantiles)))
       } else {
-        funs <- apply(w, 1, function(ww) spatstat::weighted.quantile(f.vals, w = ww, probs = quantiles))
+        funs <- t(apply(w, 1, function(ww) apply(f.vals, 2, function(x) spatstat::weighted.quantile(x, w = ww, probs = quantiles))))
       }
       
     }
@@ -752,27 +752,21 @@ runRandomPinballAnalysis <- function(X,
     
     print("predict forests.")
     yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
-                        quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
+                        quantiles = c(alpha_seq,0.1), f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
-                         quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
+                         quantiles = c(alpha_seq,0.1), f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     # loop over projections
     print("predict res.")
-    yhat_res <- mclapply(1:length(w), function(i) {
-      predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
-                               quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-    })
+    yhat_res   <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
+                               quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     
     print("predict knn.")
-    yhat_knn <- mclapply(1:length(w), function(i) {
-      predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
-                 quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-    })
+    yhat_knn   <-   predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
+                 quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     
     print("predict gauss.")
-    yhat_gauss <- mclapply(1:length(w), function(i) {
-      predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
-                         quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-    })
+    yhat_gauss   <-  predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
+                         quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     # for (i in 1:length(w)) {
     #   
     #   yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
@@ -803,20 +797,17 @@ runRandomPinballAnalysis <- function(X,
       
       
       for (i in 1:length(w)) {
-        for (j in 1:length(alpha_seq)) {
           mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                  yhat = yhat_mrf[[i]][,j], alpha = alpha_seq[j])/k
+                                                  yhat = yhat_mrf[[i]][,1], alpha = alpha_seq[j])/k
           gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
-                                                   yhat = yhat_gini[[i]][,j], alpha = alpha_seq[j])/k
+                                                   yhat = yhat_gini[[i]][,1], alpha = alpha_seq[j])/k
           res_loss[i,j] <- res_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
-                                                   yhat = yhat_res[[i]][,j], alpha = alpha_seq[j])/k
+                                                   yhat = yhat_res[,i], alpha = alpha_seq[j])/k
           knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                  yhat = yhat_knn[[i]][,j], alpha = alpha_seq[j])/k
+                                                  yhat = yhat_knn[,i], alpha = alpha_seq[j])/k
           gauss_loss[i,j] <- gauss_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                  yhat = yhat_gauss[[i]][,j], alpha = alpha_seq[j])/k
-        }
-  }
-    
+                                                  yhat = yhat_gauss[,i], alpha = alpha_seq[j])/k
+      }  
   }
   
   return(list(mrf_loss = mrf_loss, gini_loss = gini_loss, res_loss = res_loss,
