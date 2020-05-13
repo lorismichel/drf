@@ -405,15 +405,19 @@ predictResRF <- function(object,
     } else {
       means <- matrix(0, nrow=nrow(newdata), ncol=ncol(object$Y))
     }
+    
     funs <- apply(means, 1, function(m) {
       s <- m + object$residuals
       fvals <- apply(s, 1, f)
       if (is.null(quantiles)) {
         return(mean(fvals))
       } else {
-        return(quantile(fvals, probs = quantiles))
+        return(apply(fvals, 1, function(x) quantile(x, probs = quantiles)))
       }
     })
+    
+    
+    
     
     return(list(functional=t(funs)))
   } else if (type == "cov") {
