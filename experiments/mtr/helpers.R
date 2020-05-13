@@ -100,12 +100,14 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
   if (dataset.name == "air1") {
     load(paste0(path, 'air_data_benchmark.Rdata'))
     set.seed(0)
-    ids <- sample(1:nrow(X), size = 2000, replace = FALSE)
+    #ids <- 1:nrow(X)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "air2") {
     load(paste0(path, 'air_data_benchmark2.Rdata'))
     set.seed(0)
-    ids <- sample(1:nrow(X), size = 2000, replace = FALSE)
+    #ids <- 1:nrow(X)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
@@ -1032,6 +1034,15 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
                  apply(x, 2, function(xx) {v <- rep(0, length(xx)); v[which.min(xx)] <- 1; v})})
   heter1 <- Reduce(heter1, f = function(x,y) x+y)
   heter1 <- heter1/20
+  
+  heter2 <- lapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+                                                 res_pinball$gini_loss[i,],
+                                                 res_pinball$res_loss[i,],
+                                                 res_pinball$knn_loss[i,],
+                                                 res_pinball$gauss_loss[i,])
+  apply(x, 2, function(xx) {rank(xx)})})
+  heter2 <- Reduce(heter2, f = function(x,y) x+y)
+  heter2 <- heter2/20
   # vec.mse.u.mrf <- list()
   # vec.mse.u.gini <- list()
   # vec.mse.u.knn <- list()
@@ -1108,7 +1119,8 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   
   return(list(
     heter0 = heter0,
-    heter1 = heter1
+    heter1 = heter1,
+    heter2 = heter2
     # mean.pinball.mrf = mean.pinball.mrf,
     # mean.pinball.gini = mean.pinball.gini,
     # mean.pinball.res = mean.pinball.res,

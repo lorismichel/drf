@@ -14,6 +14,7 @@ slump.summaries <- makeSummaries(dataset = "slump", nrep = 500)
 scpf.summaries <- makeSummaries(dataset = "scpf", nrep = 500)
 sf1.summaries <- makeSummaries(dataset = "sf1", nrep = 500)
 sf2.summaries <- makeSummaries(dataset = "sf2", nrep = 500)
-load("./experiments/mtr/data/example1.Rdata")
+#load("./experiments/mtr/data/example1.Rdata")
+
 
 
