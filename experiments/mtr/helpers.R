@@ -107,7 +107,7 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
     load(paste0(path, 'air_data_benchmark2.Rdata'))
     set.seed(0)
     #ids <- 1:nrow(X)
-    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
+    ids <- sample(1:nrow(X), size = 5000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
@@ -406,20 +406,10 @@ predictResRF <- function(object,
       means <- matrix(0, nrow=nrow(newdata), ncol=ncol(object$Y))
     }
     
-    funs <- apply(means, 1, function(m) {
-      s <- m + object$residuals
-      fvals <- apply(s, 1, f)
-      if (is.null(quantiles)) {
-        return(mean(fvals))
-      } else {
-        return(apply(fvals, 1, function(x) quantile(x, probs = quantiles)))
-      }
-    })
+    qq <- matrix(apply(apply(object$residuals, 1, f),1, function(x) quantile(x, probs=quantiles)),nrow=1)
     
-    
-    
-    
-    return(list(functional=t(funs)))
+   
+    return(list(functional=qq[rep(1,nrow(newdata)),]))
   } else if (type == "cov") {
     
     cov.mat <- array(1, dim = c(nrow(newdata), ncol(object$Y), ncol(object$Y)))
