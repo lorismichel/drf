@@ -1,10 +1,3 @@
-# wq dataset
-
-# WQ
-# The Water Quality dataset (Dzeroski et al. 2000) has 14 target attributes that refer to the
-# relative representation of plant and animal species in Slovenian rivers and 16 input attributes
-# that refer to physical and chemical water quality parameters.
-
 # repro
 set.seed(1)
 
@@ -18,7 +11,7 @@ USE.RES <- TRUE
 source("./experiments/mtr/helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "wq")
+d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "births1")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -36,7 +29,7 @@ selected.k <- c(5, 10, sqrt(nrow(d$X.knn)), nrow(d$X.knn))[which.min(lapply(res_
 selected.sigma <- c(0.1, 0.5, 1, 2, 10)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
 
 # run pinball analysis (l)
-res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2, alpha_seq = 0.9,
+res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,alpha_seq = c(0.9),
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
 
@@ -50,4 +43,4 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
 
 # save results
 #res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/wq.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/births1.Rdata")

@@ -25,7 +25,7 @@ selected.k <- c(5, 10, 20, sqrt(nrow(d$X.knn)), nrow(d$X.knn))[which.min(lapply(
 selected.sigma <- c(0.1, 0.5, 1, 2, 10)[which.min(lapply(res_hyper_param$gauss, function(res) mean(res)))]
 
 # run pinball analysis (l)
-res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
+res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2, alpha_seq = 0.9,
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100, 
                                         nb_random_directions = 100)
 

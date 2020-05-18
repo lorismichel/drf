@@ -93,7 +93,7 @@ require(copula)
 
 
 loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets/') {
-  if (!dataset.name %in% c("example1", "example2", "air1", "air2")) {
+  if (!dataset.name %in% c("example1", "example2", "air1", "air2", "wage", "births1", "births2")) {
     dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
   }
   
@@ -108,6 +108,33 @@ loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets
     set.seed(0)
     #ids <- 1:nrow(X)
     ids <- sample(1:nrow(X), size = 5000, replace = FALSE)
+    return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
+  } else if (dataset.name == "wage") {
+    load(paste0(path, 'wage_benchmark.Rdata'))
+    set.seed(0)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
+    X <- X[ids,]
+    Y <- Y[ids,]
+    nb.unique <- apply(X, 2,function(x) length(unique(x)))
+    X <- X[,nb.unique != 1]
+    #ids <- 1:nrow(X)
+    
+    return(list(X = as.matrix(X), X.knn = scale(as.matrix(X)), X.gauss = scale(as.matrix(X)), Y = as.matrix(Y)))
+  } else if (dataset.name == "births1") {
+    load(paste0(path, 'births_benchmark1.Rdata'))
+    set.seed(0)
+    nb.unique <- apply(X, 2,function(x) length(unique(x)))
+    X <- X[,nb.unique != 1]
+    #ids <- 1:nrow(X)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
+    return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
+  } else if (dataset.name == "births2") {
+    load(paste0(path, 'births_benchmark2.Rdata'))
+    set.seed(0)
+    nb.unique <- apply(X, 2,function(x) length(unique(x)))
+    X <- X[,nb.unique != 1]
+    #ids <- 1:nrow(X)
+    ids <- sample(1:nrow(X), size = 10000, replace = FALSE)
     return(list(X = as.matrix(X[ids,]), X.knn = scale(as.matrix(X[ids,])), X.gauss = scale(as.matrix(X[ids,])), Y = as.matrix(Y[ids,])))
   } else if (dataset.name == "enb") {
     names.dataset <- c("Relative Compactness",
@@ -700,9 +727,9 @@ runRandomPinballAnalysis <- function(X,
                                      seed = 0,
                                      ...) {
   
-  if (length(alpha_seq) <= 1) {
-    stop("alpha_seq should be at least of length 2.")
-  }
+  #if (length(alpha_seq) <= 1) {
+  #  stop("alpha_seq should be at least of length 2.")
+  #}
   
   # scaling the responses
   Y <- scale(Y)
@@ -785,7 +812,7 @@ runRandomPinballAnalysis <- function(X,
       #funs <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], type = "ecdf", sigma = param.gauss, f = function(y) sum(w[[i]]*y))$ecdf
       #gauss_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
       
-      
+      j <- 1
       for (i in 1:length(w)) {
           mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
                                                   yhat = yhat_mrf[[i]][,1], alpha = alpha_seq[j])/k
