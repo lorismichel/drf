@@ -15,6 +15,7 @@ source(file = "./experiments/mtr/scpf.R") # ok
 #source(file = "./experiments/mtr/air2.R") # ok
 source(file = "./experiments/mtr/sf1.R") #  ok
 source(file = "./experiments/mtr/sf2.R") #  ok
+source(file = "./experiments/mtr/osales.R") #  ok
 #source(file = "./experiments/mtr/RF1.R") # very long
 #source(file = "./experiments/mtr/RF2.R") # very long
 

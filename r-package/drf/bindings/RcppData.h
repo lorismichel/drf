@@ -15,8 +15,8 @@
   along with drf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef drf_RCPPDATA_H
-#define drf_RCPPDATA_H
+#ifndef DRF_RCPPDATA_H
+#define DRF_RCPPDATA_H
 
 #include <Rcpp.h>
 
@@ -41,4 +41,4 @@ private:
   DISALLOW_COPY_AND_ASSIGN(RcppData);
 };
 
-#endif //drf_RCPPDATA_H
+#endif //DRF_RCPPDATA_H

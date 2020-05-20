@@ -90,7 +90,7 @@
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils modifyList
 drf <-               function(X, Y,
-                              num.trees = 2000,
+                              num.trees = 500,
                               sample.weights = NULL,
                               clusters = NULL,
                               equalize.cluster.weights = FALSE,
@@ -110,10 +110,11 @@ drf <-               function(X, Y,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
                               seed = runif(1, 0, .Machine$integer.max),
-                              splitting.rule = "gini",
-                              num.features = 1,
+                              splitting.rule = "CART",
+                              num.features = 10,
                               bandwidth = 1.0,
                               node.scaling = FALSE) {
+  
   validate_X(X)
   validate_sample_weights(sample.weights, X)
   #Y <- validate_observations(Y, X)
@@ -124,7 +125,7 @@ drf <-               function(X, Y,
   all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
                           "honesty.prune.leaves", "alpha", "imbalance.penalty")
 
-  data <- create_data_matrices(X, outcome = scale(Y), sample.weights = sample.weights)
+  data <- create_data_matrices(X.mat, outcome = scale(Y), sample.weights = sample.weights)
 
   args <- list(num.trees = num.trees,
                clusters = clusters,
@@ -146,34 +147,15 @@ drf <-               function(X, Y,
                node_scaling = ifelse(node.scaling, 1, 0))
 
     tuning.output <- NULL
-  #  if (!identical(tune.parameters, "none")){
-  #    tuning.output <- tune_regression_forest(X, Y,
-  #                                            sample.weights = sample.weights,
-  #                                            clusters = clusters,
-  #                                            equalize.cluster.weights = equalize.cluster.weights,
-  #                                            sample.fraction = sample.fraction,
-  #                                            mtry = mtry,
-  #                                            min.node.size = min.node.size,
-  #                                            honesty = honesty,
-  #                                            honesty.fraction = honesty.fraction,
-  #                                            honesty.prune.leaves = honesty.prune.leaves,
-  #                                            alpha = alpha,
-  #                                            imbalance.penalty = imbalance.penalty,
-  #                                            ci.group.size = ci.group.size,
-  #                                            tune.parameters = tune.parameters,
-  #                                            tune.num.trees = tune.num.trees,
-  #                                            tune.num.reps = tune.num.reps,
-  #                                            tune.num.draws = tune.num.draws,
-  #                                            num.threads = num.threads,
-  #                                            seed = seed)
-  #    args <- modifyList(args, as.list(tuning.output[["params"]]))
-  # }
-   if (splitting.rule == "gini") {
+
+   if (splitting.rule == "CART") {
      ##forest <- do.call(gini_train, c(data, args))
      forest <- do.call.rcpp(gini_train, c(data, args))
      ##forest <- do.call(gini_train, c(data, args))
-   } else {
+   } else if (splitting.rule == "FourierMMD") {
      forest <- do.call.rcpp(fourier_train, c(data, args))
+   } else {
+     stop("splitting rule not available.")
    }
    
    class(forest) <- c("drf")
@@ -185,6 +167,7 @@ drf <-               function(X, Y,
    forest[["equalize.cluster.weights"]] <- equalize.cluster.weights
    forest[["tunable.params"]] <- args[all.tunable.params]
    forest[["tuning.output"]] <- tuning.output
+   forest[["one.hot.fun"]] <- one.hot.fun
   
    forest
 }
@@ -237,184 +220,213 @@ drf <-               function(X, Y,
 #'
 #' @method predict drf
 #' @export
+#' 
 predict.drf <- function(object, 
                         newdata = NULL,
-                        type = "weights",
+                        transformation = NULL,
+                        functional = NULL,
                         num.threads = NULL,
                         n.sim = NULL,
                         ...) {
   
   
-  # get weights
+  # support vector
+  if (is.null(dim(newdata))) {
+    newdata <- matrix(newdata, 1)
+  }
+  
+  # get the weights which are used in a second step
   w <- get_sample_weights(forest = object, 
                           newdata = newdata, 
                           num.threads = num.threads)
   
-  if (type == "weights") {
+  
+  if (!is.null(transformation) && !(functional %in% c("mean", "quantile", "sd", 
+                                                      "cor", "cov",
+                                                      "normalPredictionScore", "cdf"))) {
+    stop("transformation not available.")
+  }
+  
+  
+  if (is.null(transformation)) {
+    transformation <- function(y) y
+  }
+  
+  if (is.null(functional)) {
     
+    # return the weights 
     return(list(weights = w, 
                 y = object$Y.orig))
     
-  } else if (type == "mean") {
+  # } else if (functional == "mean") {
+  #   
+  #   # return the conditional mean
+  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+  #   colnames(means) <- colnames(object$Y.orig)
+  #   
+  #   return(list(mean = means))
     
-    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    colnames(means) <- colnames(object$Y.orig)
-    return(list(mean = means))
+  # } else if (functional == "sd") {
+  #   
+  #   # return the conditional sd
+  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+  #   means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
+  #   colnames(means) <- colnames(object$Y.orig)
+  #   
+  #   return(list(sd = sqrt(means2-(means)^2)))
     
-  } else if (type == "sd") {
+  } else if (functional %in% c("mean",
+                               "quantile", 
+                               "sd")) {
     
-    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-    colnames(means) <- colnames(object$Y.orig)
-    return(list(sd = sqrt(means2-(means)^2)))
     
-  } else if (type == "functional") {
-    
+    # get the additional parameters
     add.param <- list(...)
+    
+    if (functional == "quantile" && is.null(add.param$quantiles)) {
+      stop("additional parameter quantiles should be provided when functional is quantile.")
+    }
+    
+    # compute the functional on the training set
     functional.t <- t(apply(object$Y.orig, 
                             1, 
-                            function(yy) add.param$f(yy)))
-    # check length one
-    if (length(add.param$f(object$Y.ori[1,]))==1) {
+                            function(yy) transformation(yy)))
+    
+    # check length one (R size management)
+    if (length(transformation(object$Y.ori[1,])) == 1) {
       functional.t <- t(functional.t)
-    } else {
-      if (!is.null(add.param$quantiles) && length(add.param$quantiles) > 1) {
-        # do smth optimized
-        functional.val <- parallel::mclapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0,j], 
+    }
+      
+      # in case of quantile regression
+      if (!is.null(add.param$quantiles)) {
+        
+        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j], 
                                                                                  w = ww[ww!=0], 
                                                                                  probs = add.param$quantiles))))
-        #stop("multiples quantiles cannot be evaluated for multi-dimensional functionals.")
-        return(list(functional = functional.val))
+      for (i in 1:length(functional.val)) {
+        
+        if (length(add.param$quantile) == 1) {
+          functional.val[[i]] <- t(functional.val[[i]])
+        }
+        colnames(functional.val[[i]]) <- paste("q=", round(add.param$quantiles, 2), sep="")
+      }
+        
+        
+        return(list(quantile = functional.val))
         
       }
     }
     
-    # if no quantiles provided then conditional mean, possibly multi-dimensional
-    if (is.null(add.param$quantiles)) {
+    # if no quantiles provided then conditional mean or sd, possibly multi-dimensional
+    if (functional == "mean") {
       
-      functional.val <- t(apply(w, 1, function(ww) ww%*%functional.t))
+      functional.mean <- t(apply(w, 1, function(ww) ww%*%functional.t))
       
-      if (length(add.param$f(object$Y.ori[1,]))==1) {
-        functional.val <- t(functional.val)
+      # check length one (R size management)
+      if (length(transformation(object$Y.ori[1,])) == 1) {
+        
+        functional.mean <- t(functional.mean)
       }
       
-      return(list(functional = functional.val))
+      return(list(mean = functional.mean))
       
-    # otherwise if quantile provided then for a uni-dimensional functional quantiles are returned
-    } else {
-      if (length(add.param$f(object$Y.ori[1,]))==1) {
-        functional.val <- t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t, 
-                                                                               w = ww, 
-                                                                               probs = add.param$quantiles)))
-        if (length(add.param$quantiles)==1) {
-          functional.val <- matrix(functional.val,ncol=1)
-        }
-        colnames(functional.val) <- paste("q=", round(add.param$quantiles, 2), sep="")
-      } else {
-        stop("quantile prediction only work for uni-dimensional functionals.")
+    } else if (functional == "sd") {
+      
+      functional.mean <- t(apply(w, 1, function(ww) ww%*%functional.t))
+      functional.mean2 <- t(apply(w, 1, function(ww) ww%*%(functional.t)^2))
+      
+      # check length one (R size management)
+      if (length(transformation(object$Y.ori[1,])) == 1) {
+        
+        
+        functional.mean <- t(functional.mean)
+        functional.mean2 <- t(functional.mean2)
       }
       
-      return(list(functional = functional.val))
-    }
+      return(list(sd = sqrt(functional.mean2-(functional.mean)^2)))
+    # # otherwise if quantile provided then for a uni-dimensional functional quantiles are returned
+    # } else {
+    #   if (length(add.param$f(object$Y.ori[1,]))==1) {
+    #     functional.val <- t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t, 
+    #                                                                            w = ww, 
+    #                                                                            probs = add.param$quantiles)))
+    #     if (length(add.param$quantiles)==1) {
+    #       functional.val <- matrix(functional.val,ncol=1)
+    #     }
+    #     colnames(functional.val) <- paste("q=", round(add.param$quantiles, 2), sep="")
+    #   } else {
+    #     stop("quantile prediction only work for uni-dimensional functionals.")
+    #   }
+    #   
+    #   return(list(functional = functional.val))
+    # }
     
     
-  } else if (type == "cor") {
+  } else if (functional == "cor") {
     
     # if (!require(wCorr)) {
     #   stop("wCorr package missing.")
     # }
       
-    cor.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
+    # compute the functional on the training set
+    functional.t <- t(apply(object$Y.orig, 
+                            1, 
+                            function(yy) transformation(yy)))
+    
+    # check length one (R size management)
+    if (length(transformation(object$Y.ori[1,])) == 1) {
+      stop("cor available only for multi-dimensional transformation.")
+    }
+    
+    cor.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)))
     
     for (i in 1:nrow(w)) {
-      cor.mat[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]), cor = TRUE)$cor
-    }
-    # cor.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    # for (id1 in 1:ncol(object$Y.orig)) {
-    #   for (id2 in id1:ncol(object$Y.orig)) {
-    #     if (id1 != id2) {
-    #        cor.mat[,id1,id2] <- sapply(1:nrow(w), 
-    #                                                        function(i) {
-    #                                                          weightedCorr(object$Y.orig[,id1], 
-    #                                                                       object$Y.orig[,id2], 
-    #                                                                       method = "pearson", 
-    #                                                                       weights=as.numeric(w[i,]))
-    #                                                        })
-    #        cor.mat[,id2,id1] <- cor.mat[,id1,id2]
-    #     }
-    #   }
-    # }
+      cor.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]), cor = TRUE)$cor
+    } 
     
     return(list(cor = cor.mat))
     
-  } else if (type == "cov") {
+  } else if (functional == "cov") {
     
-    #if (!require(wCorr)) {
-    #  stop("wCorr package missing.")
-    #}
+    # compute the functional on the training set
+    functional.t <- t(apply(object$Y.orig, 
+                            1, 
+                            function(yy) transformation(yy)))
     
-    #means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    #means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-    #sds <- sqrt(means2-(means)^2)
-    cov.mat <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    
-    for (i in 1:nrow(w)) {
-      cov.mat[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]))$cov
+    # check length one (R size management)
+    if (length(transformation(object$Y.ori[1,])) == 1) {
+      stop("cor available only for multi-dimensional transformation.")
     }
     
-    # for (id1 in 1:ncol(object$Y.orig)) {
-    #   for (id2 in id1:ncol(object$Y.orig)) {
-    #     if (id1 != id2) {
-    #       
-    #        cov.mat[i,id1,id2] <- sapply(1:nrow(w), 
-    #                                                  function(i) {
-    #                                                    sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
-    #                                                                                       object$Y.orig[,id2], 
-    #                                                                                       method = "pearson", 
-    #                                                                                       weights=as.numeric(w[i,]))
-    #                                                  })
-    #        cov.mat[i,id2,id1] <- cov.mat[i,id1,id2]
-    #     } else {
-    #       cov.mat[i,id2,id1] <- sds[i,id2]*sds[i,id1]
-    #     } 
-    #   }
-    # }
+    cov.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)))
+    
+    for (i in 1:nrow(w)) {
+      cov.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]))$cov
+    }
     
     return(list(cov = cov.mat))
     
-  }  else if (type == "normalPredictionScore") {
+  }  else if (functional == "normalPredictionScore") {
     
-    # if (!require(wCorr)) {
-    #   stop("wCorr package missing.")
-    # }
+    # compute the functional on the training set
+    functional.t <- t(apply(object$Y.orig, 
+                            1, 
+                            function(yy) transformation(yy)))
     
-    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    # means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-    # sds <- sqrt(means2-(means)^2)
-    # covs <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    # for (id1 in 1:ncol(object$Y.orig)) {
-    #   for (id2 in id1:ncol(object$Y.orig)) {
-    #     if (id1 != id2) {
-    #        covs[,id1,id2] <- sapply(1:nrow(w), 
-    #                                function(i) {
-    #                                 sds[i,id2]*sds[i,id1]*weightedCorr(object$Y.orig[,id1], 
-    #                                                                                     object$Y.orig[,id2], 
-    #                                                                                     method = "pearson", 
-    #                                                                                     weights=as.numeric(w[i,]))
-    #                                                        })
-    #        covs[,id2,id1] <- covs[,id1,id2]
-    #     } else {
-    #       covs[,id2,id1] <- sds[i,id2]*sds[i,id1]
-    #     } 
-    #   }
-    # }
-    
-    covs <- array(1, dim = c(nrow(w), ncol(object$Y.orig), ncol(object$Y.orig)))
-    
-    for (i in 1:nrow(w)) {
-      covs[i,,] <- cov.wt(x = object$Y.orig, wt = as.numeric(w[i,]))$cov
+    # check length one (R size management)
+    if (length(transformation(object$Y.ori[1,])) == 1) {
+      stop("cor available only for multi-dimensional transformation.")
     }
     
+    means <- t(apply(w, 1, function(ww) ww%*%functional.t))
+    
+    covs <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)))
+    
+    for (i in 1:nrow(w)) {
+      covs[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]))$cov
+    } 
+    
+    # dims
     n <- nrow(object$Y.orig)
     d <- ncol(object$Y.orig)
     
@@ -424,45 +436,51 @@ predict.drf <- function(object,
                     return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
                   })
     
-    return(list(normalPredictionScore=funs))
+    return(list(normalPredictionScore = funs))
        
-  }  else if (type == "normalPredictionScore_global") {
-    
-    if (!require(wCorr)) {
-      stop("wCorr package missing.")
-    }
-    
-    means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-    
-    add.param <- list(...)
-    input.cov <- add.param$cov.residuals
-  
-    n <- nrow(object$Y.orig)
-    d <- ncol(object$Y.orig)
-    
-    funs <- lapply(1:nrow(w), function(i) {
-      inv.cov <- solve(input.cov)
-      
-      return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
-    })
-    
-    return(list(normalPredictionScore_global=funs))
-    
-  } else if (type == "ecdf") {
+  # }  else if (type == "normalPredictionScore_global") {
+  #   
+  #   if (!require(wCorr)) {
+  #     stop("wCorr package missing.")
+  #   }
+  #   
+  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
+  #   
+  #   add.param <- list(...)
+  #   input.cov <- add.param$cov.residuals
+  # 
+  #   n <- nrow(object$Y.orig)
+  #   d <- ncol(object$Y.orig)
+  #   
+  #   funs <- lapply(1:nrow(w), function(i) {
+  #     inv.cov <- solve(input.cov)
+  #     
+  #     return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
+  #   })
+  #   
+  #   return(list(normalPredictionScore_global=funs))
+  #   
+  } else if (functional == "cdf") {
     
     if (!require(spatstat)) {
       stop("spatstat package missing.")
     }
     
-    add.param <- list(...)
     functional.t <- apply(object$Y.orig, 
                             1, 
-                            function(yy) add.param$f(yy))
+                            function(yy) transformation(yy))
+    
+    # check length one (R size management)
+    if (length(transformation(object$Y.ori[1,])) != 1) {
+      stop("multi-dimensional ecdf not available.")
+    } else {
+      functional.t <- t(functional.t)
+    }
     
     funs <- lapply(1:nrow(w), function(i) {
       return(function(y) spatstat::ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
     })
     
-    return(list(ecdf=funs))
+    return(list(cdf = funs))
   } 
 }
