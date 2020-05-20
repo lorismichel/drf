@@ -17,7 +17,7 @@
 
 #include "prediction/PredictionValues.h"
 
-namespace mrf {
+namespace drf {
 
 PredictionValues::PredictionValues():
   num_nodes(0),
@@ -61,4 +61,4 @@ void PredictionValues::clear() {
   values.clear();
 }
 
-} // namespace mrf
+} // namespace drf

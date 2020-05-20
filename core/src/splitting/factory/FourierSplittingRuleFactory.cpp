@@ -18,7 +18,7 @@
 #include "splitting/factory/FourierSplittingRuleFactory.h"
 #include "splitting/FourierSplittingRule.h"
 
-namespace mrf {
+namespace drf {
 
 std::unique_ptr<SplittingRule> FourierSplittingRuleFactory::create(const Data& data,
                                                                       const TreeOptions& options) const {
@@ -32,4 +32,4 @@ std::unique_ptr<SplittingRule> FourierSplittingRuleFactory::create(const Data& d
       options.get_node_scaling()));
 }
 
-} // namespace mrf
+} // namespace drf

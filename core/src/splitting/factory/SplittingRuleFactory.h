@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SPLITTINGRULEFACTORY_H
-#define MRF_SPLITTINGRULEFACTORY_H
+#ifndef drf_SPLITTINGRULEFACTORY_H
+#define drf_SPLITTINGRULEFACTORY_H
 
 #include <memory>
 
@@ -24,7 +24,7 @@
 #include "splitting/SplittingRule.h"
 #include "tree/TreeOptions.h"
 
-namespace mrf {
+namespace drf {
 
 class SplittingRuleFactory {
 public:
@@ -35,6 +35,6 @@ public:
                                                 const TreeOptions& options) const = 0;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_SPLITTINGRULEFACTORY_H
+#endif //drf_SPLITTINGRULEFACTORY_H

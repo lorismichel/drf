@@ -15,14 +15,14 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_REGRESSIONSPLITTINGRULE_H
-#define MRF_REGRESSIONSPLITTINGRULE_H
+#ifndef drf_REGRESSIONSPLITTINGRULE_H
+#define drf_REGRESSIONSPLITTINGRULE_H
 
 #include "commons/DefaultData.h"
 #include "splitting/SplittingRule.h"
 #include "tree/Tree.h"
 
-namespace mrf {
+namespace drf {
 
 class RegressionSplittingRule final: public SplittingRule {
 public:
@@ -113,6 +113,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(RegressionSplittingRule);
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_REGRESSIONSPLITTINGRULE_H
+#endif //drf_REGRESSIONSPLITTINGRULE_H

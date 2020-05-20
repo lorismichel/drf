@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_REGRESSIONPREDICTIONSTRATEGY_H
-#define MRF_REGRESSIONPREDICTIONSTRATEGY_H
+#ifndef drf_REGRESSIONPREDICTIONSTRATEGY_H
+#define drf_REGRESSIONPREDICTIONSTRATEGY_H
 
 #include "commons/DefaultData.h"
 #include "commons/Data.h"
@@ -24,7 +24,7 @@
 #include "prediction/PredictionValues.h"
 //#include "ObjectiveBayesDebiaser.h"
 
-namespace mrf {
+namespace drf {
 
 class RegressionPredictionStrategy final: public OptimizedPredictionStrategy {
 public:
@@ -58,6 +58,6 @@ private:
  // ObjectiveBayesDebiaser bayes_debiaser;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_REGRESSIONPREDICTIONSTRATEGY_H
+#endif //drf_REGRESSIONPREDICTIONSTRATEGY_H

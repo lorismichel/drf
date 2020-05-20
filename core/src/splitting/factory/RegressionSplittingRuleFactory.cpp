@@ -18,7 +18,7 @@
 #include "splitting/factory/RegressionSplittingRuleFactory.h"
 #include "splitting/RegressionSplittingRule.h"
 
-namespace mrf {
+namespace drf {
 
 std::unique_ptr<SplittingRule> RegressionSplittingRuleFactory::create(const Data& data,
                                                                       const TreeOptions& options) const {
@@ -29,4 +29,4 @@ std::unique_ptr<SplittingRule> RegressionSplittingRuleFactory::create(const Data
       data.get_outcome_index().size()));
 }
 
-} // namespace mrf
+} // namespace drf

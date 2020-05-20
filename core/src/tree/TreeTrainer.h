@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_TREETRAINER_H
-#define MRF_TREETRAINER_H
+#ifndef drf_TREETRAINER_H
+#define drf_TREETRAINER_H
 
 #include <memory>
 
@@ -28,7 +28,7 @@
 #include "tree/Tree.h"
 #include "tree/TreeOptions.h"
 
-namespace mrf {
+namespace drf {
 
 class TreeTrainer {
 public:
@@ -85,6 +85,6 @@ private:
   std::unique_ptr<OptimizedPredictionStrategy> prediction_strategy;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_TREETRAINER_H
+#endif //drf_TREETRAINER_H

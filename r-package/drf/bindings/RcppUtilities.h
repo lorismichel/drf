@@ -1,11 +1,11 @@
-#ifndef MRF_RCPPUTILITIES_H
-#define MRF_RCPPUTILITIES_H
+#ifndef DRF_RCPPUTILITIES_H
+#define DRF_RCPPUTILITIES_H
 
 #include "commons/globals.h"
 #include "Eigen/Sparse"
 #include "forest/ForestTrainer.h"
 
-using namespace mrf;
+using namespace drf;
 
 class RcppUtilities {
 public:
@@ -40,4 +40,4 @@ public:
 };
 
 
-#endif //MRF_RCPPUTILITIES_H
+#endif //DRF_RCPPUTILITIES_H

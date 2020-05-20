@@ -7,7 +7,7 @@
 #include "RcppData.h"
 #include "RcppUtilities.h"
 
-using namespace mrf;
+using namespace drf;
 
 Rcpp::List RcppUtilities::create_forest_object(Forest& forest,
                                                const std::vector<Prediction>& predictions) {

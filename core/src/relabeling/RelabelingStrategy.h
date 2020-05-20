@@ -15,15 +15,15 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_RELABELINGSTRATEGY_H
-#define MRF_RELABELINGSTRATEGY_H
+#ifndef drf_RELABELINGSTRATEGY_H
+#define drf_RELABELINGSTRATEGY_H
 
 
 #include "commons/DefaultData.h"
 #include "commons/Data.h"
 #include <vector>
 
-namespace mrf {
+namespace drf {
 
 /**
  * Produces a relabelled set of outcomes for a set of training samples. These outcomes
@@ -49,6 +49,6 @@ public:
                        std::vector<std::vector<double>>& responses_by_sample) const = 0; // std::vector<double> -> std::vector<std::vector<double>> 
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_RELABELINGSTRATEGY_H
+#endif //drf_RELABELINGSTRATEGY_H

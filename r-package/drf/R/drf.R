@@ -86,10 +86,10 @@
 #' }
 #'
 #' @export
-#' @useDynLib mrf
+#' @useDynLib drf
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils modifyList
-mrf <-               function(X, Y,
+drf <-               function(X, Y,
                               num.trees = 2000,
                               sample.weights = NULL,
                               clusters = NULL,
@@ -176,7 +176,7 @@ mrf <-               function(X, Y,
      forest <- do.call.rcpp(fourier_train, c(data, args))
    }
    
-   class(forest) <- c("mrf")
+   class(forest) <- c("drf")
    forest[["ci.group.size"]] <- ci.group.size
    forest[["X.orig"]] <- X
    forest[["Y.orig"]] <- Y
@@ -189,7 +189,7 @@ mrf <-               function(X, Y,
    forest
 }
 
-#' Predict with a mrf forest
+#' Predict with a drf forest
 #'
 #'
 #' @param object The trained forest.
@@ -235,9 +235,9 @@ mrf <-               function(X, Y,
 #' r.pred <- predict(r.forest, X.test, estimate.variance = TRUE)
 #' }
 #'
-#' @method predict mrf
+#' @method predict drf
 #' @export
-predict.mrf <- function(object, 
+predict.drf <- function(object, 
                         newdata = NULL,
                         type = "weights",
                         num.threads = NULL,

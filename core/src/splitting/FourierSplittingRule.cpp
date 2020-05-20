@@ -24,7 +24,7 @@
 
 #include "FourierSplittingRule.h"
 
-namespace mrf {
+namespace drf {
 
 FourierSplittingRule::FourierSplittingRule(size_t max_num_unique_values,
                                                  double alpha,
@@ -490,4 +490,4 @@ void FourierSplittingRule::find_split(const Data& data,
 }
 
 
-} // namespace mrf
+} // namespace drf

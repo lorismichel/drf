@@ -19,7 +19,7 @@
 #include <string>
 #include "prediction/RegressionPredictionStrategy.h"
 
-namespace mrf {
+namespace drf {
 
 const size_t RegressionPredictionStrategy::OUTCOME = 0;
 
@@ -164,4 +164,4 @@ PredictionValues RegressionPredictionStrategy::precompute_prediction_values(
 //   return { output };
 // }
 
-} // namespace mrf
+} // namespace drf

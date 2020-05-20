@@ -15,12 +15,12 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_PREDICTIONCOLLECTOR_H
-#define MRF_PREDICTIONCOLLECTOR_H
+#ifndef drf_PREDICTIONCOLLECTOR_H
+#define drf_PREDICTIONCOLLECTOR_H
 
 #include "forest/Forest.h"
 
-namespace mrf {
+namespace drf {
 
 class PredictionCollector {
 public:
@@ -36,6 +36,6 @@ public:
                                                       bool estimate_error) const = 0;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_PREDICTIONCOLLECTOR_H
+#endif //drf_PREDICTIONCOLLECTOR_H

@@ -21,7 +21,7 @@
 #include "tree/Tree.h"
 #include "commons/utility.h"
 
-namespace mrf {
+namespace drf {
 
 Tree::Tree(size_t root_node,
            const std::vector<std::vector<size_t>>& child_nodes,
@@ -176,4 +176,4 @@ bool Tree::is_empty_leaf(size_t node) const  {
   return is_leaf(node) && leaf_samples[node].empty();
 }
 
-} // namespace mrf
+} // namespace drf

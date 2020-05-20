@@ -20,7 +20,7 @@
 
 #include <future>
 
-namespace mrf {
+namespace drf {
 
 TreeTraverser::TreeTraverser(uint num_threads) :
     num_threads(num_threads) {}
@@ -114,4 +114,4 @@ std::vector<bool> TreeTraverser::get_valid_samples(size_t num_samples,
   return valid_samples;
 }
 
-} // namespace mrf
+} // namespace drf

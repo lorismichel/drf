@@ -15,12 +15,12 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_NOOPRELABELINGSTRATEGY_H
-#define MRF_NOOPRELABELINGSTRATEGY_H
+#ifndef drf_NOOPRELABELINGSTRATEGY_H
+#define drf_NOOPRELABELINGSTRATEGY_H
 
 #include "relabeling/RelabelingStrategy.h"
 
-namespace mrf {
+namespace drf {
 
 class NoopRelabelingStrategy final: public RelabelingStrategy {
 public:
@@ -30,6 +30,6 @@ public:
       std::vector<std::vector<double>>& responses_by_sample) const; // std::vector<double> -> std::vector<std::vector<double>> 
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_NOOPRELABELINGSTRATEGY_H
+#endif //drf_NOOPRELABELINGSTRATEGY_H

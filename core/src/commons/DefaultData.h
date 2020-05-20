@@ -1,22 +1,22 @@
 /*-------------------------------------------------------------------------------
-  This file is part of generalized random forest (grf).
+  This file is part of ditributional-regression-forest (drf).
 
-  grf is free software: you can redistribute it and/or modify
+  drf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  grf is distributed in the hope that it will be useful,
+  drf is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with grf. If not, see <http://www.gnu.org/licenses/>.
+  along with drf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_DEFAULTDATA_H_
-#define MRF_DEFAULTDATA_H_
+#ifndef DRF_DEFAULTDATA_H_
+#define DRF_DEFAULTDATA_H_
 
 #include <vector>
 #include <iostream>
@@ -24,7 +24,7 @@
 #include "Data.h"
 #include "globals.h"
 
-namespace mrf {
+namespace drf {
 
 class DefaultData final: public Data {
 public:
@@ -45,6 +45,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(DefaultData);
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif /* GRF_DEFAULTDATA_H_ */
+#endif /* DRF_DEFAULTDATA_H_ */

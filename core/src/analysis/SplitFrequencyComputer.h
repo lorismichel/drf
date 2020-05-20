@@ -15,13 +15,13 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SPLITFREQUENCYCOMPUTER_H
-#define MRF_SPLITFREQUENCYCOMPUTER_H
+#ifndef DRF_SPLITFREQUENCYCOMPUTER_H
+#define DRF_SPLITFREQUENCYCOMPUTER_H
 
 
 #include "forest/Forest.h"
 
-namespace mrf {
+namespace drf {
 
 /**
  * Computes a matrix of split depth by variable ID, where each value is
@@ -36,6 +36,6 @@ public:
                                            size_t max_depth) const;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_SPLITFREQUENCYCOMPUTER_H
+#endif //DRF_SPLITFREQUENCYCOMPUTER_H

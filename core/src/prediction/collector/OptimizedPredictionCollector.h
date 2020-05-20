@@ -15,14 +15,14 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_OPTIMIZEDPREDICTIONCOLLECTOR_H
-#define MRF_OPTIMIZEDPREDICTIONCOLLECTOR_H
+#ifndef drf_OPTIMIZEDPREDICTIONCOLLECTOR_H
+#define drf_OPTIMIZEDPREDICTIONCOLLECTOR_H
 
 
 #include "forest/Forest.h"
 #include "prediction/collector/PredictionCollector.h"
 
-namespace mrf {
+namespace drf {
 
 class OptimizedPredictionCollector final: public PredictionCollector {
 public:
@@ -61,6 +61,6 @@ private:
   uint num_threads;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_OPTIMIZEDPREDICTIONCOLLECTOR_H
+#endif //drf_OPTIMIZEDPREDICTIONCOLLECTOR_H

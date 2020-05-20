@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SAMPLINGOPTIONS_H
-#define MRF_SAMPLINGOPTIONS_H
+#ifndef drf_SAMPLINGOPTIONS_H
+#define drf_SAMPLINGOPTIONS_H
 
 
 #include <string>
@@ -24,7 +24,7 @@
 
 #include "commons/globals.h"
 
-namespace mrf {
+namespace drf {
 
 class SamplingOptions {
 public:
@@ -51,6 +51,6 @@ private:
   std::vector<std::vector<size_t>> clusters;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_SAMPLINGOPTIONS_H
+#endif //drf_SAMPLINGOPTIONS_H

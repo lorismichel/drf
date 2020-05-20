@@ -4,9 +4,9 @@
 #' @param max.depth The maximum depth of splits to consider.
 #' @param ... Additional arguments (currently ignored).
 #'
-#' @method print mrf
+#' @method print drf
 #' @export
-print.mrf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
+print.drf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
   var.importance <- variable_importance(x, decay.exponent, max.depth)
   var.importance <- c(round(var.importance, 3))
   names(var.importance) <- 1:length(var.importance)

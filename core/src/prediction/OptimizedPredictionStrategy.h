@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_OPTIMIZEDPREDICTIONSTRATEGY_H
-#define MRF_OPTIMIZEDPREDICTIONSTRATEGY_H
+#ifndef drf_OPTIMIZEDPREDICTIONSTRATEGY_H
+#define drf_OPTIMIZEDPREDICTIONSTRATEGY_H
 
 #include <vector>
 
@@ -25,7 +25,7 @@
 #include "prediction/Prediction.h"
 #include "prediction/PredictionValues.h"
 
-namespace mrf {
+namespace drf {
 
 /**
  * A prediction strategy defines how predictions are computed over test samples.
@@ -108,6 +108,6 @@ public:
 //       const Data& data) const = 0;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_OPTIMIZEDPREDICTIONSTRATEGY_H
+#endif //drf_OPTIMIZEDPREDICTIONSTRATEGY_H

@@ -19,7 +19,7 @@
 
 #include "tree/Tree.h"
 
-namespace mrf {
+namespace drf {
 
 std::unordered_map<size_t, double> SampleWeightComputer::compute_weights(size_t sample,
                                                                          const Forest& forest,
@@ -67,4 +67,4 @@ void SampleWeightComputer::normalize_sample_weights(std::unordered_map<size_t, d
   }
 }
 
-} // namespace mrf
+} // namespace drf

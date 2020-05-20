@@ -1,28 +1,28 @@
 /*-------------------------------------------------------------------------------
-  This file is part of generalized-random-forest.
+  This file is part of ditributional-regression-forest.
 
-  grf is free software: you can redistribute it and/or modify
+  drf is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
 
-  grf is distributed in the hope that it will be useful,
+  drf is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with grf. If not, see <http://www.gnu.org/licenses/>.
+  along with drf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SPARSEDATA_H
-#define MRF_SPARSEDATA_H
+#ifndef DRF_SPARSEDATA_H
+#define DRF_SPARSEDATA_H
 
 
 #include "Data.h"
 #include "Eigen/Sparse"
 
-namespace mrf {
+namespace drf {
 
 class SparseData final: public Data {
 public:
@@ -45,6 +45,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(SparseData);
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //GRF_SPARSEDATA_H
+#endif //DRF_SPARSEDATA_H

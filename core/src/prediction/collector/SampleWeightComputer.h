@@ -15,15 +15,15 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SAMPLEWEIGHTCOMPUTER_H
-#define MRF_SAMPLEWEIGHTCOMPUTER_H
+#ifndef drf_SAMPLEWEIGHTCOMPUTER_H
+#define drf_SAMPLEWEIGHTCOMPUTER_H
 
 #include "forest/Forest.h"
 
 #include <unordered_map>
 #include <vector>
 
-namespace mrf {
+namespace drf {
 
 class SampleWeightComputer {
 public:
@@ -39,6 +39,6 @@ private:
   void normalize_sample_weights(std::unordered_map<size_t, double>& weights_by_sample) const;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_SAMPLEWEIGHTCOMPUTER_H
+#endif //drf_SAMPLEWEIGHTCOMPUTER_H

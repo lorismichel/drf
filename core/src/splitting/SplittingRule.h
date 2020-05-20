@@ -15,14 +15,14 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_SPLITTINGRULE_H
-#define MRF_SPLITTINGRULE_H
+#ifndef drf_SPLITTINGRULE_H
+#define drf_SPLITTINGRULE_H
 
 #include <vector>
 
 #include "commons/Data.h"
 
-namespace mrf {
+namespace drf {
 
 class SplittingRule {
 public:
@@ -36,8 +36,8 @@ public:
                                std::vector<double>& split_values) = 0;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_SPLITTINGRULE_H
+#endif //drf_SPLITTINGRULE_H
 
 

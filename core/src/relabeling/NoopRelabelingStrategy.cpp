@@ -17,7 +17,7 @@
 
 #include "relabeling/NoopRelabelingStrategy.h"
 
-namespace mrf {
+namespace drf {
 
 bool NoopRelabelingStrategy::relabel(
     const std::vector<size_t>& samples,
@@ -47,5 +47,5 @@ bool NoopRelabelingStrategy::relabel(
   return false;
 }
 
-} // namespace mrf
+} // namespace drf
 

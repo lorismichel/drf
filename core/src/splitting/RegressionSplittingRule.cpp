@@ -21,7 +21,7 @@
 
 #include "RegressionSplittingRule.h"
 
-namespace mrf {
+namespace drf {
 
 RegressionSplittingRule::RegressionSplittingRule(size_t max_num_unique_values,
                                                  double alpha,
@@ -283,4 +283,4 @@ void RegressionSplittingRule::find_best_split_value_large_q(const Data& data,
   }
 }
 
-} // namespace mrf
+} // namespace drf

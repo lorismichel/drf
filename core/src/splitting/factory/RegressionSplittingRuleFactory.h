@@ -15,13 +15,13 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_REGRESSIONSPLITTINGRULEFACTORY_H
-#define MRF_REGRESSIONSPLITTINGRULEFACTORY_H
+#ifndef drf_REGRESSIONSPLITTINGRULEFACTORY_H
+#define drf_REGRESSIONSPLITTINGRULEFACTORY_H
 
 
 #include "splitting/factory/SplittingRuleFactory.h"
 
-namespace mrf {
+namespace drf {
 
 /**
  * A factory that produces standard regression splitting rules.
@@ -38,6 +38,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(RegressionSplittingRuleFactory);
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_REGRESSIONSPLITTINGRULEFACTORY_H
+#endif //drf_REGRESSIONSPLITTINGRULEFACTORY_H

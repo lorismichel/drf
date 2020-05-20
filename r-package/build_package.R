@@ -1,4 +1,4 @@
-# Builds and tests the mrf package.
+# Builds and tests the drf package.
 #
 # To build the package for development:
 #   `Rscript build_package.R`
@@ -12,19 +12,19 @@ library(devtools)
 library(testthat)
 library(roxygen2)
 
-package.name <- "mrf"
+package.name <- "drf"
 
 # If built for CRAN, exlude all test except ones with "cran" in the filename
 # by adding the following regex to .Rbuildignore.
 if (!is.na(args[1]) && args[1] == "--as-cran") {
-  write_union("mrf/.Rbuildignore", "^tests/testthat/test_((?!cran).).*")
+  write_union("drf/.Rbuildignore", "^tests/testthat/test_((?!cran).).*")
 }
 
 # Auto-generate documentation files
 roxygen2::roxygenise(package.name)
 
 # Run Rcpp and build the package.
-# Symlinks in `mRF/src` point to the Rcpp bindings (`mRF/bindings`) and core C++ (`core/src`).
+# Symlinks in `drf/src` point to the Rcpp bindings (`drf/bindings`) and core C++ (`core/src`).
 # Note: we don't link in third_party/Eigen, because for the R package build we provide
 # access to the library through RcppEigen.
 compileAttributes(package.name)

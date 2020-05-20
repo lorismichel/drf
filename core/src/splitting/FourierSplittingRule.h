@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_FOURIERSPLITTINGRULE_H
-#define MRF_FOURIERSPLITTINGRULE_H
+#ifndef drf_FOURIERSPLITTINGRULE_H
+#define drf_FOURIERSPLITTINGRULE_H
 
 #include <complex> //n
  
@@ -24,7 +24,7 @@
 #include "splitting/SplittingRule.h"
 #include "tree/Tree.h"
 
-namespace mrf {
+namespace drf {
 
 class FourierSplittingRule final: public SplittingRule {
 public:
@@ -131,6 +131,6 @@ private:
   DISALLOW_COPY_AND_ASSIGN(FourierSplittingRule);
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_FOURIERSPLITTINGRULE_H
+#endif //drf_FOURIERSPLITTINGRULE_H

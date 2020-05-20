@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_RANDOMSAMPLER_H
-#define MRF_RANDOMSAMPLER_H
+#ifndef drf_RANDOMSAMPLER_H
+#define drf_RANDOMSAMPLER_H
 
 
 #include "commons/globals.h"
@@ -30,7 +30,7 @@
 #include <set>
 #include <vector>
 
-namespace mrf {
+namespace drf {
 
 class RandomSampler {
 public:
@@ -158,6 +158,6 @@ private:
   std::mt19937_64 random_number_generator;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_RANDOMSAMPLER_H
+#endif //drf_RANDOMSAMPLER_H

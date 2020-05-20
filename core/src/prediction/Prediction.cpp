@@ -17,7 +17,7 @@
 
 #include "prediction/Prediction.h"
 
-namespace mrf {
+namespace drf {
 
 Prediction::Prediction(const std::vector<double>& predictions): // std::vector<std::vector<double>>
   predictions(predictions),
@@ -62,4 +62,4 @@ const size_t Prediction::size() const {
   return predictions.size();
 }
 
-} // namespace mrf
+} // namespace drf

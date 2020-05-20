@@ -17,7 +17,7 @@
 
 #include "RandomSampler.h"
 
-namespace mrf {
+namespace drf {
 
 RandomSampler::RandomSampler(uint seed,
                              const SamplingOptions& options) :
@@ -227,4 +227,4 @@ size_t RandomSampler::sample_poisson(size_t mean) {
   return distribution(random_number_generator);
 }
 
-} // namespace mrf
+} // namespace drf

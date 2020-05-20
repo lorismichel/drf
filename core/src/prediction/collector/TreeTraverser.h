@@ -15,12 +15,12 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_TREETRAVERSER_H
-#define MRF_TREETRAVERSER_H
+#ifndef drf_TREETRAVERSER_H
+#define drf_TREETRAVERSER_H
 
 #include "forest/Forest.h"
 
-namespace mrf {
+namespace drf {
 
 class TreeTraverser {
 public:
@@ -50,6 +50,6 @@ private:
   uint num_threads;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_TREETRAVERSER_H
+#endif //drf_TREETRAVERSER_H

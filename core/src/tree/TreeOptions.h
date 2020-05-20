@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_TREEOPTIONS_H
-#define MRF_TREEOPTIONS_H
+#ifndef drf_TREEOPTIONS_H
+#define drf_TREEOPTIONS_H
 
 
 #include <set>
@@ -25,7 +25,7 @@
 
 #include "commons/globals.h"
 
-namespace mrf {
+namespace drf {
 
 class TreeOptions {
 public:
@@ -84,6 +84,6 @@ private:
   unsigned int node_scaling;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_TREEOPTIONS_H
+#endif //drf_TREEOPTIONS_H

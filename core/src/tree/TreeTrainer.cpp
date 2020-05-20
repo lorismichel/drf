@@ -21,7 +21,7 @@
 #include "commons/DefaultData.h"
 #include "tree/TreeTrainer.h"
 
-namespace mrf {
+namespace drf {
 
 TreeTrainer::TreeTrainer(std::unique_ptr<RelabelingStrategy> relabeling_strategy,
                          std::unique_ptr<SplittingRuleFactory> splitting_rule_factory,
@@ -237,4 +237,4 @@ void TreeTrainer::create_empty_node(std::vector<std::vector<size_t>>& child_node
   split_values.push_back(0);
 }
 
-} // namespace mrf
+} // namespace drf

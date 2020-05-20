@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_TREE_H_
-#define MRF_TREE_H_
+#ifndef drf_TREE_H_
+#define drf_TREE_H_
 
 #include <vector>
 
@@ -26,7 +26,7 @@
 #include "prediction/PredictionValues.h"
 #include "splitting/SplittingRule.h"
 
-namespace mrf {
+namespace drf {
 
 class Tree {
 public:
@@ -151,6 +151,6 @@ private:
   PredictionValues prediction_values;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif /* MRF_TREE_H_ */
+#endif /* drf_TREE_H_ */

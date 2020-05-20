@@ -17,7 +17,7 @@
 
 #include "tree/TreeOptions.h"
 
-namespace mrf {
+namespace drf {
 
 TreeOptions::TreeOptions(uint mtry,
                          uint min_node_size,
@@ -80,4 +80,4 @@ unsigned int TreeOptions::get_node_scaling() const {
   return node_scaling;
 }
 
-} // namespace mrf
+} // namespace drf

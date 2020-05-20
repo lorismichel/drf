@@ -15,8 +15,8 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_DEFAULTPREDICTIONSTRATEGY_H
-#define MRF_DEFAULTPREDICTIONSTRATEGY_H
+#ifndef drf_DEFAULTPREDICTIONSTRATEGY_H
+#define drf_DEFAULTPREDICTIONSTRATEGY_H
 
 #include <unordered_map>
 #include <vector>
@@ -27,7 +27,7 @@
 #include "prediction/Prediction.h"
 #include "prediction/PredictionValues.h"
 
-namespace mrf {
+namespace drf {
 
 /**
  * A prediction strategy defines how predictions are computed over test samples.
@@ -86,6 +86,6 @@ public:
       size_t ci_group_size) const = 0;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_DEFAULTPREDICTIONSTRATEGY_H
+#endif //drf_DEFAULTPREDICTIONSTRATEGY_H

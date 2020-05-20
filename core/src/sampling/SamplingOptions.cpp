@@ -19,7 +19,7 @@
 #include <unordered_map>
 #include "commons/globals.h"
 
-namespace mrf {
+namespace drf {
 
 SamplingOptions::SamplingOptions():
     sample_weights(0),
@@ -62,4 +62,4 @@ const std::vector<std::vector<size_t>>& SamplingOptions::get_clusters() const {
   return clusters;
 }
 
-} // namespace mrf
+} // namespace drf

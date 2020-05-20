@@ -21,7 +21,7 @@
 #include "prediction/collector/OptimizedPredictionCollector.h"
 #include "commons/utility.h"
 
-namespace mrf {
+namespace drf {
 
 OptimizedPredictionCollector::OptimizedPredictionCollector(std::unique_ptr<OptimizedPredictionStrategy> strategy, uint num_threads):
     strategy(std::move(strategy)), num_threads(num_threads) {}
@@ -184,4 +184,4 @@ void OptimizedPredictionCollector::validate_prediction(size_t sample,
   }
 }
 
-} // namespace mrf
+} // namespace drf

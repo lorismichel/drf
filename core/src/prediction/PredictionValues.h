@@ -15,15 +15,15 @@
   along with grf. If not, see <http://www.gnu.org/licenses/>.
  #-------------------------------------------------------------------------------*/
 
-#ifndef MRF_PREDICTIONVALUES_H
-#define MRF_PREDICTIONVALUES_H
+#ifndef drf_PREDICTIONVALUES_H
+#define drf_PREDICTIONVALUES_H
 
 
 #include <vector>
 #include <string>
 #include <map>
 
-namespace mrf {
+namespace drf {
 
 class PredictionValues {
 public:
@@ -56,6 +56,6 @@ private:
   size_t num_types;
 };
 
-} // namespace mrf
+} // namespace drf
 
-#endif //MRF_PREDICTIONVALUES_H
+#endif //drf_PREDICTIONVALUES_H
