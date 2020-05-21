@@ -41,7 +41,7 @@ matrix:
         - cd ..
         - valgrind --leak-check=full --error-exitcode=1 ./build/drf
 
-    - name: "core grf C++: clang"
+    - name: "core drf C++: clang"
       compiler: clang
       addons:
         apt:
@@ -67,7 +67,7 @@ matrix:
         - cd ..
         - valgrind --leak-check=full --error-exitcode=1 ./build/drf
 
-    - name: "grf R package"
+    - name: "drf R package"
       before_install:
         - cd r-package/drf
       script:
