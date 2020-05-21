@@ -1,0 +1,89 @@
+sudo: required
+language: R
+latex: false
+cache: packages
+
+branches:
+  only:
+    - master
+
+r_packages:
+  # build_package.R requirements.
+  - devtools
+  - testthat
+  - roxygen2
+  # Vignette requirements are installed in the `deploy` section.
+
+matrix:
+  include:
+    - name: "core drf C++: gcc"
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+      env: COMPILER=g++-4.9
+      before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -y libopencv-dev
+
+        # Install a newer version of valgrind, the one that comes with Ubuntu 16.04 has a regression.
+        - sudo add-apt-repository -y ppa:msulikowski/valgrind
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq valgrind
+      install: true
+      script:
+        - cd core
+        - mkdir build && cd build
+        - cmake -DCMAKE_CXX_COMPILER=$COMPILER .. && make
+        - cd ..
+        - valgrind --leak-check=full --error-exitcode=1 ./build/drf
+
+    - name: "core grf C++: clang"
+      compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.7
+          packages:
+            - clang-3.7
+      env: COMPILER=clang++-3.7
+      install: true
+      before_install:
+        - sudo apt-get update -qq
+        - sudo apt-get install -y libopencv-dev
+
+        # Install a newer version of valgrind, the one that comes with Ubuntu 16.04 has a regression.
+        - sudo add-apt-repository -y ppa:msulikowski/valgrind
+        - sudo apt-get update -qq
+        - sudo apt-get install -qq valgrind
+      script:
+        - cd core
+        - mkdir build && cd build
+        - cmake -DCMAKE_CXX_COMPILER=$COMPILER .. && make
+        - cd ..
+        - valgrind --leak-check=full --error-exitcode=1 ./build/drf
+
+    - name: "grf R package"
+      before_install:
+        - cd r-package/drf
+      script:
+        - cd ..
+        - Rscript build_package.R
+      # Render the examples under vignettes/ and build the package documentation with 'pkgdown'.
+      # Also install required packages for vignette examples, like glmnet.
+      before_deploy:
+        - cd grf
+        - cp ../../README.md .
+        - Rscript -e 'install.packages("pkgdown")'
+        - Rscript -e 'install.packages(c("ggplot2", "glmnet"))'
+        - Rscript -e 'pkgdown::build_site()'
+        - cp pkgdown/favicon/* docs/
+      deploy:
+        provider: pages
+        local_dir: r-package/grf/docs/
+        skip_cleanup: true
+        github-token: $GH_TOKEN
