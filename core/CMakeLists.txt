@@ -34,8 +34,8 @@ endif()
 ## ======================================================================================##
 ## Subdirectories and source files
 ## ======================================================================================##
-include_directories(src test third_party)
-file(GLOB_RECURSE SOURCES src/*.cpp test/*.cpp)
+include_directories(src third_party)
+file(GLOB_RECURSE SOURCES src/*.cpp)
 
 ## ======================================================================================##
 ## Debug and release targets
