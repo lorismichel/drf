@@ -1,4 +1,6 @@
-# drf: distributional regression forests
+# distributional random forests 
+
+[![Build Status](https://travis-ci.com/lorismichel/drf.svg?branch=master)](https://travis-ci.com/lorismichel/drf)
 
 A package for forest-based conditional distribution estimation in presence of potentially multivariate outcomes. 
 
