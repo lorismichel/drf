@@ -54,6 +54,6 @@ predict(fit, newdata = X_test, functional = "mean")
 predict(fit, newdata = rep(0, p), functional = "cov")$cov[1,,]
 
 # we can transform the response beforehand to obtain more complicated quantities 
-out = predict(fit, newdata = X_test, functional = "quantile", quantiles=c(0.1, 0.9), transformation = function(y) c(y[1]*y[2], y[2]^2))
+predict(fit, newdata = X_test, functional = "quantile", quantiles=c(0.1, 0.9), transformation = function(y) c(sin(y[1]), y[1]*y[2], y[2]^2))
 
 ```
