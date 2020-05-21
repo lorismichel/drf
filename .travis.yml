@@ -75,11 +75,3 @@ matrix:
         - Rscript build_package.R
       # Render the examples under vignettes/ and build the package documentation with 'pkgdown'.
       # Also install required packages for vignette examples, like glmnet.
-      before_deploy:
-        - cd drf
-        - cp ../../README.md .
-      deploy:
-        provider: pages
-        local_dir: r-package/drf/docs/
-        skip_cleanup: true
-        github-token: $GH_TOKEN
