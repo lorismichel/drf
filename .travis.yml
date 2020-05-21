@@ -78,12 +78,8 @@ matrix:
       before_deploy:
         - cd grf
         - cp ../../README.md .
-        - Rscript -e 'install.packages("pkgdown")'
-        - Rscript -e 'install.packages(c("ggplot2", "glmnet"))'
-        - Rscript -e 'pkgdown::build_site()'
-        - cp pkgdown/favicon/* docs/
       deploy:
         provider: pages
-        local_dir: r-package/grf/docs/
+        local_dir: r-package/drf/docs/
         skip_cleanup: true
         github-token: $GH_TOKEN

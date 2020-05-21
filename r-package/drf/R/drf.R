@@ -1,6 +1,6 @@
-#' Distributional Regression Forests
+#' Distributional Random Forests
 #'
-#' Trains a distributional regression forest that can be used to estimate
+#' Trains a distributional random forest that can be used to estimate
 #' statistical functional F(P(Y | X)) for possibly multivariate Y.
 #'
 #' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter,
@@ -65,11 +65,11 @@
 #'                    to the maximum hardware concurrency.
 #' @param seed The seed of the C++ random number generator.
 #'
-#' @return A trained distributional regression forest object.
+#' @return A trained distributional random forest object.
 #'
 #' @examples
 #' \dontrun{
-#' # Train a distributional regression forest with CART splitting rule.
+#' # Train a distributional random forest with CART splitting rule.
 #' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)
@@ -84,7 +84,7 @@
 #' # Predict on out-of-bag training samples.
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
 #' 
-#' # Train a distributional regression forest with "FourierMMD" splitting rule.
+#' # Train a distributional random forest with "FourierMMD" splitting rule.
 #' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)
@@ -224,7 +224,7 @@ drf <-               function(X, Y,
 #'
 #' @examples
 #' \dontrun{
-#' # Train a distributional regression forest with CART splitting rule.
+#' # Train a distributional random forest with CART splitting rule.
 #' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)
@@ -239,7 +239,7 @@ drf <-               function(X, Y,
 #' # Predict on out-of-bag training samples.
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
 #' 
-#' # Train a distributional regression forest with "FourierMMD" splitting rule.
+#' # Train a distributional random forest with "FourierMMD" splitting rule.
 #' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)

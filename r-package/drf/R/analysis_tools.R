@@ -182,7 +182,7 @@ variable_importance <- function(forest, decay.exponent = 2, max.depth = 4) {
 #' n <- 100
 #' X <- matrix(2 * runif(n * p) - 1, n, p)
 #' Y <- (X[, 1] > 0) + 2 * rnorm(n)
-#' rrf <- regression_forest(X, Y, mtry = p)
+#' rrf <- drf(X, matrix(Y,ncol=1), mtry = p)
 #' sample.weights.oob <- get_sample_weights(rrf)
 #'
 #' n.test <- 15
@@ -230,7 +230,7 @@ leaf_stats.default <- function(forest, samples, ...){
 #'
 #' @return A named vector containing summary stats
 #'
-#' @method leaf_stats regression_forest
+#' @method leaf_stats drf
 leaf_stats.drf <- function(forest, samples, ...){
   leaf_stats <- c()
   leaf_stats["avg_Y"] <- round(mean(forest$Y.orig[samples]), 2)
