@@ -76,7 +76,7 @@ matrix:
       # Render the examples under vignettes/ and build the package documentation with 'pkgdown'.
       # Also install required packages for vignette examples, like glmnet.
       before_deploy:
-        - cd grf
+        - cd drf
         - cp ../../README.md .
       deploy:
         provider: pages
