@@ -1,13 +1,13 @@
 validate_X <- function(X) {
   if (inherits(X, c("matrix", "data.frame")) && !is.numeric(as.matrix(X))) {
     stop(paste(
-      "The feature matrix X must be numeric. GRF does not",
+      "The feature matrix X must be numeric. DRF does not",
       "currently support non-numeric features. If factor variables",
       "are required, we recommend one of the following: Either",
       "represent the factor with a 1-vs-all expansion,",
       "(e.g., using model.matrix(~. , data=X)), or then encode the factor",
       "as a numeric via any natural ordering (e.g., if the factor is a month).",
-      "For more on GRF and categorical variables see the online vignette:",
+      "For more on DRF and categorical variables see the online vignette:",
       "https://grf-labs.github.io/grf/articles/categorical_inputs.html"
     ))
   }
@@ -30,7 +30,7 @@ validate_observations <- function(V, X) {
 
   if (!is.numeric(V) && !is.logical(V)) {
     stop(paste(
-      "Observations (W, Y, or Z) must be numeric. GRF does not ",
+      "Observations (W, Y, or Z) must be numeric. DRF does not ",
       "currently support non-numeric observations."
     ))
   }
@@ -221,7 +221,7 @@ observation_weights <- function(forest) {
   return (raw.weights / sum(raw.weights))
 }
 
-# Call the grf Rcpp bindings (argument_names) with R argument.names
+# Call the drf Rcpp bindings (argument_names) with R argument.names
 #
 # All the bindings argument names (C++) have underscores: sample_weights, train_matrix, etc.
 # On the R side each variable name is written as sample.weights, train.matrix, etc.

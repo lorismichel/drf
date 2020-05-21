@@ -11,6 +11,7 @@ Description: A package implementing distributional regression forests
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
 Imports:
+    fastDummies,
     DiceKriging,
     lmtest,
     Matrix,

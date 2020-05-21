@@ -1,7 +1,7 @@
 #' Merges a list of forests that were grown using the same data into one large forest.
 #'
 #' @param forest_list A `list` of forests to be concatenated.
-#'                        All forests must be of the same type, and the type must be a subclass of `grf`.
+#'                        All forests must be of the same type, and the type must be a subclass of `drf`.
 #'                        In addition, all forests must have the same 'ci.group.size'.
 #'                        Other tuning parameters (e.g. alpha, mtry, min.node.size, imbalance.penalty) are
 #'                        allowed to differ across forests.
@@ -62,8 +62,8 @@ validate_forest_list <- function(forest_list) {
   }
 
   first_forest <- forest_list[[1]]
-  if (!is(first_forest, "grf")) {
-    stop("Argument 'forest_list' must be a list of grf objects.
+  if (!is(first_forest, "drf")) {
+    stop("Argument 'forest_list' must be a list of drf objects.
            Be sure to use 'list(forest1, forest2), not 'c(forest1, forest2)'.")
   }
 

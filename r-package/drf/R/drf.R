@@ -1,13 +1,18 @@
-#' Regression forest
+#' Distributional Regression Forests
 #'
-#' Trains a regression forest that can be used to estimate
-#' the conditional mean function mu(x) = E[Y | X = x]
+#' Trains a distributional regression forest that can be used to estimate
+#' statistical functional F(P(Y | X)) for possibly multivariate Y.
 #'
-#' @param X The covariates used in the regression.
-#' @param Y The outcome.
+#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter,
+#'   one-hot-encoding will be implicitely used.
+#' @param Y The outcome. A matrix or data.frame of possibly multvariate responses.
 #' @param num.trees Number of trees grown in the forest. Note: Getting accurate
 #'                  confidence intervals generally requires more trees than
 #'                  getting accurate predictions. Default is 2000.
+#' @param splitting.rule a character value. The type of splitting rule used, can be either "CART" or "FourierMMD".
+#' @param num.features a numeric value, in case of "FourierMMD", the number of random features to sample.
+#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD".
+#' @param node.scaling a boolean value, should the responses be scaled or not by node.
 #' @param sample.weights (experimental) Weights given to an observation in estimation.
 #'                       If NULL, each observation is given the same weight. Default is NULL.
 #' @param clusters Vector of integers or factors specifying which cluster each observation corresponds to.
@@ -31,7 +36,7 @@
 #'                      Default is 5.
 #' @param honesty Whether to use honest splitting (i.e., sub-sample splitting). Default is TRUE.
 #'  For a detailed description of honesty, honesty.fraction, honesty.prune.leaves, and recommendations for
-#'  parameter tuning, see the grf
+#'  parameter tuning, see the grf reference for more information
 #'  \href{https://grf-labs.github.io/grf/REFERENCE.html#honesty-honesty-fraction-honesty-prune-leaves}{algorithm reference}.
 #' @param honesty.fraction The fraction of data that will be used for determining splits if honesty = TRUE. Corresponds
 #'                         to set J1 in the notation of the paper. Default is 0.5 (i.e. half of the data is used for
@@ -60,29 +65,40 @@
 #'                    to the maximum hardware concurrency.
 #' @param seed The seed of the C++ random number generator.
 #'
-#' @return A trained regression forest object. If tune.parameters is enabled,
-#'  then tuning information will be included through the `tuning.output` attribute.
+#' @return A trained distributional regression forest object.
 #'
 #' @examples
 #' \dontrun{
-#' # Train a standard regression forest.
+#' # Train a distributional regression forest with CART splitting rule.
 #' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)
-#' Y <- X[, 1] * rnorm(n)
-#' r.forest <- regression_forest(X, Y)
+#' Y <- X + matrix(rnorm(n * p), ncol=p)
+#' drf.forest <- drf(X = X, Y = Y)
 #'
-#' # Predict using the forest.
+#' # Predict conditional correlation.
 #' X.test <- matrix(0, 101, p)
 #' X.test[, 1] <- seq(-2, 2, length.out = 101)
-#' r.pred <- predict(r.forest, X.test)
+#' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' r.pred <- predict(r.forest)
+#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' 
+#' # Train a distributional regression forest with "FourierMMD" splitting rule.
+#' n <- 500
+#' p <- 10
+#' X <- matrix(rnorm(n * p), n, p)
+#' Y <- X + matrix(rnorm(n * p), ncol=p)
+#' drf.forest <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num.features = 10)
 #'
-#' # Predict with confidence intervals; growing more trees is now recommended.
-#' r.forest <- regression_forest(X, Y, num.trees = 100)
-#' r.pred <- predict(r.forest, X.test, estimate.variance = TRUE)
+#' # Predict conditional correlation.
+#' X.test <- matrix(0, 101, p)
+#' X.test[, 1] <- seq(-2, 2, length.out = 101)
+#' cor.pred <- predict(drf.forest, X.test, functional = "cor")
+#'
+#' # Predict on out-of-bag training samples.
+#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#'
 #' }
 #'
 #' @export
@@ -91,6 +107,10 @@
 #' @importFrom utils modifyList
 drf <-               function(X, Y,
                               num.trees = 500,
+                              splitting.rule = "CART",
+                              num.features = 10,
+                              bandwidth = 1.0,
+                              node.scaling = FALSE,
                               sample.weights = NULL,
                               clusters = NULL,
                               equalize.cluster.weights = FALSE,
@@ -109,21 +129,30 @@ drf <-               function(X, Y,
                               tune.num.draws = 1000,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
-                              seed = runif(1, 0, .Machine$integer.max),
-                              splitting.rule = "CART",
-                              num.features = 10,
-                              bandwidth = 1.0,
-                              node.scaling = FALSE) {
+                              seed = runif(1, 0, .Machine$integer.max)) {
   
-  validate_X(X)
-  validate_sample_weights(sample.weights, X)
+  # initial checks for X and Y
+  if (is.data.frame(X)) {
+    X.mat <- fastDummies::dummy_cols(X, remove_selected_columns = TRUE)
+    mat.col.names <- colnames(X.mat)
+  } else {
+    mat.col.names <- NULL
+  }
+  
+  if (is.data.frame(Y)) {
+    Y <- as.matrix(Y)
+  }
+  
+  
+  validate_X(X.mat)
+  validate_sample_weights(sample.weights, X.mat)
   #Y <- validate_observations(Y, X)
-  clusters <- validate_clusters(clusters, X)
+  clusters <- validate_clusters(clusters, X.mat)
   samples.per.cluster <- validate_equalize_cluster_weights(equalize.cluster.weights, clusters, sample.weights)
   num.threads <- validate_num_threads(num.threads)
 
-  all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
-                          "honesty.prune.leaves", "alpha", "imbalance.penalty")
+  #all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
+  #                        "honesty.prune.leaves", "alpha", "imbalance.penalty")
 
   data <- create_data_matrices(X.mat, outcome = scale(Y), sample.weights = sample.weights)
 
@@ -146,8 +175,6 @@ drf <-               function(X, Y,
                bandwidth = bandwidth,
                node_scaling = ifelse(node.scaling, 1, 0))
 
-    tuning.output <- NULL
-
    if (splitting.rule == "CART") {
      ##forest <- do.call(gini_train, c(data, args))
      forest <- do.call.rcpp(gini_train, c(data, args))
@@ -166,8 +193,7 @@ drf <-               function(X, Y,
    forest[["clusters"]] <- clusters
    forest[["equalize.cluster.weights"]] <- equalize.cluster.weights
    forest[["tunable.params"]] <- args[all.tunable.params]
-   forest[["tuning.output"]] <- tuning.output
-   forest[["one.hot.fun"]] <- one.hot.fun
+   forest[["mat.col.names"]] <- mat.col.names
   
    forest
 }
@@ -198,24 +224,36 @@ drf <-               function(X, Y,
 #'
 #' @examples
 #' \dontrun{
-#' # Train a standard regression forest.
-#' n <- 50
+#' # Train a distributional regression forest with CART splitting rule.
+#' n <- 500
 #' p <- 10
 #' X <- matrix(rnorm(n * p), n, p)
-#' Y <- X[, 1] * rnorm(n)
-#' r.forest <- regression_forest(X, Y)
+#' Y <- X + matrix(rnorm(n * p), ncol=p)
+#' drf.forest <- drf(X = X, Y = Y)
 #'
-#' # Predict using the forest.
+#' # Predict conditional correlation.
 #' X.test <- matrix(0, 101, p)
 #' X.test[, 1] <- seq(-2, 2, length.out = 101)
-#' r.pred <- predict(r.forest, X.test)
+#' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' r.pred <- predict(r.forest)
+#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' 
+#' # Train a distributional regression forest with "FourierMMD" splitting rule.
+#' n <- 500
+#' p <- 10
+#' X <- matrix(rnorm(n * p), n, p)
+#' Y <- X + matrix(rnorm(n * p), ncol=p)
+#' drf.forest <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num.features = 10)
 #'
-#' # Predict with confidence intervals; growing more trees is now recommended.
-#' r.forest <- regression_forest(X, Y, num.trees = 100)
-#' r.pred <- predict(r.forest, X.test, estimate.variance = TRUE)
+#' # Predict conditional correlation.
+#' X.test <- matrix(0, 101, p)
+#' X.test[, 1] <- seq(-2, 2, length.out = 101)
+#' cor.pred <- predict(drf.forest, X.test, functional = "cor")
+#'
+#' # Predict on out-of-bag training samples.
+#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#'
 #' }
 #'
 #' @method predict drf
@@ -229,15 +267,31 @@ predict.drf <- function(object,
                         n.sim = NULL,
                         ...) {
   
+  # if the newdata is a data.frame we should be careful about the non existing levels
+  if (is.data.frame(newdata)) {
+    
+    newdata.mat <- fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE)
+    col.to.add <- setdiff(object$mat.col.names, colnames(newdata.mat))
+    
+    for (col in col.to.add) {
+      newdata.mat[,col] <- 0
+    }
+    
+    newdata.mat <- newdata.mat[,object$mat.col.names]
+  } else {
+    
+    newdata.mat <- newdata
+  }
   
-  # support vector
-  if (is.null(dim(newdata))) {
-    newdata <- matrix(newdata, 1)
+  
+  # support vector as input 
+  if (is.null(dim(newdata.mat))) {
+    newdata.mat <- matrix(newdata.mat, 1)
   }
   
   # get the weights which are used in a second step
   w <- get_sample_weights(forest = object, 
-                          newdata = newdata, 
+                          newdata = newdata.mat, 
                           num.threads = num.threads)
   
   
@@ -257,23 +311,6 @@ predict.drf <- function(object,
     # return the weights 
     return(list(weights = w, 
                 y = object$Y.orig))
-    
-  # } else if (functional == "mean") {
-  #   
-  #   # return the conditional mean
-  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-  #   colnames(means) <- colnames(object$Y.orig)
-  #   
-  #   return(list(mean = means))
-    
-  # } else if (functional == "sd") {
-  #   
-  #   # return the conditional sd
-  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-  #   means2 <- t(apply(w, 1, function(ww) ww%*%(object$Y.orig^2)))
-  #   colnames(means) <- colnames(object$Y.orig)
-  #   
-  #   return(list(sd = sqrt(means2-(means)^2)))
     
   } else if (functional %in% c("mean",
                                "quantile", 
@@ -344,30 +381,9 @@ predict.drf <- function(object,
       }
       
       return(list(sd = sqrt(functional.mean2-(functional.mean)^2)))
-    # # otherwise if quantile provided then for a uni-dimensional functional quantiles are returned
-    # } else {
-    #   if (length(add.param$f(object$Y.ori[1,]))==1) {
-    #     functional.val <- t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t, 
-    #                                                                            w = ww, 
-    #                                                                            probs = add.param$quantiles)))
-    #     if (length(add.param$quantiles)==1) {
-    #       functional.val <- matrix(functional.val,ncol=1)
-    #     }
-    #     colnames(functional.val) <- paste("q=", round(add.param$quantiles, 2), sep="")
-    #   } else {
-    #     stop("quantile prediction only work for uni-dimensional functionals.")
-    #   }
-    #   
-    #   return(list(functional = functional.val))
-    # }
-    
     
   } else if (functional == "cor") {
     
-    # if (!require(wCorr)) {
-    #   stop("wCorr package missing.")
-    # }
-      
     # compute the functional on the training set
     functional.t <- t(apply(object$Y.orig, 
                             1, 
@@ -438,28 +454,6 @@ predict.drf <- function(object,
     
     return(list(normalPredictionScore = funs))
        
-  # }  else if (type == "normalPredictionScore_global") {
-  #   
-  #   if (!require(wCorr)) {
-  #     stop("wCorr package missing.")
-  #   }
-  #   
-  #   means <- t(apply(w, 1, function(ww) ww%*%object$Y.orig))
-  #   
-  #   add.param <- list(...)
-  #   input.cov <- add.param$cov.residuals
-  # 
-  #   n <- nrow(object$Y.orig)
-  #   d <- ncol(object$Y.orig)
-  #   
-  #   funs <- lapply(1:nrow(w), function(i) {
-  #     inv.cov <- solve(input.cov)
-  #     
-  #     return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
-  #   })
-  #   
-  #   return(list(normalPredictionScore_global=funs))
-  #   
   } else if (functional == "cdf") {
     
     if (!require(spatstat)) {

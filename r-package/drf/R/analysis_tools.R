@@ -3,7 +3,7 @@
 #' @param forest The trained forest.
 #' @param index The index of the tree to retrieve.
 #'
-#' @return A GRF tree object containing the below attributes.
+#' @return A DRF tree object containing the below attributes.
 #'     drawn_samples: a list of examples that were used in training the tree. This includes
 #'     examples that were used in choosing splits, as well as the examples that populate the leaf
 #'     nodes. Put another way, if honesty is enabled, this list includes both subsamples from the
@@ -231,40 +231,10 @@ leaf_stats.default <- function(forest, samples, ...){
 #' @return A named vector containing summary stats
 #'
 #' @method leaf_stats regression_forest
-leaf_stats.regression_forest <- function(forest, samples, ...){
+leaf_stats.drf <- function(forest, samples, ...){
   leaf_stats <- c()
   leaf_stats["avg_Y"] <- round(mean(forest$Y.orig[samples]), 2)
   return(leaf_stats)
 }
 
-#' Calculate summary stats given a set of samples for causal forests.
-#' @param forest The GRF forest
-#' @param samples The samples to include in the calculations.
-#' @param ... Additional arguments (currently ignored).
-#'
-#' @return A named vector containing summary stats
-#'
-#' @method leaf_stats causal_forest
-leaf_stats.causal_forest <- function(forest, samples, ...){
-  leaf_stats <- c()
-  leaf_stats["avg_Y"] <- round(mean(forest$Y.orig[samples]), 2)
-  leaf_stats["avg_W"] <- round(mean(forest$W.orig[samples]), 2)
-  return(leaf_stats)
-}
 
-#' Calculate summary stats given a set of samples for instrumental forests.
-#' @param forest The GRF forest
-#' @param samples The samples to include in the calculations.
-#' @param ... Additional arguments (currently ignored).
-#'
-#' @return A named vector containing summary stats
-#'
-#' @method leaf_stats instrumental_forest
-leaf_stats.instrumental_forest <- function(forest, samples, ...){
-
-  leaf_stats <- c()
-  leaf_stats["avg_Y"] <- round(mean(forest$Y.orig[samples]), 2)
-  leaf_stats["avg_W"] <- round(mean(forest$W.orig[samples]), 2)
-  leaf_stats["avg_Z"] <- round(mean(forest$Z.orig[samples]), 2)
-  return(leaf_stats)
-}
