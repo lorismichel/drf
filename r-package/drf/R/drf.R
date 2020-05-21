@@ -136,6 +136,7 @@ drf <-               function(X, Y,
     X.mat <- fastDummies::dummy_cols(X, remove_selected_columns = TRUE)
     mat.col.names <- colnames(X.mat)
   } else {
+    X.mat <- X
     mat.col.names <- NULL
   }
   
