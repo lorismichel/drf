@@ -12,7 +12,7 @@ r_packages:
   - devtools
   - testthat
   - roxygen2
-  # Vignette requirements are installed in the `deploy` section.
+  # Vignette requirements are installed in the `deploy` section. build
 
 matrix:
   include:
