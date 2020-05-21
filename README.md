@@ -5,7 +5,7 @@
 
 A package for forest-based conditional distribution estimation of a possibly multivariate response. The estimated distribution is in a simple form which allows for simple and fast computation of different functionals of the conditional distributions such as, for example, conditional quantiles, conditional correlations or conditional probability statements. One can do a heterogeneity adjustment with DRF by obtaining the weighting function which describes the relevance of each training point for a given test point and which can further be used as an input to some other method.
 
-This repository started as a fork from the [grf](https://github.com/grf-labs/grf) repository, which is itself forked from [ranger](https://github.com/imbs-hl/ranger) repository -- we sincerely thank the authors of both repositories for their useful and free packages.
+This repository started as a fork from the [grf](https://github.com/grf-labs/grf) repository, which is itself forked from [ranger](https://github.com/imbs-hl/ranger) repository. We sincerely thank the authors of both repositories for their useful and free packages.
 
 ### Installation
 
