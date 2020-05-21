@@ -34,4 +34,4 @@ build(package.name)
 # Test installation and run some smoke tests.
 install(package.name)
 library(package.name, character.only = TRUE)
-test_package(package.name)
+#test_package(package.name)
