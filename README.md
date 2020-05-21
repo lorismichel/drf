@@ -1,4 +1,4 @@
-# distributional random forests ![logoDRF](https://https://github.com/lorismichel/drf/tree/master/experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_1.png)
+# distributional random forests ![logoDRF](https://github.com/lorismichel/drf/blob/master/experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_0.png)
 
 [![Build Status](https://travis-ci.com/lorismichel/drf.svg?branch=master)](https://travis-ci.com/lorismichel/drf)
 
