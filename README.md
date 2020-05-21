@@ -1,7 +1,6 @@
-# Distributional Random Forests
-[![Build Status](https://travis-ci.com/lorismichel/drf.svg?branch=master)](https://travis-ci.com/lorismichel/drf)
+# Distributional Random Forests <a href='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png'><img src='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png' align="right" height="140" /></a>
 
-<a href='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png'><img src='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png' align="right" height="160" /></a>
+[![Build Status](https://travis-ci.com/lorismichel/drf.svg?branch=master)](https://travis-ci.com/lorismichel/drf)
 
 A package for forest-based conditional distribution estimation of a possibly multivariate response. The estimated distribution is in a simple form which allows for simple and fast computation of different functionals of the conditional distributions such as, for example, conditional quantiles, conditional correlations or conditional probability statements. One can do a heterogeneity adjustment with DRF by obtaining the weighting function which describes the relevance of each training point for a given test point and which can further be used as an input to some other method.
 
