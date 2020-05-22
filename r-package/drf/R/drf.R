@@ -188,7 +188,7 @@ drf <-               function(X, Y,
    
    class(forest) <- c("drf")
    forest[["ci.group.size"]] <- ci.group.size
-   forest[["X.orig"]] <- X
+   forest[["X.orig"]] <- X.mat
    forest[["Y.orig"]] <- Y
    forest[["sample.weights"]] <- sample.weights
    forest[["clusters"]] <- clusters
