@@ -1,18 +1,17 @@
 sudo: required
 language: R
-latex: false
-cache: packages
-
-branches:
-  only:
-    - master
-
 r:
   #- 3.1
   #- 3.2
   - oldrel
   - release
   - devel
+latex: false
+cache: packages
+
+branches:
+  only:
+    - master
 
 r_packages:
   # build_package.R requirements.
