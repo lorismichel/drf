@@ -1,11 +1,5 @@
 sudo: required
 language: R
-r:
-  #- 3.1
-  #- 3.2
-  - oldrel
-  - release
-  - devel
 latex: false
 cache: packages
 
