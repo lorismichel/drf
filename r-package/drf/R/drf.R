@@ -107,7 +107,7 @@
 #' @importFrom utils modifyList
 drf <-               function(X, Y,
                               num.trees = 500,
-                              splitting.rule = "CART",
+                              splitting.rule = "FourierMMD",
                               num.features = 10,
                               bandwidth = 1.0,
                               node.scaling = FALSE,
@@ -133,7 +133,7 @@ drf <-               function(X, Y,
   
   # initial checks for X and Y
   if (is.data.frame(X)) {
-    X.mat <- fastDummies::dummy_cols(X, remove_selected_columns = TRUE)
+    X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
     mat.col.names <- colnames(X.mat)
   } else {
     X.mat <- X
@@ -271,7 +271,7 @@ predict.drf <- function(object,
   # if the newdata is a data.frame we should be careful about the non existing levels
   if (is.data.frame(newdata)) {
     
-    newdata.mat <- fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE)
+    newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
     col.to.add <- setdiff(object$mat.col.names, colnames(newdata.mat))
     
     for (col in col.to.add) {
