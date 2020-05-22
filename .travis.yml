@@ -7,6 +7,13 @@ branches:
   only:
     - master
 
+r:
+  #- 3.1
+  #- 3.2
+  - oldrel
+  - release
+  - devel
+
 r_packages:
   # build_package.R requirements.
   - devtools
