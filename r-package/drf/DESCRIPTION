@@ -5,9 +5,10 @@ Author: Loris Michel, Domagoj Cevid
 Maintainer: Loris Michel <michel@stat.math.ethz.ch>
 BugReports: https://github.com/lorismichel/mrf/issues
 Description: A package implementing distributional random forests.
-    R (>= 3.5.0)
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
+Depends:
+    R (>= 3.5.0)
 Imports:
     fastDummies,
     Matrix,
@@ -16,7 +17,6 @@ Imports:
     spatstat
 RoxygenNote: 7.1.0
 Suggests:
-    DiagrammeR,
     testthat
 SystemRequirements: GNU make
 URL: https://github.com/lorismichel/drf
