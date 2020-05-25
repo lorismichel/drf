@@ -1,24 +1,19 @@
 Package: drf
-Title: Distributional Regression Forests
+Title: Distributional Random Forests
 Version: 1.0.0
-Authors@R: c(
-    person("Loris", "Michel", role = c("aut", "cre"), email = "michel@stat.math.ethz.ch"),
-    person("Domagoj", "Cevid", role = c("ctb"), email = "cevid@stat.math.ethz.ch")
-    )
+Author: Loris Michel, Domagoj Cevid
+Maintainer: Loris Michel <michel@stat.math.ethz.ch>
 BugReports: https://github.com/lorismichel/mrf/issues
-Description: A package implementing distributional regression forests
+Description: A package implementing distributional random forests.
     R (>= 3.5.0)
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
 Imports:
     fastDummies,
-    DiceKriging,
-    lmtest,
     Matrix,
     methods,
     Rcpp (>= 0.12.15),
-    sandwich (>= 2.4-0),
-    parallel
+    spatstat
 RoxygenNote: 7.1.0
 Suggests:
     DiagrammeR,

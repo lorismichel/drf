@@ -129,7 +129,7 @@ drf <-               function(X, Y,
                               tune.num.draws = 1000,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
-                              seed = runif(1, 0, .Machine$integer.max)) {
+                              seed = stats::runif(1, 0, .Machine$integer.max)) {
   
   # initial checks for X and Y
   if (is.data.frame(X)) {
@@ -202,26 +202,19 @@ drf <-               function(X, Y,
 #' Predict with a drf forest
 #'
 #'
-#' @param object The trained forest.
+#' @param object The trained drf forest.
 #' @param newdata Points at which predictions should be made. If NULL, makes out-of-bag
 #'                predictions on the training set instead (i.e., provides predictions at
 #'                Xi using only trees that did not use the i-th training example). Note
 #'                that this matrix should have the number of columns as the training
 #'                matrix, and that the columns must appear in the same order.
-#' @param type weights
+#' @param functional which type of statistical functional. One option between "mean", "sd", "quantile", "cor", "cov", "ecdf" or "normalPredictionScore"
+#' @param transformation a function giving a transformation of the responses, by default if NULL, the identity \code{function(y) y} is used.
 #' @param num.threads Number of threads used in training. If set to NULL, the software
 #'                    automatically selects an appropriate amount.
+#' @param ... additional parameters.
 #'
-#' @return Vector of predictions, along with estimates of the error and
-#'         (optionally) its variance estimates. Column 'predictions' contains
-#'         estimates of E[Y|X=x]. The square-root of column 'variance.estimates' is the standard error
-#          of these predictions. Column 'debiased.error' contains out-of-bag estimates of
-#'         the test mean-squared error. Column 'excess.error' contains
-#'         jackknife estimates of the Monte-carlo error. The sum of 'debiased.error'
-#'         and 'excess.error' is the raw error attained by the current forest, and
-#'         'debiased.error' alone is an estimate of the error attained by a forest with
-#'         an infinite number of trees. We recommend that users grow
-#'         enough forests to make the 'excess.error' negligible.
+#' @return a list containing an entry with the same name as the functional selected. 
 #'
 #' @examples
 #' \dontrun{
@@ -265,7 +258,6 @@ predict.drf <- function(object,
                         transformation = NULL,
                         functional = NULL,
                         num.threads = NULL,
-                        n.sim = NULL,
                         ...) {
   
   # if the newdata is a data.frame we should be careful about the non existing levels
@@ -456,10 +448,6 @@ predict.drf <- function(object,
     return(list(normalPredictionScore = funs))
        
   } else if (functional == "cdf") {
-    
-    if (!require(spatstat)) {
-      stop("spatstat package missing.")
-    }
     
     functional.t <- apply(object$Y.orig, 
                             1, 
