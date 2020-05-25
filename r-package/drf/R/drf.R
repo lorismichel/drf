@@ -1,14 +1,12 @@
 #' Distributional Random Forests
 #'
 #' Trains a distributional random forest that can be used to estimate
-#' statistical functional F(P(Y | X)) for possibly multivariate Y.
+#' statistical functional F(P(Y | X)) for possibly multivariate response Y.
 #'
-#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter,
+#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter case,
 #'   one-hot-encoding will be implicitely used.
-#' @param Y The outcome. A matrix or data.frame of possibly multvariate responses.
-#' @param num.trees Number of trees grown in the forest. Note: Getting accurate
-#'                  confidence intervals generally requires more trees than
-#'                  getting accurate predictions. Default is 2000.
+#' @param Y The (multivariate) outcome. A matrix or data.frame of numeric values.
+#' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule a character value. The type of splitting rule used, can be either "CART" or "FourierMMD".
 #' @param num.features a numeric value, in case of "FourierMMD", the number of random features to sample.
 #' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD".
@@ -51,15 +49,6 @@
 #' @param ci.group.size The forest will grow ci.group.size trees on each subsample.
 #'                      In order to provide confidence intervals, ci.group.size must
 #'                      be at least 2. Default is 2.
-#' @param tune.parameters A vector of parameter names to tune.
-#'  If "all": all tunable parameters are tuned by cross-validation. The following parameters are
-#'  tunable: ("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
-#'   "honesty.prune.leaves", "alpha", "imbalance.penalty"). If honesty is FALSE the honesty.* parameters are not tuned.
-#'  Default is "none" (no parameters are tuned).
-#' @param tune.num.trees The number of trees in each 'mini forest' used to fit the tuning model. Default is 50.
-#' @param tune.num.reps The number of forests used to fit the tuning model. Default is 100.
-#' @param tune.num.draws The number of random parameter values considered when using the model
-#'                          to select the optimal parameters. Default is 1000.
 #' @param compute.oob.predictions Whether OOB predictions on training set should be precomputed. Default is TRUE.
 #' @param num.threads Number of threads used in training. By default, the number of threads is set
 #'                    to the maximum hardware concurrency.
@@ -123,10 +112,6 @@ drf <-               function(X, Y,
                               alpha = 0.05,
                               imbalance.penalty = 0,
                               ci.group.size = 2,
-                              tune.parameters = "none",
-                              tune.num.trees = 50,
-                              tune.num.reps = 100,
-                              tune.num.draws = 1000,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
                               seed = stats::runif(1, 0, .Machine$integer.max)) {
@@ -206,9 +191,9 @@ drf <-               function(X, Y,
 #' @param newdata Points at which predictions should be made. If NULL, makes out-of-bag
 #'                predictions on the training set instead (i.e., provides predictions at
 #'                Xi using only trees that did not use the i-th training example). Note
-#'                that this matrix should have the number of columns as the training
+#'                that this matrix (or vector) should have the number of columns as the training
 #'                matrix, and that the columns must appear in the same order.
-#' @param functional which type of statistical functional. One option between "mean", "sd", "quantile", "cor", "cov", "ecdf" or "normalPredictionScore"
+#' @param functional which type of statistical functional. One option between "mean", "sd", "quantile", "cor", "cov", "ecdf" or "normalPredictionScore".
 #' @param transformation a function giving a transformation of the responses, by default if NULL, the identity \code{function(y) y} is used.
 #' @param num.threads Number of threads used in training. If set to NULL, the software
 #'                    automatically selects an appropriate amount.
