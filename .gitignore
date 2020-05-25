@@ -1,2 +1,11 @@
 *.DS_Store
 .Rproj.user
+
+# Compiled python modules.
+python-package/*.pyc
+
+# Setuptools distribution folder.
+python-package/dist/
+
+# Python egg metadata, regenerated from source files by setuptools.
+python-package/*.egg-info
