@@ -17,6 +17,7 @@ Imports:
     spatstat
 RoxygenNote: 7.1.0
 Suggests:
+    DiagrammeR,
     testthat
 SystemRequirements: GNU make
 URL: https://github.com/lorismichel/drf
