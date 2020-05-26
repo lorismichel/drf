@@ -2,12 +2,12 @@
 
 # libs
 library(copula)
-library(mrf)
+library(drf)
 library(MASS)
 library(ggplot2)
 
 # source
-setwd('~/Documents/projects/heterogeneity/mrf')
+#setwd('~/Documents/projects/heterogeneity/mrf')
 source("./experiments/copula_examples/helpers.R")
 
 # repro
@@ -69,11 +69,11 @@ colnames(Y) <- c("Y1", "Y2")
 
 
 ## fitting the models and getting predictions
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, 
-                   splitting.rule = "fourier",
-                   num_features = 3,  
+mRF_fourier <- drf(X = X, Y = Y, num.trees = 2000, 
+                   splitting.rule = "FourierMMD",
+                   num.features = 10,  
                    bandwidth = 1, 
-                   node_scaling = FALSE,
+                   node.scaling = FALSE,
                    min.node.size = 20)
 
 
@@ -82,7 +82,7 @@ if (SC == 0) {
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_POOLED_",
                         SC, 
                         ".png"), 
-      width = 400, height = 400)
+      width = 800, height = 400)
   par(mfrow=c(1,1))
   par(mar=rep(4.7,4))
   plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1,cex=0.1)
@@ -344,11 +344,10 @@ if (SC == 1) {
 }
 
 # comparison with gini for corr and hsic
-
-mRF_gini <- mrf(X = X, Y = Y, num.trees = 500, 
-                   splitting.rule = "gini",
+mRF_gini <- drf(X = X, Y = Y, num.trees = 500, 
+                   splitting.rule = "CART",
                    bandwidth = 1, 
-                   node_scaling = FALSE,
+                   node.scaling = FALSE,
                    min.node.size = 20)
 
 ### helpers functions (! need to be defined here since using variables defined in this file)
@@ -377,13 +376,13 @@ get_corr_grid <- function(fit_obj, grid){
 
 if (SC == 0) {
    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
-       width = 500, height = 500)
+       width = 800, height = 400)
    par(mar=c(5.1, 5.3, 4.1, 2.1))
    x = seq(-1, 1, by=0.03)
    par(mfrow=c(1,1))
    plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(hat(rho)(X[1])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1,lwd=2,lty=2)
-   lines(x, get_corr(mRF_fourier, x), col='blue', lty=2, lwd=3)
-   lines(x, get_corr(mRF_gini, x), col='red', lty=2, lwd=3)
+   lines(x, get_corr(mRF_fourier, x), col='blue', lty=1, lwd=3)
+   lines(x, get_corr(mRF_gini, x), col='red', lty=1, lwd=3)
    dev.off()
 } else if (SC == 1) {
 
@@ -436,7 +435,7 @@ get_hsic_grid <- function(fit_obj, grid){
 
 if (SC == 0) {
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
-    width = 500, height = 500)
+    width = 800, height = 400)
 
   x = seq(-1, 1, by=0.05)
   par(mar=c(5.1, 5.3, 4.1, 2.1))
@@ -455,7 +454,7 @@ dev.off()
   Grid2D$HSIC <- get_hsic_grid(mRF_fourier, Grid2D)
   
   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
-      width = 500, height = 500)
+      width = 800, height = 400)
   
   ggplot(Grid2D, aes(x=X1, y=X2))+
     labs(x=expression(X[1]),y=expression(X[2])) +

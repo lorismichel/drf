@@ -118,7 +118,14 @@ drf <-               function(X, Y,
   
   # initial checks for X and Y
   if (is.data.frame(X)) {
-    X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
+    if (any(apply(X, 2, class) %in% c("factor", "character"))) {
+      any.factor.or.character <- TRUE
+      X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
+    } else {
+      any.factor.or.character <- FALSE
+      X.mat <- as.matrix(X.mat)
+    }
+    
     mat.col.names <- colnames(X.mat)
   } else {
     X.mat <- X
@@ -180,7 +187,8 @@ drf <-               function(X, Y,
    forest[["equalize.cluster.weights"]] <- equalize.cluster.weights
    forest[["tunable.params"]] <- args[all.tunable.params]
    forest[["mat.col.names"]] <- mat.col.names
-  
+   forest[["any.factor.or.character"]] <- any.factor.or.character
+   
    forest
 }
 
@@ -248,7 +256,12 @@ predict.drf <- function(object,
   # if the newdata is a data.frame we should be careful about the non existing levels
   if (is.data.frame(newdata)) {
     
-    newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
+    if (object$any.factor.or.character) {
+      newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
+    } else {
+      newdata.mat <- as.matrix(newdata)
+    }
+    
     col.to.add <- setdiff(object$mat.col.names, colnames(newdata.mat))
     
     for (col in col.to.add) {
