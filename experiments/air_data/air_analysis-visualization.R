@@ -46,7 +46,7 @@ for(i in 1:6){
 }
 
 #choose target pollutants
-pollutants = c('PM2.5', 'NO2')
+pollutants = c('PM2.5', 'NO2', 'O3', 'PM10', 'CO', 'SO2')
 targets = c(paste('max_', pollutants, sep=''))
 dataset <- air_data[-c(11:22)]
 dataset <- cbind(dataset, air_data[, targets])

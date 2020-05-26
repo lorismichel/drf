@@ -2,7 +2,7 @@ library(mrf)
 library(ggplot2)
 
 # dimensions
-p <- 40
+p <- 10
 n <- 2000
 
 # CONSTRUCTION TRAINING DATA
@@ -23,7 +23,7 @@ Y <- t(apply(X, 1, function(xx) {
 }))
 
 #TRAINING METHODS
-mRF <- mrf(X = X, Y = Y, splitting.rule = "fourier", num_features=200)
+mRF <- mrf(X = X, Y = Y, splitting.rule = "fourier", num_features=50)
 mRF2 <- mrf(X = X, Y = Y, splitting.rule = "fourier", num_features=5)
 giniRF <- mrf(X = X, Y = Y, splitting.rule = "gini")
 
