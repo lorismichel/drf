@@ -85,7 +85,7 @@ if (SC == 0) {
       width = 600, height = 400)
   par(mfrow=c(1,1))
   par(mar=rep(4.7,4))
-  plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1,cex=0.1)
+  plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,cex=0.1)
   dev.off()
 }
 
@@ -182,7 +182,7 @@ if (SC == 0) {
                   cex.points = 0.1, 
                   xlim = c(-4.3,4.3), 
                   ylim = c(-4.3,4.3),
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1,cex.main=2,font.main=1,font.axis=1,font.lab=1)
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,cex.main=2,font.main=1,font.axis=1,font.lab=1)
     dev.off()
   }
 }
@@ -261,7 +261,7 @@ if (SC == 1) {
                   xlim = c(-4.2,4.2),
                   ylim = c(-4.2,4.2),
                   cex.points = 0.1, 
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1,
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,
                   font.main=1,cex.main=2,font.axis=1,font.lab=1)
     dev.off()
   }
@@ -338,7 +338,7 @@ if (SC == 1) {
                   y = y.sample[,2], 
                   main = parse(text=paste0("~X[1] ==", xx[1], "~X[2] ==", xx[2], "~X[3] ==", xx[3])),
                   cex.points = 0.1, 
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1,cex.main=2,font.main=1,font.axis=1,font.lab=1)
+                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,cex.main=2,font.main=1,font.axis=1,font.lab=1)
     dev.off()
   }
 }
@@ -380,7 +380,7 @@ if (SC == 0) {
    par(mar=c(5.1, 5.3, 4.1, 2.1))
    x = seq(-1, 1, by=0.03)
    par(mfrow=c(1,1))
-   plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(hat(rho)(X[1])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=2,lwd=3,lty=2)
+   plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(hat(rho)(X[1])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,lwd=3,lty=2)
    lines(x, get_corr(mRF_fourier, x), col='blue', lty=1, lwd=3)
    lines(x, get_corr(mRF_gini, x), col='red', lty=1, lwd=3)
    dev.off()
@@ -440,7 +440,7 @@ if (SC == 0) {
   x = seq(-1, 1, by=0.05)
   par(mar=c(5.1, 5.3, 4.1, 2.1))
   par(mfrow=c(1,1))
-  plot(x, get_hsic(mRF_fourier, x), col='blue', lwd=3, xlab=expression(X[1]),ylab="HSIC",type='l', ylim=c(0, 0.06),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=2)
+  plot(x, get_hsic(mRF_fourier, x), col='blue', lwd=3, xlab=expression(X[1]),ylab="HSIC",type='l', ylim=c(0, 0.06),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5)
   lines(x, get_hsic(mRF_gini, x), col='red', lwd = 3)
 dev.off()
 } else if (SC == 1) {
