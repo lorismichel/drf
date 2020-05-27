@@ -23,7 +23,7 @@ SC <- 0
 
 # dimensions
 d <- 5
-n <- 10000
+n <- 1000
 
 
 # CONSTRUCTION
