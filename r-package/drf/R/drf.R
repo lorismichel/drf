@@ -137,6 +137,10 @@ drf <-               function(X, Y,
   }
   
   if (is.data.frame(Y)) {
+    
+    if (any(apply(Y, 2, class) %in% c("factor", "character"))) {
+      stop("Y should only contain numeric variables.")
+    }
     Y <- as.matrix(Y)
   }
   
