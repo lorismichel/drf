@@ -7,10 +7,15 @@
 #' @method print drf
 #' @export
 print.drf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
+  
   var.importance <- variable_importance(x, decay.exponent, max.depth)
   var.importance <- c(round(var.importance, 3))
-  names(var.importance) <- 1:length(var.importance)
-
+  if (is.null(x$mat.col.names)) {
+    names(var.importance) <- 1:length(var.importance)
+  } else {
+    names(var.importance) <- x$mat.col.names
+  }
+  
   main.class <- class(x)[1]
   num.samples <- nrow(x$X.orig)
 
