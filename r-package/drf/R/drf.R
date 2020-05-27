@@ -133,6 +133,7 @@ drf <-               function(X, Y,
   } else {
     X.mat <- X
     mat.col.names <- NULL
+    any.factor.or.character <- FALSE
   }
   
   if (is.data.frame(Y)) {
