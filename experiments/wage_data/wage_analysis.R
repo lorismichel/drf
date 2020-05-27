@@ -40,7 +40,7 @@ ggplot(data, aes(log_wage)) +
         axis.title.x = element_text(size=19),
         axis.title.y = element_text(size=19))+
   labs(x='log(hourly_wage)')
-#ggsave('~/Documents/projects/heterogeneity/paper/observational.png', width=16, height=11, units='cm')
+#ggsave('~/Documents/projects/heterogeneity/paper/wage_data/observational.png', width=16, height=11, units='cm')
 
 quantile_male = wtd.quantile(x=data$log_wage, weights=data$plotweight*(data$sex=='male'), normwt=TRUE, probs=0.5)
 quantile_female = wtd.quantile(x=data$log_wage, weights=data$plotweight*(data$sex=='female'), normwt=TRUE, probs=0.5)
@@ -154,16 +154,20 @@ for(i in sample((1:nrow(X))[-train_idx], 50)){
 #165076 veterinarian - high salary
 #81835 nurse -> interesting
 
-###########################################################
-
-N=800
+############################################################################
+N=1000
 plotdf$plotweight = 0
 cnt=0
-for(i in sample((1:nrow(X))[-train_idx], N)){
+
+which = (1:nrow(X))[-train_idx]
+which = which[data$sex[which] == 'female']
+set.seed(22)
+for(i in sample(which, N, replace=FALSE)){
   print(cnt)
   cnt = cnt+1
-  test_point = X[i,]
+  #print(data[i,])
   
+  test_point = X[i,]
   weights = predict(drf_fit, newdata=matrix(test_point, nrow=1))$weights[1,]
   
   propensity = sum(weights[plotdf$sex=='female'])
@@ -171,93 +175,53 @@ for(i in sample((1:nrow(X))[-train_idx], N)){
   plotdf$plotweight[plotdf$sex=='male'] = plotdf$plotweight[plotdf$sex=='male'] + weights[plotdf$sex=='male']/(1-propensity)/N
 }
 
-#save(plotdf, file='~/Documents/projects/heterogeneity/wage_data/computed_data2')
-load(file='~/Documents/projects/heterogeneity/wage_data/computed_data2')
+save(plotdf, file='~/Documents/projects/heterogeneity/wage_data/computed_data4')
+#load(file='~/Documents/projects/heterogeneity/wage_data/computed_data4')
 
-plotdf$log_wage = data[train_idx,]$log_wage
 #interventional distribution
 ggplot(plotdf, aes(log_wage)) +
-  geom_density(adjust=2, alpha = 0.3, show.legend=TRUE,  aes(fill=sex, weight=plotweight)) +
+  geom_density(adjust=2.5, alpha = 0.3, show.legend=TRUE,  aes(fill=sex, weight=plotweight)) +
   coord_cartesian(xlim=c(0.7, 5.8)) +
   theme_light()+
-  scale_fill_discrete(name = "gender", labels = c('female', "male"))+
-  theme(legend.position = c(0.83, 0.66),
-        legend.text=element_text(size=14),
-        legend.title=element_text(size=16),
-        legend.background = element_rect(fill=alpha('white', 0.5)),
-        axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        axis.title.x = element_text(size=15),
-        axis.title.y = element_text(size=15))+
+  scale_fill_discrete(name = "", labels = c("observed women's wages", "wages if they were men"))+
+  theme(legend.position = c(0.76, 0.98),
+        legend.text=element_text(size=13.5),
+        legend.title=element_text(size=20),
+        legend.background = element_rect(fill=alpha('white', 0)),
+        axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        axis.title.x = element_text(size=19),
+        axis.title.y = element_text(size=19))+
   labs(x='log(hourly wage)')
-#ggsave('~/Documents/projects/heterogeneity/paper/counterfactual.png', width=16, height=11, units='cm')
+
+ggsave('~/Documents/projects/heterogeneity/paper/wage_data/counterfactual2.png', width=16, height=11, units='cm')
+
+quantile_male = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=0.5)
+quantile_female = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=0.5)
+exp(quantile_female)/exp(quantile_male)
 
 ####################################
 library(Hmisc)
 grid = seq(0.001, 0.999, length.out=1000)
-quantile_male = wtd.quantile(x=exp(plotdf$log_wage)*40*5*49, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=grid)
-quantile_female = wtd.quantile(x=exp(plotdf$log_wage)*40*5*49, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=grid)
-idx1 = c(200, 400, 600, 800, 900, 940, 960, 970, 980, 990, 991, 992, 993, 994, 995)
+quantile_male = wtd.quantile(x=exp(plotdf$log_wage)*40*49, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=grid)
+quantile_female = wtd.quantile(x=exp(plotdf$log_wage)*40*49, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=grid)
+idx1 = c(200, 500, 700, 800, 900, 950, 970, 980)
+idx2 = c(990)
 qplot(quantile_male, quantile_female, geom='line', size=I(1)) + 
   geom_abline(color='red', linetype='dashed', size=0.6) +
-  annotate(x=quantile_male[idx1]+7500, y=quantile_female[idx1]-12000, "text", label=round(grid[idx1], 2), size=4.6) +
-  #annotate(x=quantile_male[idx2], y=quantile_female[idx2]-18000, "text", label=round(grid[idx2], 3)) +
+  annotate(x=quantile_male[idx1]+7500, y=quantile_female[idx1]-11000, "text", label=round(grid[idx1], 2), size=4.6) +
+  annotate(x=quantile_male[idx2]-6000, y=quantile_female[idx2]-14000, "text", label=round(grid[idx2], 3), size=4.2) +
   annotate(x=quantile_male[c(idx1, idx2)], y=quantile_female[c(idx1, idx2)], "point", size=2.5) +
   theme_light()+
-  theme(axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        axis.title.x = element_text(size=15),
-        axis.title.y = element_text(size=15))+
+  theme(axis.text.x = element_text(size=14),
+        axis.text.y = element_text(size=14),
+        axis.title.x = element_text(size=19),
+        axis.title.y = element_text(size=19))+
   coord_cartesian(xlim=c(0, 320000), ylim=c(0, 320000)) +
   scale_x_continuous(breaks=c(0, 100000, 200000, 300000),
                      labels=c("0", "100K", "200K", "300K")) +
   scale_y_continuous(breaks=c(0, 100000, 200000, 300000),
                      labels=c("0", "100K", "200K", "300K")) +
   labs(x='wage quantile men', y='wage quantile women')
-ggsave('~/Documents/projects/heterogeneity/paper/wage_quantiles2.png', width=16, height=11, units='cm')
+ggsave('~/Documents/projects/heterogeneity/paper/wage_data/wage_quantiles2.png', width=16, height=11, units='cm')
 
-#####################################
-N=1000
-plotdf$plotweight = 0
-cnt=0
-
-which = (1:nrow(X))[-train_idx]
-which = which[data$sex[which] == 'female']
-for(i in sample(which, N, replace=FALSE)){
-  print(cnt)
-  cnt = cnt+1
-  print(data[i,])
-  
-  test_point = X[i,]
-  weights = predict(mrf_fit, newdata=matrix(test_point, nrow=1))$weights[1,]
-  
-  propensity = sum(weights[plotdf$sex=='female'])
-  plotdf$plotweight[plotdf$sex=='female'] = plotdf$plotweight[plotdf$sex=='female'] + weights[plotdf$sex=='female']/propensity/N
-  plotdf$plotweight[plotdf$sex=='male'] = plotdf$plotweight[plotdf$sex=='male'] + weights[plotdf$sex=='male']/(1-propensity)/N
-}
-
-#save(plotdf, file='~/Documents/projects/heterogeneity/wage_data/computed_data3')
-load(file='~/Documents/projects/heterogeneity/wage_data/computed_data3')
-
-#interventional distribution
-ggplot(plotdf, aes(log_wage)) +
-  geom_density(adjust=2, alpha = 0.3, show.legend=TRUE,  aes(fill=sex, weight=plotweight)) +
-  coord_cartesian(xlim=c(-0.9, 4.4)) +
-  theme_light()+
-  scale_fill_discrete(name = "", labels = c("observed women's wages", "wages if they were men"))+
-  theme(legend.position = c(0.78, 0.95),
-        legend.text=element_text(size=13),
-        legend.title=element_text(size=16),
-        legend.background = element_rect(fill=alpha('white', 0)),
-        axis.text.x = element_text(size=12),
-        axis.text.y = element_text(size=12),
-        axis.title.x = element_text(size=15),
-        axis.title.y = element_text(size=15))+
-  labs(x='log(hourly_wage)')
-ggsave('~/Documents/projects/heterogeneity/paper/counterfactual2.png', width=16, height=11, units='cm')
-
-quantile_male = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=0.5)
-quantile_female = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=0.5)
-#avg_female = sum(data$log_wage[data$sex=='female']*data$plotweight[data$sex=='female'])
-#avg_male = sum(data$log_wage[data$sex=='male']*data$plotweight[data$sex=='male'])
-exp(quantile_female)/exp(quantile_male)
