@@ -118,12 +118,15 @@ drf <-               function(X, Y,
   
   # initial checks for X and Y
   if (is.data.frame(X)) {
+    
     if (any(apply(X, 2, class) %in% c("factor", "character"))) {
+      
       any.factor.or.character <- TRUE
       X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
     } else {
+      
       any.factor.or.character <- FALSE
-      X.mat <- as.matrix(X.mat)
+      X.mat <- as.matrix(X)
     }
     
     mat.col.names <- colnames(X.mat)
