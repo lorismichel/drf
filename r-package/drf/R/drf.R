@@ -341,7 +341,7 @@ predict.drf <- function(object,
                             function(yy) transformation(yy)))
     
     # check length one (R size management)
-    if (length(transformation(object$Y.ori[1,])) == 1) {
+    if (length(transformation(object$Y.orig[1,])) == 1) {
       functional.t <- t(functional.t)
     }
       
@@ -375,11 +375,13 @@ predict.drf <- function(object,
       functional.mean <- t(apply(w, 1, function(ww) ww%*%functional.t))
       
       # check length one (R size management)
-      if (length(transformation(object$Y.ori[1,])) == 1) {
+      if (length(transformation(object$Y.orig[1,])) == 1) {
         
         functional.mean <- t(functional.mean)
       }
       
+      colnames(functional.mean) <- colnames(object$Y.orig)
+        
       return(list(mean = functional.mean))
       
     } else if (functional == "sd") {
@@ -388,14 +390,17 @@ predict.drf <- function(object,
       functional.mean2 <- t(apply(w, 1, function(ww) ww%*%(functional.t)^2))
       
       # check length one (R size management)
-      if (length(transformation(object$Y.ori[1,])) == 1) {
+      if (length(transformation(object$Y.orig[1,])) == 1) {
         
         
         functional.mean <- t(functional.mean)
         functional.mean2 <- t(functional.mean2)
       }
       
-      return(list(sd = sqrt(functional.mean2-(functional.mean)^2)))
+      functional.sd <- sqrt(functional.mean2-(functional.mean)^2
+      colnames(functional.sd) <- colnames(object$Y.orig)      
+      
+      return(list(sd = functional.sd)))
     
   } else if (functional == "cor") {
     
@@ -405,12 +410,12 @@ predict.drf <- function(object,
                             function(yy) transformation(yy)))
     
     # check length one (R size management)
-    if (length(transformation(object$Y.ori[1,])) == 1) {
+    if (length(transformation(object$Y.orig[1,])) == 1) {
       stop("cor available only for multi-dimensional transformation.")
     }
     
     cor.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
-                     dimnames = list(NULL, rownames(object$Y.orign), colnames(object$Y.orig)))
+                     dimnames = list(NULL, colnames(object$Y.orign), colnames(object$Y.orig)))
     
     for (i in 1:nrow(w)) {
       cor.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]), cor = TRUE)$cor
@@ -426,12 +431,12 @@ predict.drf <- function(object,
                             function(yy) transformation(yy)))
     
     # check length one (R size management)
-    if (length(transformation(object$Y.ori[1,])) == 1) {
+    if (length(transformation(object$Y.orig[1,])) == 1) {
       stop("cor available only for multi-dimensional transformation.")
     }
     
     cov.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
-                     dimnames = list(NULL, rownames(object$Y.orign), colnames(object$Y.orig)))
+                     dimnames = list(NULL, colnames(object$Y.orig), colnames(object$Y.orig)))
     
     for (i in 1:nrow(w)) {
       cov.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]))$cov
@@ -447,7 +452,7 @@ predict.drf <- function(object,
                             function(yy) transformation(yy)))
     
     # check length one (R size management)
-    if (length(transformation(object$Y.ori[1,])) == 1) {
+    if (length(transformation(object$Y.orig[1,])) == 1) {
       stop("cor available only for multi-dimensional transformation.")
     }
     
