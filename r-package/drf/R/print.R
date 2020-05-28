@@ -19,7 +19,7 @@ print.drf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
   main.class <- class(x)[1]
   num.samples <- nrow(x$X.orig)
 
-  cat("DRF forest object of type \n")
+  cat("DRF forest object\n")
   cat("Number of trees:", x[["_num_trees"]], "\n")
   cat("Number of training samples:", num.samples, "\n")
 

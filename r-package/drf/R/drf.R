@@ -337,18 +337,21 @@ predict.drf <- function(object,
       if (!is.null(add.param$quantiles)) {
         
         functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j], 
-                                                                                 w = ww[ww!=0], 
-                                                                                 probs = add.param$quantiles))))
-      for (i in 1:length(functional.val)) {
+                                                                                                                          w = ww[ww!=0], 
+                                                                                                                          probs = add.param$quantiles))))
+        quantile.array <- array(dim = c(nrow(w), length(functional.t), length(add.param$quantiles)))                                                                      
+      
+        for (i in 1:length(functional.val)) {
         
         if (length(add.param$quantile) == 1) {
           functional.val[[i]] <- t(functional.val[[i]])
         }
-        colnames(functional.val[[i]]) <- paste("q=", round(add.param$quantiles, 2), sep="")
+        #colnames(functional.val[[i]]) <- paste("q=", round(add.param$quantiles, 2), sep="")
+        quantile.array[,i,] <- functional.val[[i]]
       }
         
         
-        return(list(quantile = functional.val))
+        return(list(quantile = quantile.array))
         
       }
     }
