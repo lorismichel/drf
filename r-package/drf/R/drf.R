@@ -351,7 +351,8 @@ predict.drf <- function(object,
         functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j], 
                                                                                                                           w = ww[ww!=0], 
                                                                                                                           probs = add.param$quantiles))))
-        quantile.array <- array(dim = c(nrow(w), length(functional.t), length(add.param$quantiles)))                                                                      
+        quantile.array <- array(dim = c(nrow(w), length(functional.t), length(add.param$quantiles)), 
+                                dimnames = list(NULL, NULL, paste("q=", round(add.param$quantiles, 2), sep="")))                                                                      
       
         for (i in 1:length(functional.val)) {
         
@@ -408,7 +409,8 @@ predict.drf <- function(object,
       stop("cor available only for multi-dimensional transformation.")
     }
     
-    cor.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)))
+    cor.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
+                     dimnames = list(NULL, rownames(object$Y.orign), colnames(object$Y.orig)))
     
     for (i in 1:nrow(w)) {
       cor.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]), cor = TRUE)$cor
@@ -428,7 +430,8 @@ predict.drf <- function(object,
       stop("cor available only for multi-dimensional transformation.")
     }
     
-    cov.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)))
+    cov.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
+                     dimnames = list(NULL, rownames(object$Y.orign), colnames(object$Y.orig)))
     
     for (i in 1:nrow(w)) {
       cov.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]))$cov
