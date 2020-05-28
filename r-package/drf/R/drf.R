@@ -351,7 +351,7 @@ predict.drf <- function(object,
         functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j], 
                                                                                                                           w = ww[ww!=0], 
                                                                                                                           probs = add.param$quantiles))))
-        quantile.array <- array(dim = c(nrow(w), length(functional.t), length(add.param$quantiles)), 
+        quantile.array <- array(dim = c(nrow(w), ncol(functional.t), length(add.param$quantiles)), 
                                 dimnames = list(NULL, NULL, paste("q=", round(add.param$quantiles, 2), sep="")))                                                                      
       
         for (i in 1:length(functional.val)) {
@@ -397,10 +397,10 @@ predict.drf <- function(object,
         functional.mean2 <- t(functional.mean2)
       }
       
-      functional.sd <- sqrt(functional.mean2-(functional.mean)^2
+      functional.sd <- sqrt(functional.mean2-(functional.mean)^2)
       colnames(functional.sd) <- colnames(object$Y.orig)      
       
-      return(list(sd = functional.sd)))
+      return(list(sd = functional.sd))
     
   } else if (functional == "cor") {
     
