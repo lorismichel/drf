@@ -189,6 +189,7 @@ drf <-               function(X, Y,
    class(forest) <- c("drf")
    forest[["ci.group.size"]] <- ci.group.size
    forest[["X.orig"]] <- X.mat
+   forest[["is.df.X"]] <- is.data.frame(X)
    forest[["Y.orig"]] <- Y
    forest[["sample.weights"]] <- sample.weights
    forest[["clusters"]] <- clusters
@@ -265,7 +266,7 @@ predict.drf <- function(object,
   if (is.data.frame(newdata)) {
     
     
-    if (is.data.frame(newdata) && !is.data.frame(object$Y.ori)) {
+    if (is.data.frame(newdata) && !object$is.df.X) {
       stop("data.frame for newdata is accepted only if it was used for training data.")
     }
     if (ncol(newdata) != length(names(Y.ori))) {
