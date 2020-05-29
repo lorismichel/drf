@@ -128,11 +128,12 @@ drf <-               function(X, Y,
       any.factor.or.character <- FALSE
       X.mat <- as.matrix(X)
     }
-    
+    mat.col.names.df <- names(X)
     mat.col.names <- colnames(X.mat)
   } else {
     X.mat <- X
     mat.col.names <- NULL
+    mat.col.names.df <- NULL
     any.factor.or.character <- FALSE
   }
   
@@ -196,6 +197,7 @@ drf <-               function(X, Y,
    forest[["equalize.cluster.weights"]] <- equalize.cluster.weights
    forest[["tunable.params"]] <- args[all.tunable.params]
    forest[["mat.col.names"]] <- mat.col.names
+   forest[["mat.col.names.df"]] <- mat.col.names.df
    forest[["any.factor.or.character"]] <- any.factor.or.character
    
    forest
@@ -269,7 +271,7 @@ predict.drf <- function(object,
     if (is.data.frame(newdata) && !object$is.df.X) {
       stop("data.frame for newdata is accepted only if it was used for training data.")
     }
-    if (ncol(newdata) != length(names(object$Y.ori))) {
+    if (ncol(newdata) != length(object$mat.col.names.df)) {
       stop("newdata should have the same dimension as the training data.")
     }
     names(newdata) <- names(object$Y.ori)
