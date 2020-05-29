@@ -264,31 +264,31 @@ predict.drf <- function(object,
   # if the newdata is a data.frame we should be careful about the non existing levels
   if (is.data.frame(newdata)) {
     
-    if (object$any.factor.or.character) {
-      newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
-    } else {
+    if (!object$any.factor.or.character) {
       newdata.mat <- as.matrix(newdata)
+    } else {
+      newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
+    
+    
+      # define the modifications of the columns to do
+      col.to.remove <- setdiff(colnames(newdata.mat), object$mat.col.names)
+      col.to.add <- setdiff(object$mat.col.names, colnames(newdata.mat))
+      
+      # col to remove
+      newdata.mat <- newdata.mat[,!(colnames(newdata.mat)%in%col.to.remove), drop = FALSE]
+  
+      # col to add
+      prev.nb.col <- ncol(newdata.mat)
+      prev.col.names <- colnames(newdata.mat)
+      
+      for (col in col.to.add) {
+        newdata.mat <- cbind(newdata.mat, 0)
+      }
+    
+      colnames(newdata.mat) <- c(prev.col.names, col.to.add)
+    
+      newdata.mat <- newdata.mat[,object$mat.col.names]
     }
-    
-    # define the modifications of the columns to do
-    col.to.remove <- setdiff(colnames(newdata.mat), object$mat.col.names)
-    col.to.add <- setdiff(object$mat.col.names, colnames(newdata.mat))
-    
-    # col to remove
-    newdata.mat <- newdata.mat[,!(colnames(newdata.mat)%in%col.to.remove), drop = FALSE]
-
-    # col to add
-    prev.nb.col <- ncol(newdata.mat)
-    prev.col.names <- colnames(newdata.mat)
-    
-    for (col in col.to.add) {
-      newdata.mat <- cbind(newdata.mat, 0)
-    }
-    
-    colnames(newdata.mat) <- c(prev.col.names, col.to.add)
-    
-    
-    newdata.mat <- newdata.mat[,object$mat.col.names]
   } else {
     
     newdata.mat <- newdata
