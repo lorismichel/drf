@@ -264,10 +264,21 @@ predict.drf <- function(object,
   # if the newdata is a data.frame we should be careful about the non existing levels
   if (is.data.frame(newdata)) {
     
+    
+    if (is.data.frame(newdata) && !is.data.frame(object$Y.ori)) {
+      stop("data.frame for newdata is accepted only if it was used for training data.")
+    }
+    if (ncol(newdata) != length(names(Y.ori))) {
+      stop("newdata should have the same dimension as the training data.")
+    }
+    names(newdata) <- names(object$Y.ori)
+    
+    # check if factor or not
     if (!object$any.factor.or.character) {
       newdata.mat <- as.matrix(newdata)
     } else {
-      newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, remove_selected_columns = TRUE))
+      newdata.mat <- as.matrix(fastDummies::dummy_cols(.data = newdata, 
+                                                       remove_selected_columns = TRUE))
     
     
       # define the modifications of the columns to do
@@ -290,7 +301,6 @@ predict.drf <- function(object,
       newdata.mat <- newdata.mat[,object$mat.col.names]
     }
   } else {
-    
     newdata.mat <- newdata
   }
   
