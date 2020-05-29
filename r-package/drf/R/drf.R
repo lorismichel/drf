@@ -269,7 +269,7 @@ predict.drf <- function(object,
     if (is.data.frame(newdata) && !object$is.df.X) {
       stop("data.frame for newdata is accepted only if it was used for training data.")
     }
-    if (ncol(newdata) != length(names(Y.ori))) {
+    if (ncol(newdata) != length(names(object$Y.ori))) {
       stop("newdata should have the same dimension as the training data.")
     }
     names(newdata) <- names(object$Y.ori)
