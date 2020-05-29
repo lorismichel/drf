@@ -380,7 +380,7 @@ predict.drf <- function(object,
         functional.mean <- t(functional.mean)
       }
       
-      colnames(functional.mean) <- colnames(object$Y.orig)
+      #colnames(functional.mean) <- colnames(object$Y.orig)
         
       return(list(mean = functional.mean))
       
@@ -398,7 +398,7 @@ predict.drf <- function(object,
       }
       
       functional.sd <- sqrt(functional.mean2-(functional.mean)^2)
-      colnames(functional.sd) <- colnames(object$Y.orig)      
+      #colnames(functional.sd) <- colnames(object$Y.orig)      
       
       return(list(sd = functional.sd))
     
@@ -415,7 +415,7 @@ predict.drf <- function(object,
     }
     
     cor.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
-                     dimnames = list(NULL, colnames(object$Y.orign), colnames(object$Y.orig)))
+                     dimnames = list(NULL, NULL, NULL))
     
     for (i in 1:nrow(w)) {
       cor.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]), cor = TRUE)$cor
@@ -436,7 +436,7 @@ predict.drf <- function(object,
     }
     
     cov.mat <- array(1, dim = c(nrow(w), ncol(functional.t), ncol(functional.t)),
-                     dimnames = list(NULL, colnames(object$Y.orig), colnames(object$Y.orig)))
+                     dimnames = list(NULL, NULL, NULL))
     
     for (i in 1:nrow(w)) {
       cov.mat[i,,] <- stats::cov.wt(x = functional.t, wt = as.numeric(w[i,]))$cov
