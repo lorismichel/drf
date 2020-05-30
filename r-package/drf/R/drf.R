@@ -294,7 +294,8 @@ predict.drf <- function(object,
     if (ncol(newdata) != length(object$mat.col.names.df)) {
       stop("newdata should have the same dimension as the training data.")
     }
-    names(newdata) <- names(object$Y.ori)
+    
+    names(newdata) <- object$mat.col.names.df
     
     # check if factor or not
     if (!object$any.factor.or.character) {
