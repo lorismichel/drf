@@ -34,7 +34,7 @@
 #'                      Default is 5.
 #' @param honesty Whether to use honest splitting (i.e., sub-sample splitting). Default is TRUE.
 #'  For a detailed description of honesty, honesty.fraction, honesty.prune.leaves, and recommendations for
-#'  parameter tuning, see the grf reference for more information
+#'  parameter tuning, see the grf reference for more information (initial source)
 #'  \href{https://grf-labs.github.io/grf/REFERENCE.html#honesty-honesty-fraction-honesty-prune-leaves}{algorithm reference}.
 #' @param honesty.fraction The fraction of data that will be used for determining splits if honesty = TRUE. Corresponds
 #'                         to set J1 in the notation of the paper. Default is 0.5 (i.e. half of the data is used for
@@ -118,6 +118,10 @@ drf <-               function(X, Y,
   
   # initial checks for X and Y
   if (is.data.frame(X)) {
+    
+    if (is.null(names(X))) {
+      stop("teh regressor should be named if provided under data.frame format.")
+    }
     
     if (any(apply(X, 2, class) %in% c("factor", "character"))) {
       
@@ -212,7 +216,23 @@ drf <-               function(X, Y,
 #'                Xi using only trees that did not use the i-th training example). Note
 #'                that this matrix (or vector) should have the number of columns as the training
 #'                matrix, and that the columns must appear in the same order.
-#' @param functional which type of statistical functional. One option between "mean", "sd", "quantile", "cor", "cov", "ecdf" or "normalPredictionScore".
+#' @param functional which type of statistical functional. One option between:
+#' itemize{
+#'  \item{"mean"}{the conditional mean, the returned value is a list containing a matrix \code{mean} of size \code{n} x \code{f}, 
+#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \cose{transformation}.}
+#'  \item{"sd"}{the conditional standard deviation, the returned value is a list containing a matrix \code{sd} of size \code{n} x \code{f}, 
+#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \cose{transformation}.}
+#'  \item{"quantile"}{the conditional quantiles, the returned value is a list containing an array \code{quantile} of size \code{n} x \code{f}  x \code{q}, 
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation} and \code{q} the number of desired quantiles.}
+#'  \item{"cor"}{the conditional correlation, the returned value is a list containing an array \code{cor} of size \code{n} x \code{f}  x \code{f}, 
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation}.}
+#' \item{"cov"}{the conditional covariance, the returned value is a list containing an array \code{cor} of size \code{n} x \code{f}  x \code{f}, 
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation}.}
+#'  \item{"cdf"}{the conditional cumulative distribution function, the returned value is a list containing a list of functions \code{cdf} of size \code{n}, 
+#'  where \code{n} denotes the number of observation in \code{newdata}.  Here the transformation should be uni-dimensional.} 
+#'  \item{"normalPredictionScore"}{a prediction score based on an asymptotic normality assumption, the returned value is a list containing a list of functions \code{normalPredictionScore} of size \code{n}, 
+#'  where \code{n} denotes the number of observation in \code{newdata}. Here the transformation should be uni-dimensional.}
+#' }
 #' @param transformation a function giving a transformation of the responses, by default if NULL, the identity \code{function(y) y} is used.
 #' @param num.threads Number of threads used in training. If set to NULL, the software
 #'                    automatically selects an appropriate amount.
