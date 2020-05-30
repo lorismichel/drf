@@ -3,6 +3,7 @@
 
 # Compiled python modules.
 python-package/*.pyc
+python-package/drf/__pycache__
 
 # Setuptools distribution folder.
 python-package/dist/
