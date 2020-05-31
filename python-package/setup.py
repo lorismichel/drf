@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 from setuptools.command.install import install
 
 class CustomInstallCommand(install):
@@ -18,9 +18,6 @@ setup(name='drf',
       version='0.1',
       description='Distributional Random Forest python wrapper',
       long_description=readme(),
-      classifiers=[
-        'Programming Language :: Python :: 3.7',
-       ],
       url='https://github.com/lorismichel/drf/tree/master/python-package',
       author='Domagoj Ćevid',
       author_email='cevid@stat.math.ethz.ch',
@@ -29,20 +26,13 @@ setup(name='drf',
           'rpy2',
           'numpy',
       ],
+      classifiers=[
+        "Programming Language :: Python :: 3",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+        "Operating System :: OS Independent",
+      ],
       include_package_data=True,
-      packages=['drf'],
+      packages=find_packages(),
       cmdclass={
         'install': CustomInstallCommand,
     })
-
-#from rpy2.robjects.packages import importr
-#import rpy2.robjects.packages as rpackages
-
-# Choosing a CRAN Mirror
-#utils = rpackages.importr('utils')
-#utils.chooseCRANmirror(ind=1)
-# install packages from CRAN if not present
-# packnames = ('drf')
-# names_to_install = [x for x in packnames if not rpackages.isinstalled(x)]
-# if len(names_to_install) > 0:
-#     utils.install_packages(StrVector(names_to_install))

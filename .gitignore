@@ -10,3 +10,5 @@ python-package/dist/
 
 # Python egg metadata, regenerated from source files by setuptools.
 python-package/*.egg-info
+
+python-package/build/

@@ -1,18 +1,23 @@
 Python Wrapper for Distributional Random Forests (DRF)
-=============
+=================================================================================
 Installation
-_____________
+_________________________________________________________________________________
 
-To install the python package, go to the python-package folder in the cloned repository and run::
-
-    >>> pip install .
-
+To install the python package from PyPI, type::
+    
+    >>> pip install -i https://test.pypi.org/simple/ drf==0.1
+    
 Alternatively, it can be directly installed from Github by running:: 
     
     >>> pip install -e "git+https://github.com/lorismichel/drf#egg=pkg&subdirectory=python-package"
 
+If you have the Github repository "lorismichel/drf" already cloned, you can run the following command
+from the python-package subdirectory::
+
+    >>> pip install .
+
 Usage
-_____
+_________________________________________________________________________________
 Here is a short example illustrating the usage of the package:
 
 .. code-block:: python
