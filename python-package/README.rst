@@ -5,16 +5,16 @@ ________________________________________________________________________________
 
 To install the python package from PyPI, type::
     
-    >>> pip install -i https://test.pypi.org/simple/ drf==0.1
+    pip install -i https://test.pypi.org/simple/ drf==0.1
     
 Alternatively, it can be directly installed from Github by running:: 
     
-    >>> pip install -e "git+https://github.com/lorismichel/drf#egg=pkg&subdirectory=python-package"
+    pip install -e "git+https://github.com/lorismichel/drf#egg=pkg&subdirectory=python-package"
 
 If you have the Github repository "lorismichel/drf" already cloned, you can run the following command
 from the python-package subdirectory::
 
-    >>> pip install .
+    pip install .
 
 Usage
 _________________________________________________________________________________
