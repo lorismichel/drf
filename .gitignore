@@ -3,9 +3,12 @@
 
 # Compiled python modules.
 python-package/*.pyc
+python-package/drf/__pycache__
 
 # Setuptools distribution folder.
 python-package/dist/
 
 # Python egg metadata, regenerated from source files by setuptools.
 python-package/*.egg-info
+
+python-package/build/
