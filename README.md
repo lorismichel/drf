@@ -21,6 +21,12 @@ library(devtools)
 install_github("lorismichel/drf")
 ```
 
+Another installation possibility is to clone the repo, and then within the r-package folder run
+
+```R
+Rscript build_package.R
+```
+
 Note that to install from source, a compiler that implements C++11 is required (clang 3.3 or higher, or g++ 4.8 or higher). If installing on Windows, the RTools toolchain is also required.
 
 
