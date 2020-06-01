@@ -4,7 +4,7 @@ Version: 1.0.0
 Author: Loris Michel, Domagoj Cevid
 Maintainer: Loris Michel <michel@stat.math.ethz.ch>
 BugReports: https://github.com/lorismichel/mrf/issues
-Description: A package implementing distributional random forests ass introduced in Cevid & Michel & Meinshausen & Buhlmann (2020) <arXiv:2005.14458>.
+Description: An implementation of distributional random forests as introduced in Cevid & Michel & Meinshausen & Buhlmann (2020) <arXiv:2005.14458>.
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
 Depends:

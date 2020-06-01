@@ -8,16 +8,17 @@ This repository started as a fork from the [grf](https://github.com/grf-labs/grf
 
 ### Installation
 
-The latest release of the package can be installed through CRAN:
+The latest release of the package can be installed through CRAN (soon):
 
 ```R
 install.packages("drf")
 ```
 
-Any published release can also be installed from source:
+The development version can be installed from github
 
 ```R
-install.packages("https://raw.github.com/lorismichel/drf/master/releases/drf_1.0.0.tar.gz", repos = NULL, type = "source")
+library(devtools)
+install_github("lorismichel/drf")
 ```
 
 Note that to install from source, a compiler that implements C++11 is required (clang 3.3 or higher, or g++ 4.8 or higher). If installing on Windows, the RTools toolchain is also required.
