@@ -1,4 +1,5 @@
 ^.*\.Rproj$
+^.*\.md$
 ^\.Rproj\.user$
 ^bindings$
 ^vignettes

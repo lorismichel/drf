@@ -217,17 +217,17 @@ drf <-               function(X, Y,
 #'                that this matrix (or vector) should have the number of columns as the training
 #'                matrix, and that the columns must appear in the same order.
 #' @param functional which type of statistical functional. One option between:
-#' itemize{
+#' \itemize{
 #'  \item{"mean"}{the conditional mean, the returned value is a list containing a matrix \code{mean} of size \code{n} x \code{f}, 
-#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \cose{transformation}.}
+#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \code{transformation}.}
 #'  \item{"sd"}{the conditional standard deviation, the returned value is a list containing a matrix \code{sd} of size \code{n} x \code{f}, 
-#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \cose{transformation}.}
+#'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the \code{transformation}.}
 #'  \item{"quantile"}{the conditional quantiles, the returned value is a list containing an array \code{quantile} of size \code{n} x \code{f}  x \code{q}, 
-#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation} and \code{q} the number of desired quantiles.}
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \code{transformation} and \code{q} the number of desired quantiles.}
 #'  \item{"cor"}{the conditional correlation, the returned value is a list containing an array \code{cor} of size \code{n} x \code{f}  x \code{f}, 
-#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation}.}
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \code{transformation}.}
 #' \item{"cov"}{the conditional covariance, the returned value is a list containing an array \code{cor} of size \code{n} x \code{f}  x \code{f}, 
-#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \cose{transformation}.}
+#'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \code{transformation}.}
 #'  \item{"cdf"}{the conditional cumulative distribution function, the returned value is a list containing a list of functions \code{cdf} of size \code{n}, 
 #'  where \code{n} denotes the number of observation in \code{newdata}.  Here the transformation should be uni-dimensional.} 
 #'  \item{"normalPredictionScore"}{a prediction score based on an asymptotic normality assumption, the returned value is a list containing a list of functions \code{normalPredictionScore} of size \code{n}, 
