@@ -57,10 +57,9 @@
 #' @return A trained distributional random forest object.
 #'
 #' @examples
-#' \dontrun{
 #' # Train a distributional random forest with CART splitting rule.
-#' n <- 500
-#' p <- 10
+#' n <- 100
+#' p <- 2
 #' X <- matrix(rnorm(n * p), n, p)
 #' Y <- X + matrix(rnorm(n * p), ncol=p)
 #' drf.forest <- drf(X = X, Y = Y)
@@ -74,8 +73,8 @@
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
 #' 
 #' # Train a distributional random forest with "FourierMMD" splitting rule.
-#' n <- 500
-#' p <- 10
+#' n <- 100
+#' p <- 2
 #' X <- matrix(rnorm(n * p), n, p)
 #' Y <- X + matrix(rnorm(n * p), ncol=p)
 #' drf.forest <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num.features = 10)
@@ -87,8 +86,6 @@
 #'
 #' # Predict on out-of-bag training samples.
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
-#'
-#' }
 #'
 #' @export
 #' @useDynLib drf
@@ -241,10 +238,9 @@ drf <-               function(X, Y,
 #' @return a list containing an entry with the same name as the functional selected. 
 #'
 #' @examples
-#' \dontrun{
 #' # Train a distributional random forest with CART splitting rule.
-#' n <- 500
-#' p <- 10
+#' n <- 100
+#' p <- 2
 #' X <- matrix(rnorm(n * p), n, p)
 #' Y <- X + matrix(rnorm(n * p), ncol=p)
 #' drf.forest <- drf(X = X, Y = Y)
@@ -258,8 +254,8 @@ drf <-               function(X, Y,
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
 #' 
 #' # Train a distributional random forest with "FourierMMD" splitting rule.
-#' n <- 500
-#' p <- 10
+#' n <- 100
+#' p <- 2
 #' X <- matrix(rnorm(n * p), n, p)
 #' Y <- X + matrix(rnorm(n * p), ncol=p)
 #' drf.forest <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num.features = 10)
@@ -272,7 +268,6 @@ drf <-               function(X, Y,
 #' # Predict on out-of-bag training samples.
 #' cor.oob.pred <- predict(r.forest,  functional = "cor")
 #'
-#' }
 #'
 #' @method predict drf
 #' @export
