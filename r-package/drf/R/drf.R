@@ -70,7 +70,7 @@
 #' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' cor.oob.pred <- predict(drf.forest,  functional = "cor")
 #' 
 #' # Train a distributional random forest with "FourierMMD" splitting rule.
 #' n <- 100
@@ -85,7 +85,7 @@
 #' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' cor.oob.pred <- predict(drf.forest,  functional = "cor")
 #'
 #' @export
 #' @useDynLib drf
@@ -266,7 +266,7 @@ drf <-               function(X, Y,
 #' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' cor.oob.pred <- predict(drf.forest,  functional = "cor")
 #'
 #'
 #' @method predict drf
@@ -280,7 +280,7 @@ predict.drf <- function(object,
                         ...) {
   
   # if the newdata is a data.frame we should be careful about the non existing levels
-  if (is.data.frame(newdata)) {
+  if (!is.null(newdata) && is.data.frame(newdata)) {
     
     
     if (is.data.frame(newdata) && !object$is.df.X) {
@@ -319,14 +319,16 @@ predict.drf <- function(object,
     
       newdata.mat <- newdata.mat[,object$mat.col.names]
     }
-  } else {
+  } else if (!is.null(newdata)) {
     newdata.mat <- newdata
   }
   
   
   # support vector as input 
-  if (is.null(dim(newdata.mat))) {
+  if (!is.null(newdata) && is.null(dim(newdata.mat))) {
     newdata.mat <- matrix(newdata.mat, 1)
+  } else if (is.null(newdata)) {
+    newdata.mat <- NULL
   }
   
   # get the weights which are used in a second step
