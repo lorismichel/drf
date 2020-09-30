@@ -9,7 +9,7 @@ source("./genData.R")
 source("./univariateComparison.R")
 
 
-dataset.names <- c("synthetic1","synthetic2","synthetic3")
+dataset.names <- c("synthetic1")
 
 
 # rep per datasets
@@ -34,5 +34,5 @@ for (dname in dataset.names) {
   print(dname)
 }
 
-save(results, file = "./results_univariate_paper_w3.Rdata")
+save(results, file = "./results_univariate_paper_synthetic1.Rdata")
 
