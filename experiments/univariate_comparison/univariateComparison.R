@@ -2,7 +2,10 @@ source("../mtr/helpers.R")
 
 univariateComparison <- function(dataset = "synthetic1",
                                  verbose = TRUE, n = 5000,
-                                 p = 10, test.frac = 0.3, meanShift = 1, sdShift = 1, quantiles.grid = c(0.1, 0.9)) {
+                                 p = 10, test.frac = 0.3, 
+                                 meanShift = 1, 
+                                 sdShift = 1, 
+                                 quantiles.grid = c(0.1, 0.9)) {
 
   # libs
   if (!require(ranger) || !require(drf) || !require(grf) || !require(trtf)) {
@@ -12,7 +15,8 @@ univariateComparison <- function(dataset = "synthetic1",
   # generate the data
   d <- genData(dataset = dataset, meanShift = meanShift, sdShift = sdShift, n = n, p = p)
 
-  if (dataset %in% c("Abalone","Boston","BigMac","Ozone")) {
+  if (dataset %in% c("Abalone","Boston", 
+                     "BigMac", "Ozone")) {
     n <- nrow(d$X)
   }
 
@@ -29,7 +33,8 @@ univariateComparison <- function(dataset = "synthetic1",
                 num.trees = 500, quantreg = TRUE)
 
   # distributional random forest
-  dRF <- drf(X = d$X[ids.train,], Y = matrix(d$y[ids.train],ncol=1),
+  dRF <- drf(X = d$X[ids.train,], 
+             Y = matrix(d$y[ids.train],ncol=1),
              num.trees = 500,
              splitting.rule = "FourierMMD",
              num.features = 10)
@@ -153,18 +158,22 @@ univariateComparison <- function(dataset = "synthetic1",
   }
 
   if (dataset %in% c("synthetic1","synthetic2","synthetic3","synthetic4")) {
-    # get the grid prediction
+    
+    # get the grid predictions
     x <- c(- 50:1 / 51, 1:50 / 51)
-    X <- matrix(.5, nrow = length(x), ncol = ncol(d$X)-1)
-    nd <- data.frame(x=cbind(x, X))
-    qQRF <- predict(qRF, data = nd, quantiles = c(0.1, 0.3, 0.5, 0.7, 0.9), type = "quantiles")
-    qDRF <- predict(dRF, newdata = cbind(n, X), functional = "quantile", quantiles = c(0.1, 0.3, 0.5, 0.7, 0.9))$quantile
-    qGRF <- predict(gRF, newdata = cbind(n, X), quantiles = c(0.1, 0.3, 0.5, 0.7, 0.9))
-    qTRF <- list(p1 = predict(trf, newdata = nd, type = "quantile", prob = .1),
-                 p2 = predict(trf, newdata = nd, type = "quantile", prob = .3),
-                 p3 = predict(trf, newdata = nd, type = "quantile", prob = .4),
-                 p4 = predict(trf, newdata = nd, type = "quantile", prob = .7),
-                 p5 = predict(trf, newdata = nd, type = "quantile", prob = .9))
+    X <- matrix(0, nrow = length(x), ncol = ncol(d$X)-1)
+    nd <- data.frame(x = cbind(x, X))
+    qQRF <- predict(qRF, data = nd, quantiles = quantiles.grid, type = "quantiles")
+    qDRF <- predict(dRF, newdata = cbind(x, X), functional = "quantile", quantiles = quantiles.grid)$quantile
+    ord.quant <- order(quantiles.grid, decreasing = FALSE)
+    qGRF <- predict(gRF, newdata = cbind(x, X), quantiles = quantiles.grid[ord.quant])
+    qGRF <- qGRF[,ord.quant]
+    #qTRF <- list(p1 = predict(trf, newdata = nd, type = "quantile", prob = .1),
+    #             p2 = predict(trf, newdata = nd, type = "quantile", prob = .3),
+    #             p3 = predict(trf, newdata = nd, type = "quantile", prob = .4),
+    #             p4 = predict(trf, newdata = nd, type = "quantile", prob = .7),
+    #             p5 = predict(trf, newdata = nd, type = "quantile", prob = .9))
+    qTRF <- lapply(quantiles.grid, function(q) predict(trf, newdata = nd, type = "quantile", prob = q))
 
 
       if (dataset == "synthetic1") {
@@ -173,11 +182,11 @@ univariateComparison <- function(dataset = "synthetic1",
         q5 <- qnorm(.5, mean = meanShift*(x >  0))
         q7 <- qnorm(.7, mean = meanShift*(x >  0))
         q9 <- qnorm(.9, mean = meanShift*(x >  0))
-        q1.train <- qnorm(.1, mean = meanShift*(d$X[ids.train,1] > 0))
-        q3.train <- qnorm(.3, mean = meanShift*(d$X[ids.train,1] > 0))
-        q5.train <- qnorm(.5, mean = meanShift*(d$X[ids.train,1] > 0))
-        q7.train <- qnorm(.7, mean = meanShift*(d$X[ids.train,1] > 0))
-        q9.train <- qnorm(.9, mean = meanShift*(d$X[ids.train,1] > 0))
+        #q1.train <- qnorm(.1, mean = meanShift*(d$X[ids.train,1] > 0))
+        #q3.train <- qnorm(.3, mean = meanShift*(d$X[ids.train,1] > 0))
+        #q5.train <- qnorm(.5, mean = meanShift*(d$X[ids.train,1] > 0))
+        #q7.train <- qnorm(.7, mean = meanShift*(d$X[ids.train,1] > 0))
+        #q9.train <- qnorm(.9, mean = meanShift*(d$X[ids.train,1] > 0))
         q.test <- lapply(quantiles.grid, function(q) qnorm(q, mean = meanShift*(d$X[ids.test,1] > 0)))
       } else if (dataset == "synthetic2") {
         q1 <- qnorm(.1, sd = 1 + sdShift*(x > 0))
@@ -185,11 +194,11 @@ univariateComparison <- function(dataset = "synthetic1",
         q5 <- qnorm(.5, sd = 1 + sdShift*(x > 0))
         q7 <- qnorm(.7, sd = 1 + sdShift*(x > 0))
         q9 <- qnorm(.9, sd = 1 + sdShift*(x > 0))
-        q1.train <- qnorm(.1, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
-        q3.train <- qnorm(.3, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
-        q5.train <- qnorm(.5, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
-        q7.train <- qnorm(.7, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
-        q9.train <- qnorm(.9, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
+        #q1.train <- qnorm(.1, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
+        #q3.train <- qnorm(.3, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
+        #q5.train <- qnorm(.5, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
+        #q7.train <- qnorm(.7, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
+        #q9.train <- qnorm(.9, sd = 1 + sdShift*(d$X[ids.train,1] > 0))
         q.test <- lapply(quantiles.grid, function(q) qnorm(q, sd = 1 + sdShift*(d$X[ids.test,1] > 0)))
       } else if (dataset == "synthetic3") {
         q1 <- ifelse(x >= 0, qexp(.1, 1), qnorm(.1))
@@ -197,18 +206,18 @@ univariateComparison <- function(dataset = "synthetic1",
         q5 <- ifelse(x >= 0, qexp(.5, 1), qnorm(.5))
         q7 <- ifelse(x >= 0, qexp(.7, 1), qnorm(.7))
         q9 <- ifelse(x >= 0, qexp(.9, 1), qnorm(.9))
-        q1.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.1, 1), qnorm(.1))
-        q3.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.3, 1), qnorm(.3))
-        q5.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.5, 1), qnorm(.5))
-        q7.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.7, 1), qnorm(.7))
-        q9.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.9, 1), qnorm(.9))
+        #q1.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.1, 1), qnorm(.1))
+        #q3.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.3, 1), qnorm(.3))
+        #q5.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.5, 1), qnorm(.5))
+        #q7.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.7, 1), qnorm(.7))
+        #q9.train <- ifelse(d$X[ids.train,1] >= 0, qexp(.9, 1), qnorm(.9))
         q.test <- lapply(quantiles.grid, function(q) ifelse(d$X[ids.test,1] >= 0, qexp(q, 1), qnorm(q, 1, 1)))
       } else if (dataset == "synthetic4") {
         q1 <- sin(4*pi*x) + ifelse(x >= .5, qnorm(.1), qnorm(.1, sd = 2))
         q9 <- sin(4*pi*x) + ifelse(x >= .5, qnorm(.9), qnorm(.9, sd = 2))
         q1.train <- sin(4*pi*d$X[ids.train,1]) + ifelse(d$X[ids.train,1] >= .5, qnorm(.1), qnorm(.1, sd = 2))
         q9.train <- sin(4*pi*d$X[ids.train,1]) + ifelse(d$X[ids.train,1] >= .5, qnorm(.9), qnorm(.9, sd = 2))
-        q.test <- lapply(quantiles.grid, function(q) sin(4*pi*d$X[ids.test,1]) + ifelse(d$X[ids.test,1] >= .5, qnorm(q), qnorm(q, sd = 2)))
+        q.test <- lapply(quantiles.grid, function(q) sin(4*pi*d$X[ids.test,1]) + ifelse(d$X[ids.test,1] >= 0, qnorm(q), qnorm(q, sd = 2)))
       }
 
     if (verbose) {
@@ -322,12 +331,9 @@ univariateComparison <- function(dataset = "synthetic1",
               ids.train = ids.train,
               ids.test = ids.test,
               q.losses = losses, 
-              qQRF = qQRF.test,
-              qDRF = qDRF.test,
-              qGRF = qGRF.test, 
-              qTRF = qTRF.test,
-              qKNN_5 = qKNN_5.test, 
-              qKNN_20 = qKNN_20.test, 
-              qKNN_40 = qKNN_40.test))
+              qQRF = qQRF,
+              qDRF = qDRF,
+              qGRF = qGRF, 
+              qTRF = qTRF))
 }
 

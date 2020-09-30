@@ -1,5 +1,5 @@
 # creating the summaries
-load("./../../experiments/univariate_comparison/results_univariate_paper_w2.Rdata")
+load("./../../experiments/univariate_comparison/results_univariate_paper_w3.Rdata")
 
 
 # pinball for first example
@@ -29,3 +29,15 @@ for (i in 2:length(results$synthetic3)) {
 mat.res.pinball <- mat.res.pinball / 10
 print(mat.res.pinball)
 
+
+
+x <- c(- 50:1 / 51, 1:50 / 51)
+qs <- setdiff(seq(0,1,length.out = 20),c(0,1))
+sapply(x, function(xx) qnorm(qs, mean = 0.8*(xx >  0)))
+
+QRF_W2 <- apply((results$synthetic1[[1]]$qQRF$predictions[,-c(1:5)]-t(sapply(x, function(xx) qnorm(qs, mean = 0.8*(xx >  0)))))^2,1,mean)
+DRF_W2 <- apply((results$synthetic1[[1]]$qDRF[,,-c(1:5)]-t(sapply(x, function(xx) qnorm(qs, mean = 0.8*(xx >  0)))))^2,1,mean)
+plot(QRF_W2,ylim=c(0,0.9))
+lines(DRF_W2)
+mat <- results$synthetic1[[1]]$qGRF
+GRF_W2 <- apply((mat[,-c(1:5)]-t(sapply(x, function(xx) qnorm(qs, mean = 0.8*(xx >  0))))),1,mean)
