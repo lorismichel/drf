@@ -1,3 +1,5 @@
+# simulations for the paper about univariate analysis
+
 # libs
 require(parallel)
 
