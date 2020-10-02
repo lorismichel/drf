@@ -75,9 +75,9 @@ for(i in 1:length(geographies)){
   df = rbind(df, tmp)
 }
 
-#save(df, file='~/Documents/projects/heterogeneity/wage_data/raw_data')
+#save(df, file='~/Documents/projects/DRF/data/wage_data/computed_data/raw_data.Rdata')
 ##################################################################################################
-load('~/Documents/projects/heterogeneity/wage_data/raw_data')
+load('~/Documents/projects/DRF/data/wage_data/computed_data/raw_data.Rdata')
 #n = nrow(df)
 #p = ncol(df)
 #idx = sample(1:n, 100000, replace=FALSE)
@@ -318,10 +318,4 @@ ordering = c(
 )
 
 wage = wage[, ordering]
-#save(wage, file='~/Documents/projects/heterogeneity/wage_data/wage_data')
-
-########################################################
-#fix occupation encoding
-########################################################
-# occupation encoding from https://www2.census.gov/programs-surveys/acs/tech_docs/pums/code_lists/ACSPUMS2018CodeLists.xls
-
+#save(wage, file='~/Documents/projects/DRF/data/wage_data/computed_data/wage_data.Rdata')

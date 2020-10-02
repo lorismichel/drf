@@ -3,7 +3,7 @@ library(ggplot2)
 library(fastDummies)
 library(Hmisc)
 
-load("~/Documents/projects/heterogeneity/wage_data/wage_data")
+load("~/Documents/projects/DRF/wage_data/wage_data")
 
 which = rep(TRUE, nrow(wage))
 which = which & (wage$age >= 17)
@@ -83,10 +83,10 @@ Y = as.matrix(Y)
 set.seed(22)
 train_idx = sample(1:nrow(data), 300000, replace=FALSE)
 drf_fit = drf(X=X[train_idx,], Y=Y[train_idx,], min.node.size = 20, splitting.rule='FourierMMD', num.features=10)
-#save(drf_fit, train_idx, data, X, Y, file='~/Documents/projects/heterogeneity/wage_data/computed_data')
+#save(drf_fit, train_idx, data, X, Y, file='~/Documents/projects/DRF/wage_data/computed_data')
 
 ##################################
-#load(file='~/Documents/projects/heterogeneity/wage_data/computed_data')
+#load(file='~/Documents/projects/DRF/wage_data/computed_data')
 
 point_description = function(test_point){
   out = ''
@@ -126,26 +126,26 @@ for(i in sample((1:nrow(X))[-train_idx], 50)){
   
   gg = ggplot(plotdf, aes(log_wage)) +
     geom_density(adjust=5, alpha = 0.3, show.legend=TRUE,  aes(fill=sex, weight=plotweight)) +
-    coord_cartesian(xlim=c(0.7, 6)) +
+    coord_cartesian(xlim=c(0.3, 6)) +
     labs(x='log(hourly wage)')+
     #ggtitle(sprintf('%g', i)) +
     #theme(plot.title = element_text(size = 10, face = "italic")) +
     theme_light()+
-    scale_fill_discrete(name = "gender", labels = c(sprintf("female: %g%%", round(100*propensity, 1)), sprintf("male: %g%%", round(100*(1-propensity), 1))))+
-    theme(legend.position = c(0.83, 0.66),
+    scale_fill_discrete(name = "gender", labels = c(sprintf("F: %g%%", round(100*propensity, 1)), sprintf("M: %g%%", round(100*(1-propensity), 1))))+
+    theme(legend.position = c(0.82, 0.65),
           legend.text=element_text(size=18),
           legend.title=element_text(size=20),
-          legend.background = element_rect(fill=alpha('white', 0.5)),
+          legend.background = element_rect(fill=alpha('white', 0)),
           axis.text.x = element_text(size=14),
           axis.text.y = element_text(size=14),
           axis.title.x = element_text(size=19),
           axis.title.y = element_text(size=19))+
-    annotate("text", x=0.46, y=Inf, hjust=0, vjust=1, size=5, label = point_description(data[i,]))
+    annotate("text", x=0.1, y=Inf, hjust=0, vjust=1, size=5, label = point_description(data[i,]))
   plot(gg)
 
   cat ("Press [enter] to continue")
   line <- readline()
-  #ggsave('~/Documents/projects/heterogeneity/paper/wage_data/job1.png', width=16, height=11, units='cm')
+#  ggsave('~/Documents/projects/DRF/paper/wage_data/job1-new.png', width=12.5, height=11, units='cm')
 }
 #292457
 #999398 mechanic
@@ -175,17 +175,17 @@ for(i in sample(which, N, replace=FALSE)){
   plotdf$plotweight[plotdf$sex=='male'] = plotdf$plotweight[plotdf$sex=='male'] + weights[plotdf$sex=='male']/(1-propensity)/N
 }
 
-save(plotdf, file='~/Documents/projects/heterogeneity/wage_data/computed_data4')
-#load(file='~/Documents/projects/heterogeneity/wage_data/computed_data4')
+#save(plotdf, file='~/Documents/projects/DRF/wage_data/computed_data4')
+load(file='~/Documents/projects/DRF/wage_data/computed_data4')
 
 #interventional distribution
 ggplot(plotdf, aes(log_wage)) +
   geom_density(adjust=2.5, alpha = 0.3, show.legend=TRUE,  aes(fill=sex, weight=plotweight)) +
-  coord_cartesian(xlim=c(0.7, 5.8)) +
+  coord_cartesian(xlim=c(0.7, 5.8), ylim=c(0,0.7)) +
   theme_light()+
-  scale_fill_discrete(name = "", labels = c("observed women's wages", "wages if they were men"))+
-  theme(legend.position = c(0.76, 0.98),
-        legend.text=element_text(size=13.5),
+  scale_fill_discrete(name = "", labels = c("observed women's wages", "wages if treated as men"))+
+  theme(legend.position = c(0.59, 0.98),
+        legend.text=element_text(size=16),
         legend.title=element_text(size=20),
         legend.background = element_rect(fill=alpha('white', 0)),
         axis.text.x = element_text(size=14),
@@ -194,7 +194,7 @@ ggplot(plotdf, aes(log_wage)) +
         axis.title.y = element_text(size=19))+
   labs(x='log(hourly wage)')
 
-ggsave('~/Documents/projects/heterogeneity/paper/wage_data/counterfactual2.png', width=16, height=11, units='cm')
+ggsave('~/Documents/projects/DRF/paper/wage_data/counterfactual2.png', width=11, height=11, units='cm')
 
 quantile_male = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=0.5)
 quantile_female = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=0.5)
@@ -205,12 +205,12 @@ library(Hmisc)
 grid = seq(0.001, 0.999, length.out=1000)
 quantile_male = wtd.quantile(x=exp(plotdf$log_wage)*40*49, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=grid)
 quantile_female = wtd.quantile(x=exp(plotdf$log_wage)*40*49, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=grid)
-idx1 = c(200, 500, 700, 800, 900, 950, 970, 980)
+idx1 = c(200, 700, 900, 950, 980)
 idx2 = c(990)
 qplot(quantile_male, quantile_female, geom='line', size=I(1)) + 
   geom_abline(color='red', linetype='dashed', size=0.6) +
-  annotate(x=quantile_male[idx1]+7500, y=quantile_female[idx1]-11000, "text", label=round(grid[idx1], 2), size=4.6) +
-  annotate(x=quantile_male[idx2]-6000, y=quantile_female[idx2]-14000, "text", label=round(grid[idx2], 3), size=4.2) +
+  annotate(x=quantile_male[idx1]+14000, y=quantile_female[idx1]-16000, "text", label=round(grid[idx1], 2), size=4.6) +
+  annotate(x=quantile_male[idx2]-16000, y=quantile_female[idx2]-21000, "text", label=round(grid[idx2], 2), size=4.2) +
   annotate(x=quantile_male[c(idx1, idx2)], y=quantile_female[c(idx1, idx2)], "point", size=2.5) +
   theme_light()+
   theme(axis.text.x = element_text(size=14),
@@ -223,5 +223,5 @@ qplot(quantile_male, quantile_female, geom='line', size=I(1)) +
   scale_y_continuous(breaks=c(0, 100000, 200000, 300000),
                      labels=c("0", "100K", "200K", "300K")) +
   labs(x='wage quantile men', y='wage quantile women')
-ggsave('~/Documents/projects/heterogeneity/paper/wage_data/wage_quantiles2.png', width=16, height=11, units='cm')
+ggsave('~/Documents/projects/DRF/paper/wage_data/wage_quantiles2.png', width=8, height=11, units='cm')
 

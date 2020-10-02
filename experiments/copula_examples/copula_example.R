@@ -7,465 +7,207 @@ library(MASS)
 library(ggplot2)
 
 # source
-#setwd('~/Documents/projects/heterogeneity/mrf')
+setwd('~/Documents/projects/DRF/drf')
 source("./experiments/copula_examples/helpers.R")
 
 # repro
 set.seed(100)
 
 
-# SC0: normal copula example with N(0,1),N(0,1) marginals, continuous change of correlation (rho) between -1 and 1.
-# SC1: tCopula complete change case, X1 is tail parameter, X2 is covariance (correlation) and X3 is marginal
+# SC0: normal copula example with N(0,1) marginals, change of correlation of Y1 and Y2 depends on X1
+# SC1: t-copula, X1 is tail parameter, X2 is covariance and X3 is marginal
+# SC2: normal copula example with N(0,1) marginals, toeplitz covariance rho depends on X1
+# SC3: normal copula example with N(0,1) marginals, equicorrelation covariance rho depends on X1
 
 # PARAMS
 # choice of SC
-SC <- 0
+SC <- 3
 
 # dimensions
-d <- 5
-n <- 10000
+p <- 30
+n <- 5000
+d_ <- 5
 
-
-# CONSTRUCTION
+# GENERATE DATA
 
 # predictors
-X  <- matrix(runif(n*d, min = -1, max = 1),ncol = d)
-# responses
-Y <- t(apply(X, 1, function(xx) {
-  
-          if (SC == 0) {
-            
-            # copula
-            normCop <- normalCopula(param=c(xx[1]), dim = 2)
-            
-            # margins
-            mdvNorm <- mvdc(copula=normCop, margins=c("norm", "norm"),
-                               paramMargins=list(list(mean = 0, sd = 1),
-                                                 list(mean = 0, sd = 1)))
-            # gen
-            rMvdc(n = 1, mvdc = mdvNorm)
-          }  else if (SC == 1) {
-            
-            # copula
-            tCop <- tCopula(xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
-            # margins
-            if (xx[3]<=0) {
-              margins <- c("norm", "norm")
-              paramMargins <- list(list(mean = 0, sd = 1),
-                               list(mean = 0, sd = 1))
-            } else {
-              margins <- c("norm", "exp")
-              paramMargins <- list(list(mean = 0, sd = 1),
-                               list(rate = 1))
-            }
-            mdvT <- mvdc(copula=tCop, margins=margins,
-                         paramMargins=paramMargins)
-            # gen
-            rMvdc(n = 1, mvdc = mdvT)
-            
-          }
-          }))
-colnames(Y) <- c("Y1", "Y2")
-
-
-## fitting the models and getting predictions
-mRF_fourier <- drf(X = X, Y = Y, num.trees = 2000, 
-                   splitting.rule = "FourierMMD",
-                   num.features = 100,  
-                   bandwidth = 1, 
-                   node.scaling = FALSE,
-                   min.node.size = 20)
-
-
-# plot pooled data in case of SC = 0
-if (SC == 0) {
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_POOLED_",
-                        SC, 
-                        ".png"), 
-      width = 600, height = 400)
-  par(mfrow=c(1,1))
-  par(mar=rep(4.7,4))
-  plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,cex=0.1)
-  dev.off()
+if(SC == 3 || SC == 4){
+  X  <- matrix(runif(n*p, min = 0, max = 1), ncol = p)
+} else if(SC == 0 || SC == 1){
+  X  <- matrix(runif(n*p, min = -1, max = 1), ncol = p)
 }
+# responses
+gen = function(xx) {
+  if (SC == 0) {
+    # copula
+    normCop <- normalCopula(param=c(xx[1]), dim = 2)
+    # margins
+    paramMargins = list(list(mean = 0, sd = 1), list(mean = 0, sd = 1))
+    mdvNorm <- mvdc(copula=normCop, margins=c("norm", "norm"), paramMargins=paramMargins)
+    # gen
+    c(rMvdc(n = 1, mvdc = mdvNorm), rnorm(d_-2))
+  }  
+  else if (SC == 1) {
+    # copula
+    tCop <- tCopula(xx[2],  df=ifelse(xx[1] <= (-1 + 2/3), 1, ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
+    # margins
+    if (xx[3]<=0) {
+      margins <- c("norm", "norm")
+      paramMargins <- list(list(mean = 0, sd = 1), list(mean = 0, sd = 1))
+    } else {
+      margins <- c("norm", "exp")
+      paramMargins <- list(list(mean = 0, sd = 1), list(rate = 1))
+    }
+    mdvT <- mvdc(copula=tCop, margins=margins, paramMargins=paramMargins)
+    # gen
+    c(rMvdc(n = 1, mvdc = mdvT), rnorm(d_-2))
+    
+  } 
+  else if (SC == 2) {
+    mu = rep(0, d_)
+    rho = xx[1]
+    Sigma = toeplitz(rho^{pmin(0:(d_-1), d_ - 0:(d_-1))})
+    mvrnorm(mu=mu, Sigma=Sigma)
+  } 
+  else if (SC == 3) {
+    mu = rep(0, d_)
+    rho = xx[1]
+    Sigma = toeplitz(c(1, rep(rho, d_-1)))
+    mvrnorm(mu=mu, Sigma=Sigma)
+  }
+}
+Y <- t(apply(X, 1, gen))
+names = c()
+for(i in 1:d_){
+  names = c(names, paste0('Y', i))
+}
+colnames(Y) <- names
+
+## FIT MODELS
+drf_MMD <- drf(X = X, Y = Y, num.features=50)
+drf_CART <- drf(X = X, Y = Y, splitting.rule = "CART")
+
+# plot pooled data
+png(filename = paste0("./experiments/copula_examples/plots/SC/", SC, "/POOLED.png"), 
+    width = 2400, height = 1600, res=300)
+par(mfrow=c(1,1))
+par(mar=rep(4.7,4))
+plot(Y[,1],Y[,2],pch=19,col="darkblue",xlim=c(-4,4),ylim=c(-4,4),xlab=expression(Y[1]),ylab=expression(Y[2]),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,cex=0.1)
+dev.off()
 
 # get predictions on a grid
 if (SC == 0) {
-  grid <- cbind(seq(-1,1, length.out = 9), 
-                matrix(0,nrow=9,ncol=d-1))
+  grid <- cbind(seq(-1,1, length.out = 9), matrix(0,nrow=9,ncol=p-1))
 } else if (SC == 1) {
-  grid <- cbind(expand.grid(seq(-1, 1,length.out = 3), 
-                            seq(-0.7,0.7,length.out = 3), 
-                            seq(-1,1,length.out = 2)), 
-                matrix(0,nrow=18,ncol=d-3))
+  grid <- cbind(expand.grid(seq(-1, 1,length.out = 3),
+                            seq(-0.7,0.7,length.out = 3),
+                            seq(-1,1,length.out = 2)),
+                matrix(0,nrow=18,ncol=p-3))
+} else if (SC == 2 || SC == 3){
+  grid <- cbind(seq(0,1, length.out = 9), matrix(0,nrow=9,ncol=p-1))
 }
 
-p_fourier <- predict(mRF_fourier, newdata = grid)
+p_fourier <- predict(drf_MMD, newdata = as.matrix(grid))
 
 
-## produce plots for inspection
-if (SC == 0) {
+## PLOT KERNELS AND TRUE CONTOURS
+png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/COPULA_KERNEL.png"), 
+    width = 2000*nrow(grid)/3, height = 2000, res=300)
   
-  # repro
-  set.seed(100)
+par(mfrow=c(3,nrow(grid)/3))
+for (i in 1:nrow(grid)) {
+  print(i)
+  plot(p_fourier$y[,1:2], col="darkblue", cex=10*p_fourier$weights[i,]^{0.5}, pch=19, asp=1, 
+       main=paste0("X1=",grid[i,1], ", X2=",grid[i,2], "X3=",grid[i,3]),
+       xlim = c(-4,4),
+       ylim = c(-4,4)
+       )
   
-  # look at kernels
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_KERNEL_SC_",
-                        SC, 
-                        ".png"), 
-      width = 2000, height = 2000)
+  # truth
+  sim.data <- t(replicate(10000, gen(grid[i,])))
+  f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 100, lims = c(-4, 4, -4, 4))
   
-  par(mfrow=c(3,3))
-  for (i in 1:9) {
-    # plot(p_fourier$y, pch=19,main = paste0("X1=", 
-    #                                        grid[i,1],
-    #                                        ", X2=", 
-    #                                        grid[i,2]), 
-    #      cex=0.2,col="grey")
-    
-    plot(col="darkblue", p_fourier$y, 
-           cex=5*p_fourier$weights[i,]^{0.5},
-           pch=19, asp=1, main=paste0("X1=",grid[i,1], 
-                                      ", X2=",grid[i,2]))
-    
-    # truth
-    xx <- grid[i,]
-    # copula
-    normCop <- normalCopula(param=c(xx[1]), dim = 2)
-    
-    # margins
-    mdvNorm <- mvdc(copula=normCop, margins=c("norm", "norm"),
-                    paramMargins=list(list(mean = 0, sd = 1),
-                                      list(mean = 0, sd = 1)))
-
-    sim.data <- rMvdc(n = 10000, mvdc = mdvNorm)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
-    
-    contour(f1, nlevels = 5, col="purple",add =TRUE, lty = 2,lwd=2)
-  }
-  dev.off()
-  
-  
-  
-  par(mfrow=c(1,1))
-  # look at simulated data
-  for (i in 1:9) {
-    ids <- sample(1:nrow(p_fourier$y), size = 10000, replace = TRUE, prob = p_fourier$weights[i,])
-    y.sample <- p_fourier$y[ids,]
-    
-    # truth
-    xx <- grid[i,]
-    # copula
-    normCop <- normalCopula(param=c(xx[1]), dim = 2)
-    
-    # margins
-    mdvNorm <- mvdc(copula=normCop, margins=c("norm", "norm"),
-                    paramMargins=list(list(mean = 0, sd = 1),
-                                      list(mean = 0, sd = 1)))
-    
-    sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvNorm)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
-    
-    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
-                          SC, 
-                          "_TESTPOINT_",
-                          i, 
-                          ".png"),
-        width = 400, height = 400)
-    par(mar=c(5.1, 5.1, 4.1, 2.1))
-    plotBivariate(correl = FALSE,
-                  col="darkblue", 
-                  density.xy = f1,
-                  main=parse(text=paste0("~X[1] ==", xx[1])),
-                  x = y.sample[,1], 
-                  y = y.sample[,2], 
-                  cex.points = 0.1, 
-                  xlim = c(-4.3,4.3), 
-                  ylim = c(-4.3,4.3),
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,cex.main=2,font.main=1,font.axis=1,font.lab=1)
-    dev.off()
-  }
+  contour(f1, nlevels = 5, col="purple",add =TRUE, lwd=3)
 }
-  
-if (SC == 1) {
-  
-  # repro
-  set.seed(10)
-  
-  # look at kernels
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_KERNEL_SC_",
-                        SC, 
-                        "_1.png"), 
-      width = 2000, height = 2000)
-  
-  par(mfrow=c(3,3))
-  for (i in 1:9) {
-    #plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
-    
-    plot(col="darkblue", p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
-    
-    # truth
-    xx <- grid[i,]
-    tCop <- tCopula(xx[2],
-                    df=ifelse(xx[1] <= (-1 + 2/3), 1, 
-                              ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
-    margins <- c("norm", "norm")
-    paramMargins <- list(list(mean = 0, sd = 1),
-                         list(mean = 0, sd = 1))
-    mdvT <- mvdc(copula=tCop, margins=margins,
-                 paramMargins=paramMargins)
-    sim.data <- sim.data <- rMvdc(n = 100000, mvdc = mdvT)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
-    
-    contour(f1, nlevels = 5, col="purple", add =TRUE, lty = 2,lwd=2)
-    
-    #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
-  }
-  
-  dev.off()
-
-  par(mfrow=c(1,1))
-  
-  # look at simulated data
-  for (i in 1:9) {
-    ids <- sample(1:nrow(p_fourier$y), size = 10000, replace = TRUE, prob = p_fourier$weights[i,])
-    y.sample <- p_fourier$y[ids,]
-    
-    # truth
-    xx <- grid[i,]
-    tCop <- tCopula(xx[2],
-                    df=ifelse(xx[1] <= (-1 + 2/3), 1, 
-                              ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
-    margins <- c("norm", "norm")
-    paramMargins <- list(list(mean = 0, sd = 1),
-                         list(mean = 0, sd = 1))
-    mdvT <- mvdc(copula=tCop, margins=margins,
-                 paramMargins=paramMargins)
-    
-    sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
-    
-    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
-                          SC, 
-                          "_TESTPOINT_",
-                          i, 
-                          ".png"),
-        width = 500, height = 500)
-    par(mar=c(5.1, 5.1, 4.1, 2.1))
-    plotBivariate(correl = FALSE,
-                  col="darkblue", 
-                  main = parse(text=paste0("~X[1] ==", xx[1], "~X[2] ==", xx[2], "~X[3] ==", xx[3])),
-                  density.xy = f1,
-                  x = y.sample[,1], 
-                  y = y.sample[,2], 
-                  xlim = c(-4.2,4.2),
-                  ylim = c(-4.2,4.2),
-                  cex.points = 0.1, 
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,
-                  font.main=1,cex.main=2,font.axis=1,font.lab=1)
-    dev.off()
-  }
-  
-  
-  # look at the kernels
-  
-  # look at kernels
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_KERNEL_SC_",
-                        SC, 
-                        "_2.png"), 
-      width = 2000, height = 2000)
-  
-  par(mfrow=c(3,3))
-  #par(mar=rep(2,4))
-  #plot(col="black",p_fourier$y,pch=19,main="original data",cex=0.2)
-  for (i in 10:18) {
-    #plot(p_fourier$y,pch=19,main=paste0("X1=",grid[i,1], ", X2=",grid[i,2]),cex=0.2,col="grey")
-    
-    plot(p_fourier$y, cex=p_fourier$weights[i,]^{0.5},pch=19, col="darkblue", asp=1, main=paste0("X1=",grid[i,1],3, ", X2=",grid[i,2],3))
-    
-    # truth
-    xx <- grid[i,]
-    tCop <- tCopula(xx[2],  
-                    df=ifelse(xx[1] <= (-1 + 2/3), 1, 
-                              ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
-    margins <- c("norm", "exp")
-    paramMargins <- list(list(mean = 0, sd = 1),
-                         list(rate = 1))
-    mdvT <- mvdc(copula=tCop, margins=margins,
-                 paramMargins=paramMargins)
-    
-    sim.data <- sim.data <- rMvdc(n = 100000, mvdc = mdvT)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
-    
-    contour(f1, nlevels = 5, col="purple",add = TRUE, lty = 2,lwd=2)
-    #plotBivariate(correl = FALSE, col="darkblue", x = p_fourier$y[,1], y = p_fourier$y[,2], cex.points = p_fourier$weights[i,]*200,pch=19, asp=1, main=paste0("X1=",round(seq(-1,1,length.out = 16)[i],3)))
-  }
-  
-  dev.off()
-  
-  par(mfrow=c(1,1))
-  
-  # look at simulated data
-  for (i in 10:18) {
-    ids <- sample(1:nrow(p_fourier$y), size = 10000, replace = TRUE, prob = p_fourier$weights[i,])
-    y.sample <- p_fourier$y[ids,]
-    
-    # truth
-    xx <- grid[i,]
-    tCop <- tCopula(xx[2],
-                    df=ifelse(xx[1] <= (-1 + 2/3), 1, 
-                              ifelse(xx[1]<= (-1 + 4/3), 3, 10)))
-    margins <- c("norm", "norm")
-    paramMargins <- list(list(mean = 0, sd = 1),
-                         list(mean = 0, sd = 1))
-    mdvT <- mvdc(copula=tCop, margins=margins,
-                 paramMargins=paramMargins)
-    
-    sim.data <- sim.data <- rMvdc(n = 10000, mvdc = mdvT)
-    f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, 0, 10))
-    
-    png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_SAMPLE_SC_",
-                          SC, 
-                          "_TESTPOINT_",
-                          i, 
-                          ".png"), 
-        width = 1000)
-    
-    plotBivariate(correl = FALSE,
-                  col="darkblue", 
-                  density.xy = f1,
-                  x = y.sample[,1], 
-                  y = y.sample[,2], 
-                  main = parse(text=paste0("~X[1] ==", xx[1], "~X[2] ==", xx[2], "~X[3] ==", xx[3])),
-                  cex.points = 0.1, 
-                  asp=1,pch=19,cex.lab = 2,cex.axis=1.5,cex.main=2,font.main=1,font.axis=1,font.lab=1)
-    dev.off()
-  }
-}
-
-# comparison with gini for corr and hsic
-mRF_gini <- drf(X = X, Y = Y, num.trees = 500, 
-                   splitting.rule = "CART",
-                   bandwidth = 1, 
-                   node.scaling = FALSE,
-                   min.node.size = 20)
-
-### helpers functions (! need to be defined here since using variables defined in this file)
-get_corr <- function(fit_obj, x_seq){
-  require(wCorr)
-  l = length(x_seq)
-  ret_corr = rep(0, length(l))
-  for(i in 1:l){
-    point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
-    weights = predict(fit_obj, point)$weights
-    ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights=weights)
-  }
-  return(ret_corr)
-}
-get_corr_grid <- function(fit_obj, grid){
-  require(wCorr)
-  l = nrow(grid)
-  ret_corr = rep(0, length(l))
-  for(i in 1:l){
-    weights = predict(fit_obj, grid[i,])$weights
-    ret_corr[i] = weightedCorr(Y[,1], Y[,2], weights = weights)
-  }
-  return(ret_corr)
-}
+dev.off()
 
 
-if (SC == 0) {
-   png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
-       width = 600, height = 400)
-   par(mar=c(5.1, 5.3, 4.1, 2.1))
-   x = seq(-1, 1, by=0.03)
-   par(mfrow=c(1,1))
-   plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(hat(rho)(X[1])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,lwd=3,lty=2)
-   lines(x, get_corr(mRF_fourier, x), col='blue', lty=1, lwd=3)
-   lines(x, get_corr(mRF_gini, x), col='red', lty=1, lwd=3)
-   dev.off()
-} else if (SC == 1) {
-
-  require(ggplot2)
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_CORRELATION_SC_", SC, ".png"),
-      width = 1000, height = 1000)
-  grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
-                              seq(-1, 1,length.out = 15), 
-                              -1), 
-                  matrix(0,nrow=225,ncol=d-3))
-  names(grid2D)[1:3] <- c('X1', 'X2', 'X3')
-  grid2D$corr <- get_corr_grid(mRF_fourier, grid2D)
+par(mfrow=c(1,1))
+# look at simulated data
+for (i in 1:9) {
+  ids <- sample(1:nrow(p_fourier$y), size = 10000, replace = TRUE, prob = p_fourier$weights[i,])
+  y.sample <- p_fourier$y[ids,]
+  y.sample = y.sample + matrix(rnorm(length(ids)*d_, sd=0.01), ncol=d_)
+  # truth
+  sim.data <- t(replicate(10000, gen(grid[i,])))
+  f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
   
-  
-  ggplot(grid2D, aes(x=X1, y=X2))+
-    geom_raster(aes(fill=abs(corr)))+
-    scale_fill_viridis_c(option='B') 
-  
-  #plot(x = grid[grid[,1]==-1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==-1 & grid[,3]==-1],type="l",xlim=c(0,1))
-  #lines(x = grid[grid[,1]==0 & grid[,3]==-1,1], y = cor_grid[grid[,1]==0 & grid[,3]==-1],type="l",col="red")
-  #lines(x = grid[grid[,1]==1 & grid[,3]==-1,1], y = cor_grid[grid[,1]==1 & grid[,3]==-1],type="l",col="purple")
+  png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/COPULA_SAMPLE_TESTPOINT_", i, ".png"), 
+      width = 1600, height = 1600, res=300)
+  par(mar=c(5.1, 5.1, 4.1, 2.1))
+  plotBivariate(correl = FALSE,
+                col="darkblue", 
+                density.xy = f1,
+                main=parse(text=paste0("~X[1] ==", grid[i,1])),
+                x = y.sample[,1], 
+                y = y.sample[,2], 
+                cex.points = 0.1, 
+                xlim = c(-4.3,4.3), 
+                ylim = c(-4.3,4.3),
+                asp=1,pch=19,cex.lab = 2,cex.axis=1.5,cex.main=2,font.main=1,font.axis=1,font.lab=1)
   dev.off()
 }
 
-get_hsic <- function(fit_obj, x_seq){
-   require(dHSIC)
-   l = length(x_seq)
-   ret_corr = rep(0, length(l))
-   for(i in 1:l){
-     point = matrix(c(x_seq[i], rep(0, d-1)), nrow=1, ncol=(d))
-     weights = predict(fit_obj, point)$weights
-     which = sample(1:n, 10000, replace=TRUE, prob=as.vector(weights))
-     ret_corr[i] = dhsic(Y[which,1], Y[which,2])
-   }
-   return(ret_corr)
-}
-get_hsic_grid <- function(fit_obj, grid){
+
+#CONDITIONAL CORRELATION PLOTS
+png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/PLOT_COPULA_CORRELATION.png"),
+    width = 2400, height = 1600, res=300)
+par(mar=c(5.1, 5.3, 4.1, 2.1))
+
+x = matrix(seq(min(X[,1]), max(X[,1]), length.out=100), ncol=1)
+x_test = cbind(x, matrix(median(X), nrow=nrow(x), ncol=p-1))
+
+par(mfrow=c(1,1))
+plot(x, x, type='l',xlab=expression(X[1]),ylab=expression(Cor(Y[1], Y[2])),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5,lwd=3,lty=2)
+lines(x, predict(drf_MMD, newdata=x_test, functional='cor')$cor[,1,2], col='blue', lty=1, lwd=3)
+lines(x, predict(drf_CART, newdata=x_test, functional='cor')$cor[,1,2], col='red', lty=1, lwd=3)
+dev.off()
+
+
+
+#CONDITIONAL INDEPENDENCE PLOTS
+get_hsic <- function(fit_obj, x_test){
   require(dHSIC)
-  l = nrow(grid)
-  ret_hsic = rep(0, l)
+  l = dim(x_test)[1]
+  ret = rep(l, 0)
   for(i in 1:l){
     print(i)
-    point = matrix(grid[i, ], nrow=1)
-    weights = predict(fit_obj, grid[i,])$weights
-    which = sample(1:n, 10000, replace=TRUE, prob=as.vector(weights))
-    ret_hsic[i] = dhsic(Y[which, 1], Y[which, 2])$dHSIC
+    weights = predict(fit_obj, x_test[i,])$weights
+    which = sample(1:n, 15000, replace=TRUE, prob=as.vector(weights))
+    ret[i] = dhsic(Y[which,1], Y[which,2])
   }
-  return(ret_hsic)
+  return(ret)
 }
 
-if (SC == 0) {
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
-    width = 600, height = 400)
+png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
+    width = 2400, height = 1600, res=300)
 
-  x = seq(-1, 1, by=0.05)
-  par(mar=c(5.1, 5.3, 4.1, 2.1))
-  par(mfrow=c(1,1))
-  plot(x, get_hsic(mRF_fourier, x), col='blue', lwd=3, xlab=expression(X[1]),ylab="HSIC",type='l', ylim=c(0, 0.06),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5)
-  lines(x, get_hsic(mRF_gini, x), col='red', lwd = 3)
+x = matrix(seq(min(X[,1]), max(X[,1]), length.out=10), ncol=1)
+x_test = cbind(x, matrix(median(X), nrow=nrow(x), ncol=p-1))
+
+par(mar=c(5.1, 5.3, 4.1, 2.1))
+par(mfrow=c(1,1))
+plot(x, get_hsic(drf_MMD, x_test), col='blue', lwd=4, xlab=expression(X[1]),ylab="HSIC",type='l', ylim=c(0, 0.08),font.main=1,font.lab=1,font.axis=1,cex.lab=2,cex.axis=1.5)
+lines(x, get_hsic(drf_CART, x_test), col='red', lwd = 4)
+truth=c()
+for(xval in x){
+  R = 20000
+  Ytrue = matrix(0, nrow=R, ncol=d_)
+  for(j in 1:R){
+    Ytrue[j,] =gen(c(xval, rep(0, p-1)))
+  }
+  truth = c(truth, dhsic(Ytrue[, 1], Ytrue[, 2])$dHSIC)
+}
+lines(x, truth, col='black', lwd = 4, lty=2)
+
 dev.off()
-} else if (SC == 1) {
-  
-  
-  Grid2D <- cbind(expand.grid(seq(-1, 1,length.out = 15), 
-                              seq(-1, 1,length.out = 15), 
-                              -1), 
-                  matrix(0,nrow=225,ncol=d-3))
-  names(Grid2D)[1:3] <- c('X1', 'X2', 'X3')
-  Grid2D$HSIC <- get_hsic_grid(mRF_fourier, Grid2D)
-  
-  png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
-      width = 600, height = 400)
-  
-  ggplot(Grid2D, aes(x=X1, y=X2))+
-    labs(x=expression(X[1]),y=expression(X[2])) +
-    theme(
-      legend.title = element_text(size = 14),
-      legend.text = element_text(size = 10),
-      axis.title = element_text(size = 14)
-    ) +
-    geom_raster(aes(fill=HSIC))+
-    scale_fill_viridis_c(option='C') 
-  
-  dev.off()
-  
-}
