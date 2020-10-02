@@ -6,7 +6,8 @@ univariateComparison <- function(dataset = "synthetic1",
                                  p = 10, test.frac = 0.3, 
                                  meanShift = 1, 
                                  sdShift = 1, 
-                                 quantiles.grid = c(0.1, 0.9)) {
+                                 quantiles.grid = c(0.1, 0.9),
+                                 conditional.mean.analysis = FALSE) {
 
   # libs
   if (!require(ranger) || !require(drf) || !require(grf) || !require(trtf)) {
@@ -39,6 +40,14 @@ univariateComparison <- function(dataset = "synthetic1",
              num.trees = 500,
              splitting.rule = "FourierMMD",
              num.features = 10)
+  
+  if (conditional.mean.analysis) {
+    
+    qQRF.test <- predict(qRF, data = data.frame(x = d$X[ids.test,]))$predictions
+    qDRF.test <- predict(dRF, newdata = d$X[ids.test,], functional = "mean")$mean
+    
+    return(list(mse.qrf = mean((qQRF.test-d$y[ids.test])^2), mse.drf = mean((qDRF.test-d$y[ids.test])^2)))
+  }
 
   # generalized random forest
   gRF <- quantile_forest(X = d$X[ids.train,],
@@ -264,8 +273,6 @@ univariateComparison <- function(dataset = "synthetic1",
       #       bty = "n")
     }
   }
-
-
 
   # checking the quantile loss out of sample
   qLoss <- function(y, q, alpha) alpha*pmax(0, y-q) + (1-alpha)*pmax(0, q-y)

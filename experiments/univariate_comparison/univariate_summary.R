@@ -90,3 +90,17 @@ for (i in 1) {
   lines(x,TRF_W2, col="red",type="l",lwd=1.2^2)
 }
 
+
+# conditional mean non-inferiority
+load("./../../experiments/univariate_comparison/results_mean_univariate_paper_final.Rdata")
+
+mean(sapply(results.mean$synthetic1, function(l) l$mse.qrf))
+mean(sapply(results.mean$synthetic1, function(l) l$mse.drf))
+
+mean(sapply(results.mean$synthetic2, function(l) l$mse.qrf))
+mean(sapply(results.mean$synthetic2, function(l) l$mse.drf))
+
+mean(sapply(results.mean$synthetic3, function(l) l$mse.qrf))
+mean(sapply(results.mean$synthetic3, function(l) l$mse.drf))
+
+

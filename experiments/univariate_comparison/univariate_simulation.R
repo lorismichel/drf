@@ -18,6 +18,7 @@ dataset.names <- c("synthetic1","synthetic2","synthetic3")
 nrep <- 10
 
 results <- list()
+results.mean <- list()
 
 # for the quantile loss choose different quantile.grid
 for (dname in dataset.names) {
@@ -29,7 +30,7 @@ for (dname in dataset.names) {
 										            sdShift = 1,
                          								    p = 39,
 											    test.frac = 0.3,
-											    quantiles.grid = setdiff(seq(0,1,length.out = 20),c(0,1))),
+											    quantiles.grid = setdiff(seq(0,1,length.out = 100),c(0,1))),
 									error=function(e) e),
                                        mc.set.seed = 1)
 
@@ -37,4 +38,25 @@ for (dname in dataset.names) {
 }
 
 save(results, file = "./results_univariate_paper_final.Rdata")
+
+
+# for the conditional mean 
+for (dname in dataset.names) {
+  
+  results.mean[[dname]] <- mclapply(X = 1:nrep, FUN = function(i) tryCatch(univariateComparison(dataset = dname,
+                                                                                           verbose = FALSE,
+                                                                                           n = 1000,
+                                                                                           meanShift = 0.8,
+                                                                                           sdShift = 1,
+                                                                                           p = 39,
+                                                                                           test.frac = 0.3,
+                                                                                           quantiles.grid = setdiff(seq(0,1,length.out = 100),c(0,1)),
+                                                                                           conditional.mean.analysis = TRUE),
+                                                                      error=function(e) e),
+                               mc.set.seed = 1)
+  
+  print(dname)
+}
+
+save(results.mean, file = "./results_mean_univariate_paper_final.Rdata")
 
