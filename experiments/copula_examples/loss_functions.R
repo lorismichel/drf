@@ -1,4 +1,4 @@
-library(mrf)
+library(drf)
 library(ggplot2)
 
 # dimensions
@@ -23,9 +23,9 @@ Y <- t(apply(X, 1, function(xx) {
 }))
 
 #TRAINING METHODS
-mRF <- mrf(X = X, Y = Y, splitting.rule = "fourier", num_features=50)
-mRF2 <- mrf(X = X, Y = Y, splitting.rule = "fourier", num_features=5)
-giniRF <- mrf(X = X, Y = Y, splitting.rule = "gini")
+dRF <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num_features=50)
+dRF2 <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num_features=5)
+giniRF <- drf(X = X, Y = Y, splitting.rule = "CART")
 
 #############################################
 #VISUAL INSPECTION

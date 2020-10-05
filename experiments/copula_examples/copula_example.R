@@ -7,8 +7,7 @@ library(MASS)
 library(ggplot2)
 
 # source
-setwd('~/Documents/projects/DRF/drf')
-source("./experiments/copula_examples/helpers.R")
+source("./helpers.R")
 
 # repro
 set.seed(100)
@@ -84,11 +83,11 @@ for(i in 1:d_){
 colnames(Y) <- names
 
 ## FIT MODELS
-drf_MMD <- drf(X = X, Y = Y, num.features=50)
+drf_MMD <- drf(X = X, Y = Y, splitting.rule = "FourierMMD", num.features=50)
 drf_CART <- drf(X = X, Y = Y, splitting.rule = "CART")
 
 # plot pooled data
-png(filename = paste0("./experiments/copula_examples/plots/SC/", SC, "/POOLED.png"), 
+png(filename = paste0("./plots/SC/", SC, "/POOLED.png"), 
     width = 2400, height = 1600, res=300)
 par(mfrow=c(1,1))
 par(mar=rep(4.7,4))
@@ -111,7 +110,7 @@ p_fourier <- predict(drf_MMD, newdata = as.matrix(grid))
 
 
 ## PLOT KERNELS AND TRUE CONTOURS
-png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/COPULA_KERNEL.png"), 
+png(filename = paste0("./plots/SC", SC, "/COPULA_KERNEL.png"), 
     width = 2000*nrow(grid)/3, height = 2000, res=300)
   
 par(mfrow=c(3,nrow(grid)/3))
@@ -142,7 +141,7 @@ for (i in 1:9) {
   sim.data <- t(replicate(10000, gen(grid[i,])))
   f1 <- kde2d(sim.data[,1], sim.data[,2], h = rep(1.5, 2), n = 50, lims = c(-4, 4, -4, 4))
   
-  png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/COPULA_SAMPLE_TESTPOINT_", i, ".png"), 
+  png(filename = paste0("./plots/SC", SC, "/COPULA_SAMPLE_TESTPOINT_", i, ".png"), 
       width = 1600, height = 1600, res=300)
   par(mar=c(5.1, 5.1, 4.1, 2.1))
   plotBivariate(correl = FALSE,
@@ -160,7 +159,7 @@ for (i in 1:9) {
 
 
 #CONDITIONAL CORRELATION PLOTS
-png(filename = paste0("./experiments/copula_examples/plots/SC", SC, "/PLOT_COPULA_CORRELATION.png"),
+png(filename = paste0("./plots/SC", SC, "/PLOT_COPULA_CORRELATION.png"),
     width = 2400, height = 1600, res=300)
 par(mar=c(5.1, 5.3, 4.1, 2.1))
 
@@ -189,7 +188,7 @@ get_hsic <- function(fit_obj, x_test){
   return(ret)
 }
 
-png(filename = paste0("./experiments/copula_examples/plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
+png(filename = paste0("./plots/PLOT_COPULA_HSIC_SC_", SC, ".png"),
     width = 2400, height = 1600, res=300)
 
 x = matrix(seq(min(X[,1]), max(X[,1]), length.out=10), ncol=1)
