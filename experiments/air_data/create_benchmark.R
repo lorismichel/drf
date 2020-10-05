@@ -4,7 +4,7 @@ library(fastDummies)
 library(vcd)
 
 set.seed(22)
-load('~/Documents/projects/heterogeneity/air_data/computed_data/air_data.RData')
+load('../../data/air_data/computed_data/air_data.RData')
 length(unique(air_data$Site.ID))
 
 #remove outliers
@@ -51,8 +51,6 @@ X <- dummy_cols(X, remove_selected_columns=TRUE)
 colnames(X)
 X = as.matrix(X)
 
-#save(X, Y, file = "~/Documents/projects/heterogeneity/air_data/air_data_benchmark.Rdata")
-
 #########################################################################
 pollutants = c('PM2.5', 'O3', 'PM10')
 targets = c(paste('max_', pollutants, sep=''))
@@ -82,5 +80,3 @@ X$Location.Setting <- factor(X$Location.Setting)
 X <- dummy_cols(X, remove_selected_columns=TRUE)
 colnames(X)
 X = as.matrix(X)
-
-#save(X, Y, file = "~/Documents/projects/heterogeneity/air_data/air_data_benchmark2.Rdata")
