@@ -398,7 +398,7 @@ readObservation <- function(l) {
 
 # read line by line saved as a list
 # n specifies the number of rows to read
-l <- readLines(con = "~/Documents/projects/heterogeneity/birth_data/Nat2018PublicUS.c20190509.r20190717.txt")
+l <- readLines(con = "../../data/birth_data/downloaded_data/heterogeneity/birth_data/Nat2018PublicUS.c20190509.r20190717.txt")
 l = l[sample(1:length(l), 300000, replace=FALSE)]
 l = as.list(l)
 
@@ -509,5 +509,5 @@ levels(df$congenital_anomalies)[levels(df$congenital_anomalies)=="0"] = "yes"
 levels(df$congenital_anomalies)[levels(df$congenital_anomalies)=="0"] = NA
 
 births = df
-save(births, file="~/Documents/projects/heterogeneity/birth_data/births.dat")
+save(births, file="../../data/birth_data/computed_data/births.dat")
 

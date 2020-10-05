@@ -7,7 +7,7 @@ library(fastDummies)
 # load dataset
 #####################################################################
 
-load("~/Documents/projects/heterogeneity/birth_data/births.dat")
+load("../../data/birth_data/computed_data/births.dat")
 births = na.omit(births)
 births = births[births$race_mother %in% c('white', 'black', 'asian'), ]
 births = births[births$race_father %in% c('white', 'black', 'asian'), ]
@@ -156,7 +156,7 @@ for(i in sample((1:nrow(X))[-train_idx], 1500)){
 #1646
 #120894 twin or 53025 or 129085
 
-ggsave('~/Documents/projects/heterogeneity/paper/birth_data/cond2.png', width=21, height=12, units='cm')
+ggsave('./cond2.png', width=21, height=12, units='cm')
 ######################################################################
 # compute the causal do quantity
 ######################################################################

@@ -3,7 +3,7 @@ library(mrf)
 library(GGally)
 library(fastDummies)
 
-load("~/Documents/projects/DRF/data/birth_data/computed_data/births.Rdata")
+load("../../data/birth_data/computed_data/births.Rdata")
 births = na.omit(births)
 births = births[births$race_mother %in% c('white', 'black', 'asian'), ]
 births = births[births$race_father %in% c('white', 'black', 'asian'), ]
@@ -38,7 +38,7 @@ set.seed(22)
 subsample = sample(1:nrow(X), 30000, replace=FALSE)
 X = X[subsample, ]
 Y = Y[subsample, ]
-save(X, Y, file='~/Documents/projects/heterogeneity/birth_data/births_benchmark1.Rdata')
+save(X, Y, file='../../data/birth_data/computed_data/births_benchmark1.Rdata')
 
 
 X = births[,c(
@@ -74,4 +74,4 @@ set.seed(22)
 subsample = sample(1:nrow(X), 30000, replace=FALSE)
 X = X[subsample, ]
 Y = Y[subsample, ]
-save(X, Y, file='~/Documents/projects/heterogeneity/birth_data/births_benchmark2.Rdata')
+save(X, Y, file='../../data/birth_data/computed_data/births_benchmark2.Rdata')
