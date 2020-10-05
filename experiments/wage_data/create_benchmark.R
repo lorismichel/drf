@@ -2,7 +2,7 @@ library(mrf)
 library(ggplot2)
 library(fastDummies)
 
-load("~/Documents/projects/heterogeneity/wage_data/wage_data")
+load("../../data/wage_data/wage_data.Rdata")
 
 which = rep(TRUE, nrow(wage))
 which = which & (wage$race %in% c('white', 'black', 'asian'))
@@ -63,5 +63,5 @@ subsample = sample(1:nrow(X), 20000, replace=FALSE)
 X = X[subsample,]
 Y = Y[subsample,]
 
-save(X, Y, file='~/Documents/projects/heterogeneity/wage_data/wage_benchmark.Rdata')
+save(X, Y, file='../../data/wage_data/wage_benchmark.Rdata')
 

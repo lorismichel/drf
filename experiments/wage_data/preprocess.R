@@ -75,9 +75,9 @@ for(i in 1:length(geographies)){
   df = rbind(df, tmp)
 }
 
-#save(df, file='~/Documents/projects/DRF/data/wage_data/computed_data/raw_data.Rdata')
+#save(df, file='../../data/wage_data/computed_data/raw_data.Rdata')
 ##################################################################################################
-load('~/Documents/projects/DRF/data/wage_data/computed_data/raw_data.Rdata')
+load('../../data/wage_data/computed_data/raw_data.Rdata')
 #n = nrow(df)
 #p = ncol(df)
 #idx = sample(1:n, 100000, replace=FALSE)
@@ -318,4 +318,4 @@ ordering = c(
 )
 
 wage = wage[, ordering]
-#save(wage, file='~/Documents/projects/DRF/data/wage_data/computed_data/wage_data.Rdata')
+#save(wage, file='../../data/wage_data/computed_data/wage_data.Rdata')

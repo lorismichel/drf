@@ -1,5 +1,5 @@
 library(ggplot2)
-library(mrf)
+library(drf)
 library(viridis)
 library(sf)
 library(maps)
@@ -18,8 +18,7 @@ names(moderate_thresholds) = c('CO', 'SO2', 'NO2', 'O3', 'PM10', 'PM2.5')
 names(unhealthy_thresholds) = c('CO', 'SO2', 'NO2', 'O3', 'PM10', 'PM2.5')
 
 # loading data and subsampling
-#load('~/Downloads/air_data.RData')
-load('~/Documents/projects/heterogeneity/air_data/computed_data/air_data.RData')
+load('../../data/air_data/computed_data/air_data.RData')
 length(unique(air_data$Site.ID))
 
 #remove outliers
@@ -75,12 +74,12 @@ colnames(X)
 
 # fit DRF
 set.seed(22)
-mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "fourier", num_features = 10, min.node.size = 20)
+dRF_fourier <- drf(X = X, Y = Y, num.trees = 2000, splitting.rule = "FourierMMD", num.features = 10, min.node.size = 20)
 test = dummy_cols(site_data[,c('Longitude','Latitude',"Elevation","Land.Use","Location.Setting")], remove_selected_columns=TRUE)
-weights_fourier <- predict(mRF_fourier, newdata=test)$weights
+weights_fourier <- predict(dRF_fourier, newdata=test)$weights
 
-#save(mRF_fourier, weights_fourier, file="~/Documents/projects/heterogeneity/air_data/computed_data/visualization")
-load("~/Documents/projects/heterogeneity/air_data/computed_data/visualization")
+#save(dRF_fourier, weights_fourier, file="~/Documents/projects/heterogeneity/air_data/computed_data/visualization")
+load("../../data/air_data/computed_data/visualization.Rdata")
 
 ##################################################################
 # Visualization of weight distribution
@@ -237,7 +236,7 @@ gg1 = ggplot(plot_df, aes(x=Longitude, y=Latitude)) +
         legend.title=element_text(size=16)) +
   coord_cartesian(xlim=c(-106, -71), ylim=c(29, 46.5))# +
 plot(gg1)
-ggsave('~/Documents/projects/heterogeneity/paper/air_data/site_weights3.png', width=33.3, height=7.5, units='cm')
+ggsave('./site_weights3.png', width=33.3, height=7.5, units='cm')
 
 
 idx = 13234 #17238 
@@ -282,4 +281,4 @@ gg2 = ggplot(data=dataset[dataset$weight!=0 & dataset$max_NO2 > 0 & dataset$max_
         axis.title.y=element_text(size=13)) +
   labs(x="Fine particulates (µg/m³)", y='Nitrogen dioxyde (ppb)')
 plot(gg2)
-ggsave('~/Documents/projects/heterogeneity/paper/air_data/pollutant2.png', width=14.5, height=6, units='cm')
+ggsave('./pollutant2.png', width=14.5, height=6, units='cm')

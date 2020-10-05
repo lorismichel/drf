@@ -3,7 +3,7 @@ library(ggplot2)
 library(fastDummies)
 library(Hmisc)
 
-load("~/Documents/projects/DRF/wage_data/wage_data")
+load("../../data/wage_data/wage_data.Rdata")
 
 which = rep(TRUE, nrow(wage))
 which = which & (wage$age >= 17)
@@ -83,10 +83,10 @@ Y = as.matrix(Y)
 set.seed(22)
 train_idx = sample(1:nrow(data), 300000, replace=FALSE)
 drf_fit = drf(X=X[train_idx,], Y=Y[train_idx,], min.node.size = 20, splitting.rule='FourierMMD', num.features=10)
-#save(drf_fit, train_idx, data, X, Y, file='~/Documents/projects/DRF/wage_data/computed_data')
+#save(drf_fit, train_idx, data, X, Y, file='../../data/wage_data/computed_data')
 
 ##################################
-#load(file='~/Documents/projects/DRF/wage_data/computed_data')
+#load(file='../../data/wage_data/computed_data')
 
 point_description = function(test_point){
   out = ''
@@ -145,7 +145,7 @@ for(i in sample((1:nrow(X))[-train_idx], 50)){
 
   cat ("Press [enter] to continue")
   line <- readline()
-#  ggsave('~/Documents/projects/DRF/paper/wage_data/job1-new.png', width=12.5, height=11, units='cm')
+#  ggsave('./job1-new.png', width=12.5, height=11, units='cm')
 }
 #292457
 #999398 mechanic
@@ -176,7 +176,7 @@ for(i in sample(which, N, replace=FALSE)){
 }
 
 #save(plotdf, file='~/Documents/projects/DRF/wage_data/computed_data4')
-load(file='~/Documents/projects/DRF/wage_data/computed_data4')
+load(file='../../data/wage_data/computed_data4.Rdata')
 
 #interventional distribution
 ggplot(plotdf, aes(log_wage)) +
@@ -194,7 +194,7 @@ ggplot(plotdf, aes(log_wage)) +
         axis.title.y = element_text(size=19))+
   labs(x='log(hourly wage)')
 
-ggsave('~/Documents/projects/DRF/paper/wage_data/counterfactual2.png', width=11, height=11, units='cm')
+ggsave('../../data/wage_data/counterfactual2.png', width=11, height=11, units='cm')
 
 quantile_male = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='male'), normwt=TRUE, probs=0.5)
 quantile_female = wtd.quantile(x=plotdf$log_wage, weights=plotdf$plotweight*(plotdf$sex=='female'), normwt=TRUE, probs=0.5)
@@ -223,5 +223,5 @@ qplot(quantile_male, quantile_female, geom='line', size=I(1)) +
   scale_y_continuous(breaks=c(0, 100000, 200000, 300000),
                      labels=c("0", "100K", "200K", "300K")) +
   labs(x='wage quantile men', y='wage quantile women')
-ggsave('~/Documents/projects/DRF/paper/wage_data/wage_quantiles2.png', width=8, height=11, units='cm')
+ggsave('./wage_quantiles2.png', width=8, height=11, units='cm')
 
