@@ -3,7 +3,7 @@ library(mrf)
 library(GGally)
 library(fastDummies)
 
-load("~/Documents/projects/heterogeneity/birth_data/births.dat")
+load("~/Documents/projects/DRF/data/birth_data/computed_data/births.Rdata")
 births = na.omit(births)
 births = births[births$race_mother %in% c('white', 'black', 'asian'), ]
 births = births[births$race_father %in% c('white', 'black', 'asian'), ]

@@ -1,8 +1,5 @@
-# make the summaries about the datasets
-
-# repro
+# datasets
 set.seed(0)
-
 andro.summaries <- makeSummaries(dataset = "andro", nrep = 500)
 edm.summaries <- makeSummaries(dataset = "edm", nrep = 500)
 enb.summaries <- makeSummaries(dataset = "enb", nrep = 500)
@@ -20,6 +17,7 @@ sf2.summaries <- makeSummaries(dataset = "sf2", nrep = 500)
 wage.summaries <- makeSummaries(dataset = "wage", nrep = 500)
 biths1.summaries <- makeSummaries(dataset = "births1", nrep = 500)
 biths2.summaries <- makeSummaries(dataset = "births2", nrep = 500)
+#load("./experiments/mtr/data/example1.Rdata")
 
 
 
