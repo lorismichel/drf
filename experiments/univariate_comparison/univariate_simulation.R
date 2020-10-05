@@ -10,37 +10,38 @@ set.seed(1)
 source("./genData.R")
 source("./univariateComparison.R")
 
-
+# dataasets used for simulation
 dataset.names <- c("synthetic1","synthetic2","synthetic3")
 
 
 # rep per datasets
 nrep <- 10
 
-results <- list()
+# stored results
+results.quantiles <- list()
 results.mean <- list()
 
-# for the quantile loss choose different quantile.grid
+# quantile losses
 for (dname in dataset.names) {
 
     results[[dname]] <- mclapply(X = 1:nrep, FUN = function(i) tryCatch(univariateComparison(dataset = dname,
-                                                                                            verbose = FALSE,
-											    n = 1000,
-											    meanShift = 0.8,
-										            sdShift = 1,
-                         								    p = 39,
-											    test.frac = 0.3,
-											    quantiles.grid = setdiff(seq(0,1,length.out = 100),c(0,1))),
-									error=function(e) e),
-                                       mc.set.seed = 1)
+                                                                                             verbose = FALSE,
+											                                                                       n = 2000,
+											                                                                       meanShift = 0.8,
+										                                                                         sdShift = 1,
+                         								                                                     p = 39,
+											                                                                       test.frac = 0.3,
+											                                                                       quantiles.grid = setdiff(seq(0,1,length.out = 100),c(0,1))),
+									                                                       error=function(e) e),
+                                                                         mc.set.seed = 1)
 
-  print(dname)
+    print(dname)
 }
 
-save(results, file = "./results_univariate_paper_final.Rdata")
+save(results.quantiles, file = "../../data/computed_data/results_quantiles_univariate_paper_final.Rdata")
 
 
-# for the conditional mean 
+# mse losses
 for (dname in dataset.names) {
   
   results.mean[[dname]] <- mclapply(X = 1:nrep, FUN = function(i) tryCatch(univariateComparison(dataset = dname,
@@ -58,5 +59,5 @@ for (dname in dataset.names) {
   print(dname)
 }
 
-save(results.mean, file = "./results_mean_univariate_paper_final.Rdata")
+save(results.mean, file = "../../data/computed_data/results_mean_univariate_paper_final.Rdata")
 

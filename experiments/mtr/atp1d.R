@@ -11,10 +11,10 @@ require(mrf)
 USE.RES <- TRUE
 
 # source
-source("./experiments/mtr/helpers.R")
+source("./helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "atp1d")
+d <- loadMTRdata(path = "../../data/mtr-datasets/downloaded_data/", dataset.name = "atp1d")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -36,14 +36,5 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
 
-# # run pinball analysis (nl)
-# res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                              X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-# 
-# # run coverage analysis 
-# res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                   X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-
 # save results
-#res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/atp1d.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = "../../data/mtr-datasets/computed_data/atp1d.Rdata")

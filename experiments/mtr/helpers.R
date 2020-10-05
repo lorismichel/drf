@@ -1,4 +1,4 @@
-# helpers for mtr
+# helpers for mtr (benchmark analysis)
 
 # libs 
 require(foreign)
@@ -8,7 +8,7 @@ require(parallel)
 require(copula)
 
 
-loadMTRdata <- function(dataset.name = "atp1d", path = '~/Downloads/mtr-datasets/') {
+loadMTRdata <- function(dataset.name = "atp1d", path = '../../data/mtr-datasets/downloaded_data/') {
   if (!dataset.name %in% c("example1", "example2", "air1", "air2", "wage", "births1", "births2")) {
     dataset <- read.arff(file = paste0(path, dataset.name, ".arff"))
   }
@@ -660,7 +660,7 @@ runRandomPinballAnalysis <- function(X,
   w <- generateRandomDirection(dim = ncol(Y), nb = nb_random_directions)
   
   # quantile loss matrices
-  mrf_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
+  drf_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   gini_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   res_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
   knn_loss <- matrix(0,nrow=nb_random_directions, ncol=length(alpha_seq))
@@ -673,8 +673,8 @@ runRandomPinballAnalysis <- function(X,
     
     # two tree methods
     print("training forests.")
-    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
-    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
+    dRF <- drf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "FourierMMD", ...)
+    giniRF <- drf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "CART")
     
     print("training global res.")
     resRF <- ResRF(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],])
@@ -684,10 +684,10 @@ runRandomPinballAnalysis <- function(X,
     comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
     
     print("predict forests.")
-    yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
-                        quantiles = c(alpha_seq,0.1), f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
-    yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
-                         quantiles = c(alpha_seq,0.1), f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
+    yhat_drf <- predict(dRF, newdata = X[folds[[kk]],], type = "quantile", 
+                        quantiles = c(alpha_seq,0.1), transformation = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
+    yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "quantile", 
+                         quantiles = c(alpha_seq,0.1), transformation = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
     # loop over projections
     print("predict res.")
     yhat_res   <- predictResRF(resRF, newdata = X[folds[[kk]],], type = "functional", 
@@ -700,38 +700,11 @@ runRandomPinballAnalysis <- function(X,
     print("predict gauss.")
     yhat_gauss   <-  predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
                          quantiles = alpha_seq, f = function(y) sapply(1:length(w), function(i) sum(w[[i]]*y)))$functional
-    # for (i in 1:length(w)) {
-    #   
-    #   yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
-    #                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-    #   
-    #   yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
-    #                        quantiles = alpha_seq, f = function(y) sum(w[[i]]*y))$functional
-    #   
-      # define the qs
-      #mrf_q[i,folds[[kk]],] <- yhat_mrf
-      #gini_q[i,folds[[kk]],] <- yhat_gini
-      #res_q[i,folds[[kk]],] <- yhat_res
-      #knn_q[i,folds[[kk]],] <- yhat_knn
-      #gauss_q[i,folds[[kk]],] <- yhat_gauss
-      
-      # define the us
-      #funs <- predict(mRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
-      #mrf_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
-      
-      #funs <- predict(giniRF, newdata = X[folds[[kk]],], type = "ecdf", f = function(y) sum(w[[i]]*y))$ecdf
-      #gini_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
-      
-      #funs <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], type = "ecdf", k = param.knn, f = function(y) sum(w[[i]]*y))$ecdf
-      #knn_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
-      
-      #funs <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], type = "ecdf", sigma = param.gauss, f = function(y) sum(w[[i]]*y))$ecdf
-      #gauss_u[i,folds[[kk]]] <- sapply(1:length(folds[[kk]]), function(j) funs[[j]](sum(w[[i]]*as.numeric(Y[folds[[kk]][j],]))))
-      
+    
       j <- 1
       for (i in 1:length(w)) {
-          mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
-                                                  yhat = yhat_mrf[[i]][,1], alpha = alpha_seq[j])/k
+          drf_loss[i,j] <- drf_loss[i,j] +  qLoss(y = Y[folds[[kk]],] %*% w[[i]],
+                                                  yhat = yhat_drf[[i]][,1], alpha = alpha_seq[j])/k
           gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
                                                    yhat = yhat_gini[[i]][,1], alpha = alpha_seq[j])/k
           res_loss[i,j] <- res_loss[i,j] + qLoss(y = Y[folds[[kk]],] %*% w[[i]], 
@@ -743,7 +716,7 @@ runRandomPinballAnalysis <- function(X,
       }  
   }
   
-  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss, res_loss = res_loss,
+  return(list(drf_loss = drf_loss, gini_loss = gini_loss, res_loss = res_loss,
               knn_loss = knn_loss, gauss_loss = gauss_loss,
               #mrf_u = mrf_u, gini_u = gini_u, knn_u = knn_u, gauss_u = gauss_u,
               w = w))
@@ -751,193 +724,7 @@ runRandomPinballAnalysis <- function(X,
   
 }
 
-runRandomPinballNLAnalysis <- function(X, 
-                                       Y,
-                                       X.knn,
-                                       X.gauss,
-                                       param.knn,
-                                       param.gauss,
-                                       k = 10, 
-                                       alpha_seq = c(.005, .025, .05, .3, .5, .7, .95, .975, .995), 
-                                       seed = 0,
-                                       ...) {
-  
-  # repro
-  set.seed(seed)
-  
-  # create folds
-  folds <- kFoldCV(n = nrow(X), k = k)
-  
-  # properties of the simulations
-  mrf_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
-  gini_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
-  knn_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
-  gauss_loss <- matrix(0,nrow=ncol(Y)^2, ncol=length(alpha_seq))
-  
-  # CV loop
-  for (kk in 1:k) {
-    
-    print(paste0("CV loop: ", kk))
-    
-    
-    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
-    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
-    
-    comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    
-    pairs <- expand.grid(1:ncol(Y),1:ncol(Y))
-    pairs <- pairs[1:(nrow(pairs)/2),]
-    
-    for (i in 1:nrow(pairs)) {
-      
-      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
-                          quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
-                           quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      yhat_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],], k = param.knn, type = "functional", 
-                          quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      yhat_gauss <- predictGaussKernel(comp.gauss, newdata = X.gauss[folds[[kk]],], sigma = param.gauss, type = "functional", 
-                           quantiles = alpha_seq, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      
-      for (j in 1:length(alpha_seq)) {
-        mrf_loss[i,j] <- mrf_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]],
-                                                yhat = yhat_mrf[,j], alpha = alpha_seq[j])/k
-        gini_loss[i,j] <- gini_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]], 
-                                                 yhat = yhat_gini[,j], alpha = alpha_seq[j])/k
-        knn_loss[i,j] <- knn_loss[i,j] +  qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]],
-                                               yhat = yhat_knn[,j], alpha = alpha_seq[j])/k
-        gauss_loss[i,j] <- gauss_loss[i,j] + qLoss(y = Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]], 
-                                                 yhat = yhat_gauss[,j], alpha = alpha_seq[j])/k
-        
-      }
-    }
-  }
-  
-  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss,
-              knn_loss = knn_loss, gauss_loss = gauss_loss))
-  
-}
 
-
-runNormalCoverage <- function(X, 
-                              Y, 
-                              param.knn,
-                              param.gauss,
-                              X.knn,
-                              X.gauss,
-                              k = 10, 
-                              alpha = 0.05,
-                              seed = 0,
-                              ...) {
-  
-  # repro
-  set.seed(seed)
-  
-  # create folds
-  folds <- kFoldCV(n = nrow(X), k = k)
-  
-  scores_CV_mrf <- rep(NA, nrow(X))
-  scores_CV_gini <- rep(NA, nrow(X))
-  scores_CV_res <- rep(NA, nrow(X))
-  scores_CV_knn <- rep(NA, nrow(X))
-  scores_CV_gauss <- rep(NA, nrow(X))
-  #scores_CV_mrf_global <- rep(NA, nrow(X))
-  #scores_CV_gini_global <- rep(NA, nrow(X))
-  
-  # areas_CV_mrf <- rep(NA, nrow(X))
-  # areas_CV_gini <- rep(NA, nrow(X))
-  # areas_CV_mrf_global <- rep(NA, nrow(X))
-  # areas_CV_gini_global <- rep(NA, nrow(X))
-  
-  # CV loop
-  for (kk in 1:k) {
-    print(paste0("CV loop: ", kk))
-    
-    # fit the two types of forests
-    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
-    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
-    resRF <- ResRF(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
-      
-    # get the global covariance matrix of residuals
-    #residuals.mrf.oof <- Y[folds[[kk]],]-predict(mRF, newdata = X[folds[[kk]],], type = "mean")$mean
-    #residuals.gini.oof <- Y[folds[[kk]],]-predict(giniRF, newdata = X[folds[[kk]],], type = "mean")$mean
-    #cov.mrf.residuals <- cov(residuals.mrf.oof)
-    #cov.gini.residuals <- cov(residuals.gini.oof)
-    
-    # get the function for pred
-    preds_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "normalPredictionScore")
-    preds_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "normalPredictionScore")
-    preds_res <- predictResRF(resRF, X[folds[[kk]],], type = "normalPredictionScore")
-    preds_knn <- predictKNN(comp.knn, newdata = X.knn[folds[[kk]],],k = param.knn, type = "normalPredictionScore")
-    preds_gauss <- predictGaussKernel(comp.gauss, sigma = param.gauss,newdata = X.gauss[folds[[kk]],], type = "normalPredictionScore")
-    
-    #preds_mrf_global <- predict(mRF, newdata = X[folds[[kk]],], cov.residuals = cov.mrf.residuals, type = "normalPredictionScore_global")
-    #preds_gini_global <- predict(giniRF, newdata = X[folds[[kk]],], cov.residuals = cov.gini.residuals, type = "normalPredictionScore_global")
-    
-    # get the scores
-    scores_mrf <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_mrf$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
-    scores_gini <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_gini$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
-    scores_res <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_res$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
-    scores_knn <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_knn$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
-    scores_gauss <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_gauss$normalPredictionScore[[i]](Y[folds[[kk]],][i,]))
-    
-    #scores_mrf_global <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_mrf_global$normalPredictionScore_global[[i]](Y[folds[[kk]],][i,]))
-    #scores_gini_global <- sapply(1:nrow(Y[folds[[kk]],]), function(i) preds_gini_global$normalPredictionScore_global[[i]](Y[folds[[kk]],][i,]))
-    
-    # get the area
-    #Y.grid <- expand.grid(lapply(1:ncol(Y), function(i) seq(min(Y[,i]), max(Y[,i]), length.out = 100)))
-    
-    #vals_gini <- lapply(1:nrow(Y[folds[[kk]],]),function(i) apply(Y.grid, 1, function(x) preds_gini$normalPredictionScore[[i]](as.numeric(x))))
-    #vals_mrf <- lapply(1:nrow(Y[folds[[kk]],]),function(i) apply(Y.grid, 1, function(x) preds_mrf$normalPredictionScore[[i]](as.numeric(x))))
-    #vals_mrf_global <- lapply(1:nrow(Y[folds[[kk]],]),function(i) apply(Y.grid, 1, function(x) preds_mrf_global$normalPredictionScore[[i]](as.numeric(x))))
-    #vals_gini_global <- lapply(1:nrow(Y[folds[[kk]],]),function(i) apply(Y.grid, 1, function(x) preds_gini_global$normalPredictionScore[[i]](as.numeric(x))))
-    
-    
-    # save CV scores
-    #scores_CV_mrf_global[folds[[kk]]] <- scores_mrf_global
-    #scores_CV_gini_global[folds[[kk]]] <- scores_gini_global
-    scores_CV_mrf[folds[[kk]]] <- scores_mrf
-    scores_CV_gini[folds[[kk]]] <- scores_gini
-    scores_CV_res[folds[[kk]]] <- scores_res
-    scores_CV_knn[folds[[kk]]] <- scores_knn
-    scores_CV_gauss[folds[[kk]]] <- scores_gauss
-    
-    #areas_CV_mrf_global[folds[[kk]]] <- as.numeric(lapply(vals_mrf_global, function(v) mean(v <= qchisq(p = 1-alpha, df = ncol(Y)))))
-    #areas_CV_gini_global[folds[[kk]]] <- as.numeric(lapply(vals_gini_global, function(v) mean(v <= qchisq(p = 1-alpha, df = ncol(Y)))))
-    #areas_CV_mrf[folds[[kk]]] <- as.numeric(lapply(vals_mrf, function(v) mean(v <= qchisq(p = 1-alpha, df = ncol(Y)))))
-    #areas_CV_gini[folds[[kk]]] <- as.numeric(lapply(vals_gini, function(v) mean(v <= qchisq(p = 1-alpha, df = ncol(Y)))))
-  }
-
-  n <- ((k-1)/k)*nrow(Y)
-  d <- ncol(Y)
-  
-  return(list(#Y.grid = Y.grid, 
-              #areas_CV_mrf_global = areas_CV_mrf_global,
-              #areas_CV_gini_global = areas_CV_gini_global,
-              #areas_CV_mrf = areas_CV_mrf,
-              #areas_CV_gini = areas_CV_gini,
-              #scores_CV_mrf_global = scores_CV_mrf_global, 
-              #scores_CV_gini_global = scores_CV_gini_global,
-              scores_CV_mrf = scores_CV_mrf, 
-              scores_CV_gini = scores_CV_gini,
-              scores_CV_res = scores_CV_res,
-              scores_CV_knn = scores_CV_knn, 
-              scores_CV_gauss = scores_CV_gauss,
-              #coverage_mrf_global = mean(scores_CV_mrf_global <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              #coverage_gini_global = mean(scores_CV_gini_global <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              coverage_mrf = mean(scores_CV_mrf <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              coverage_gini = mean(scores_CV_gini <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              coverage_res = mean(scores_CV_res <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              coverage_knn = mean(scores_CV_knn <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              coverage_gauss = mean(scores_CV_gauss <= qf(p = 1-alpha, df1 = d, df2 = n-d)),
-              cutoff = qf(p = 1-alpha, df1 = d, df2 = n-d),
-              folds = folds
-              ))
-  
-}
 
 permRF <- function(y, X, nrep = 100) {
   
@@ -950,14 +737,14 @@ permRF <- function(y, X, nrep = 100) {
   return(sum(null.p <= obs.p)/(nrep+1))
 }
 
-makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
+makeSummaries <- function(dataset, path='../../data/mtr-datasets/downloaded_data/', nrep = 100) {
   
   infos <- load(paste0(path, dataset, ".Rdata"))
   
   
   
   # look at the quantile loss
-  heter0 <- sapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+  heter0 <- sapply(1:20, function(i) {x <- rbind(res_pinball$drf_loss[i,],
                                                  res_pinball$gini_loss[i,],
                                                  res_pinball$res_loss[i,],
                                                  res_pinball$knn_loss[i,],
@@ -965,7 +752,7 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   apply(apply(x, 2, function(xx) {v <- rep(0, length(xx)); v[which.min(xx)] <- 1; v}),1,mean)})
   heter0 <- table(apply(heter0, 2, which.max))/200
   
-  heter1 <- lapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+  heter1 <- lapply(1:20, function(i) {x <- rbind(res_pinball$drf_loss[i,],
                                          res_pinball$gini_loss[i,],
                                          res_pinball$res_loss[i,],
                                          res_pinball$knn_loss[i,],
@@ -974,7 +761,7 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   heter1 <- Reduce(heter1, f = function(x,y) x+y)
   heter1 <- heter1/20
   
-  heter2 <- lapply(1:20, function(i) {x <- rbind(res_pinball$mrf_loss[i,],
+  heter2 <- lapply(1:20, function(i) {x <- rbind(res_pinball$drf_loss[i,],
                                                  res_pinball$gini_loss[i,],
                                                  res_pinball$res_loss[i,],
                                                  res_pinball$knn_loss[i,],
@@ -982,126 +769,10 @@ makeSummaries <- function(dataset, path="./experiments/mtr/data/", nrep = 100) {
   apply(x, 2, function(xx) {rank(xx)})})
   heter2 <- Reduce(heter2, f = function(x,y) x+y)
   heter2 <- heter2/20
-  # vec.mse.u.mrf <- list()
-  # vec.mse.u.gini <- list()
-  # vec.mse.u.knn <- list()
-  # vec.mse.u.gauss <- list()
-  # # look at prediction in the random pinball
-  # for (i in 1:nrow(res_pinball$mrf_u)) {
-  #   vec.mse.u.mrf[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$mrf_u[i,],x=d$X))$predictions-res_pinball$mrf_u[i,])^2
-  #   vec.mse.u.gini[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gini_u[i,],x=d$X))$predictions-res_pinball$gini_u[i,])^2
-  #   vec.mse.u.knn[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$knn_u[i,],x=d$X))$predictions-res_pinball$knn_u[i,])^2
-  #   vec.mse.u.gauss[[i]] <- (ranger::ranger(u~., data = data.frame(u=res_pinball$gauss_u[i,],x=d$X))$predictions-res_pinball$gauss_u[i,])^2
-  # }
-  # 
-  # # computing the Us
-  # u.res <- pf(q = res_coverage$scores_CV_res, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  # u.mrf <- pf(q = res_coverage$scores_CV_mrf, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  # u.gini <- pf(q = res_coverage$scores_CV_gini, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  # u.knn <- pf(q = res_coverage$scores_CV_knn, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  # u.gauss <- pf(q = res_coverage$scores_CV_gauss, df1 = ncol(d$Y), df2 = nrow(d$Y)-ncol(d$Y))
-  # 
-  # mse.res <- ranger::ranger(u~., data = data.frame(u=u.res,x=d$X))$prediction.error
-  # mse.mrf <- ranger::ranger(u~., data = data.frame(u=u.mrf,x=d$X))$prediction.error
-  # mse.gini <- ranger::ranger(u~., data = data.frame(u=u.gini,x=d$X))$prediction.error
-  # mse.knn <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
-  # mse.gauss <- ranger::ranger(u~., data = data.frame(u=u.knn,x=d$X))$prediction.error
-  # 
-  # #p.null <- sapply(1:nrep, function(i) ranger::ranger(u~., data = data.frame(u=runif(nrow(d$X)),x=d$X))$prediction.error)
-  # 
-  # #p.res <- (sum(p.null <= mse.res)+1) / (length(p.null)+1)
-  # #p.mrf <- (sum(p.null <= mse.mrf)+1) / (length(p.null)+1)
-  # #p.gini <- (sum(p.null <= mse.gini)+1) / (length(p.null)+1)
-  # #p.knn <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
-  # #p.gauss <- (sum(p.null <= mse.knn)+1) / (length(p.null)+1)
-  # #pf(q = res_coverage$scores_CV_gauss, df1 = d, df2 = n-d)
-  # 
-  # 
-  # ## random pinball
-  # 
-  # mean.pinball.mrf <-   mean(res_pinball$mrf_loss - res_pinball$mrf_loss<=0)
-  # mean.pinball.gini <-  mean(res_pinball$mrf_loss - res_pinball$gini_loss<=0)
-  # mean.pinball.res <-   mean(res_pinball$mrf_loss - res_pinball$res_loss<=0)
-  # mean.pinball.knn <-   mean(res_pinball$mrf_loss - res_pinball$knn_loss<=0)
-  # mean.pinball.gauss <- mean(res_pinball$mrf_loss - res_pinball$gauss_loss<=0)
-  # 
-  # # max
-  # max.pinball.mrf <-  max(apply(res_pinball$mrf_loss, 1, mean))
-  # max.pinball.gini <- max(apply(res_pinball$gini_loss, 1, mean))
-  # max.pinball.res <- max(apply(res_pinball$res_loss, 1, mean))
-  # max.pinball.knn <- max(apply(res_pinball$knn_loss, 1, mean))
-  # max.pinball.gauss <- max(apply(res_pinball$gauss_loss, 1, mean))
-  # 
-  # ## random pinball (NL)
-  # 
-  # # mean
-  # mean.pinball.nl.mrf <- mean(res_pinball_nl$mrf_loss)
-  # mean.pinball.nl.gini <- mean(res_pinball_nl$gini_loss)
-  # mean.pinball.nl.knn <- mean(res_pinball_nl$knn_loss)
-  # mean.pinball.nl.gauss <- mean(res_pinball_nl$gauss_loss)
-  # 
-  # # max
-  # max.pinball.nl.mrf <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  # max.pinball.nl.gini <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  # # max.pinball.nl.res <- max(apply(res_pinball_nl$res_loss, 1, max))
-  # max.pinball.nl.knn <- max(apply(res_pinball_nl$mrf_loss, 1, max))
-  # max.pinball.nl.gauss <-max(apply(res_pinball_nl$mrf_loss, 1, max))
-  # 
-  # ## coverage
-  # 
-  # # compute the p-values
-  # #p.val.mrf <- permRF(y = res_coverage$scores_CV_mrf, X = d$X, nrep = 100)
-  # #p.val.mrf.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
-  # #p.val.gini <-permRF(y = res_coverage$scores_CV_gini, X = d$X, nrep = 100)
-  # #p.val.gini.global <-permRF(y = res_coverage$scores_CV_gini_global, X = d$X, nrep = 100)
-  # 
-  
   return(list(
     heter0 = heter0,
     heter1 = heter1,
     heter2 = heter2
-    # mean.pinball.mrf = mean.pinball.mrf,
-    # mean.pinball.gini = mean.pinball.gini,
-    # mean.pinball.res = mean.pinball.res,
-    # mean.pinball.knn = mean.pinball.knn,
-    # mean.pinball.gauss = mean.pinball.gauss,
-    # 
-    # max.pinball.mrf = max.pinball.mrf,
-    # max.pinball.gini = max.pinball.gini,
-    # max.pinball.res = max.pinball.res,
-    # max.pinball.knn = max.pinball.knn,
-    # max.pinball.gauss = max.pinball.gauss,
-    # 
-    # mean.pinball.nl.mrf = mean.pinball.nl.mrf,
-    # mean.pinball.nl.gini = mean.pinball.nl.gini,
-    # mean.pinball.nl.knn = mean.pinball.nl.knn,
-    # mean.pinball.nl.gauss = mean.pinball.nl.gauss,
-    # 
-    # max.pinball.nl.mrf = max.pinball.nl.mrf,
-    # max.pinball.nl.gini = max.pinball.nl.gini,
-    # max.pinball.nl.knn = max.pinball.nl.knn,
-    # max.pinball.nl.gauss = max.pinball.nl.gauss,
-    # 
-    # coverage.mrf = res_coverage$coverage_mrf, 
-    # coverage.gini = res_coverage$coverage_gini, 
-    # coverage.res = res_coverage$coverage_res,
-    # coverage.knn = res_coverage$coverage_knn,
-    # coverage.gauss = res_coverage$coverage_gauss,
-    # #coverage.mrf.global = res_coverage$coverage_mrf_global, 
-    # #coverage.gini.global = res_coverage$coverage_gini_global 
-    # mse.res = mse.res,
-    # mse.mrf = mse.mrf,
-    # mse.gini = mse.gini,
-    # mse.knn = mse.knn,
-    # mse.gauss = mse.gauss,
-    # vec.mse.u.mrf = vec.mse.u.mrf,
-    # vec.mse.u.gini = vec.mse.u.gini,
-    # vec.mse.u.knn = vec.mse.u.knn,
-    # vec.mse.u.gauss = vec.mse.u.gauss
-    # #p.val.mrf = p.val.mrf, 
-    # #p.val.mrf.global = p.val.mrf.global,
-    # #p.val.gini = p.val.gini,
-    # #p.val.gini.global = p.val.gini.global)
   ))
 }
 
@@ -1111,117 +782,3 @@ W2unif <- function(s) {
   return(mean((s-uq)^2))
 }
 
-# y_train <- d$Y[1:100,]
-# y_test <- d$Y[1:10,]
-# w_train <- matrix(runif(nrow(y_train)*nrow(y_train)),nrow=nrow(y_train),ncol=nrow(y_train))
-# w_test_train <- matrix(runif(nrow(y_test)*nrow(y_train)),nrow=nrow(y_test),ncol=nrow(y_train))
-# w_train <- w_train / rowSums(w_train)
-# w_test_train <- w_test_train / rowSums(w_test_train)
-# k <- function(y1,y2) {exp(-sum((y1-y2)^2))}
-
-# function to compute the RKHS MSE
-computeRKHSgaussMSE <- function(y_test, y_train, w_test, k) {
-  
-  # training kernel
-  k_train <- apply(y_train, 1, function(y1) apply(y_train, 1, function(y2) k(y1,y2)))
-  # cross testing-training kernel
-  k_test_train <- t(apply(y_test, 1, function(y1) apply(y_train, 1, function(y2) k(y1,y2))))
-  
-  # compute the values (biased)
-  vals <- sapply(1:nrow(y_test), function(i) k(y_test[i,],y_test[i,]) - 2*sum(k_test_train[i,]*w_test[i,]) + t(w_test[i,])%*%(k_train%*%w_test[i,]))
-  
-  return(vals)
-}
-
-runRKHSanalysis <- function(X, 
-                            Y,
-                            k = 10, 
-                            seed = 0,
-                            ...) {
-  
-  # repro
-  set.seed(seed)
-  
-  # create folds
-  folds <- kFoldCV(n = nrow(X), k = k)
-  
-  # properties of the simulations
-  mrf_mse <- numeric(nrow(X))
-  gini_mse <- numeric(nrow(X))
-  
-  # CV loop
-  for (kk in 1:k) {
-    
-    print(paste0("CV loop: ", kk))
-    
-    
-    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
-    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
-    
-    w_mrf <- predict(mRF, type = "weights", newdata = X[folds[[kk]],])$weights
-    mrf_mse[folds[[kk]]] <- computeRKHSgaussMSE(y_test = Y[folds[[kk]],], y_train = Y[-folds[[kk]],],w_test = w_mrf, k = function(y1,y2) {exp(-sum((y1-y2)^2))})
-    
-    w_gini <- predict(giniRF, type = "weights", newdata = X[folds[[kk]],])$weights
-    gini_mse[folds[[kk]]] <- computeRKHSgaussMSE(y_test = Y[folds[[kk]],], y_train = Y[-folds[[kk]],],w_test = w_gini, k = function(y1,y2) {exp(-sum((y1-y2)^2))})
-    
-  }
-  
-  return(list(mrf_mse = mrf_mse, gini_mse = gini_mse))
-  
-}
-
-
-runCovAnalysis <- function(X, 
-                                       Y,
-                                       seed = 0,
-                           k = 5,
-                                       ...) {
-  
-  # repro
-  set.seed(seed)
-  
-  # create folds
-  folds <- kFoldCV(n = nrow(X), k = k)
-  
-  # properties of the simulations
-  mrf_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
-  gini_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
-  knn_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
-  gauss_loss <- matrix(0,nrow=ncol(Y)^2, ncol=nrow(X))
-  
-  # CV loop
-  for (kk in 1:k) {
-    
-    print(paste0("CV loop: ", kk))
-    
-    
-    mRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "fourier", ...)
-    giniRF <- mrf(X = X[-folds[[kk]],], Y = Y[-folds[[kk]],], splitting.rule = "gini")
-    
-    #comp.knn <- KNN(X = X.knn[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    #comp.gauss <- GaussKernel(X = X.gauss[-folds[[kk]],], Y = Y[-folds[[kk]],])
-    
-    pairs <- expand.grid(1:ncol(Y),1:ncol(Y))
-    pairs <- pairs[1:(nrow(pairs)/2),]
-    
-    for (i in 1:nrow(pairs)) {
-      
-      # yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "functional", 
-      #                     quantiles = NULL, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      # yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "functional", 
-      #                      quantiles = NULL, f = function(y) y[pairs[i,1]]*y[pairs[i,2]])$functional
-      
-      yhat_mrf <- predict(mRF, newdata = X[folds[[kk]],], type = "cov")$cov
-      yhat_gini <- predict(giniRF, newdata = X[folds[[kk]],], type = "cov")$cov
-
-      
-        mrf_loss[i,folds[[kk]]] <- (Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]]-yhat_mrf[,pairs[i,1],pairs[i,2]])^2
-        gini_loss[i,folds[[kk]]] <- (Y[folds[[kk]],pairs[i,1]]*Y[folds[[kk]],pairs[i,2]]-yhat_gini[,pairs[i,1],pairs[i,2]])^2
-        
-    
-    }
-  }
-  
-  return(list(mrf_loss = mrf_loss, gini_loss = gini_loss))
-  
-}

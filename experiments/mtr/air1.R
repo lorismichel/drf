@@ -8,10 +8,10 @@ require(mrf)
 USE.RES <- TRUE
 
 # source
-source("./experiments/mtr/helpers.R")
+source("./helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "air1")
+d <- loadMTRdata(path = "../../data/mtr-datasets/downloaded_data/", dataset.name = "air1")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -32,15 +32,5 @@ selected.sigma <- c(0.1, 0.5, 1, 2, 10)[which.min(lapply(res_hyper_param$gauss, 
 res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,alpha_seq = c(0.9),
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
-
-# # run pinball analysis (nl)
-# res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                              X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-# 
-# # run coverage analysis 
-# res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                   X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-
 # save results
-#res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/air1.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = ".../../data/mtr-datasets/computed_data/air1.Rdata")

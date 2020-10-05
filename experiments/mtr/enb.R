@@ -1,24 +1,19 @@
 # enb dataset
 
-# ENB
-# The Energy Building dataset (Tsanas and Xifara 2012) concerns the prediction of the heating
-# load and cooling load requirements of buildings (i.e. energy efficiency) as a function of eight
-# building parameters such as glazing area, roof area, and overall height, amongst others.
-
 # repro
 set.seed(1)
 
 # libs
-require(mrf)
+require(drf)
 
 # params
 USE.RES <- TRUE
 
 # source
-source("./experiments/mtr/helpers.R")
+source("./helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "enb")
+d <- loadMTRdata(path = "../../data/mtr-datasets/downloaded_data/", dataset.name = "enb")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -40,14 +35,5 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
 
-# # run pinball analysis (nl)
-# res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                              X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-# 
-# # run coverage analysis 
-# res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                   X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-
 # save results
-#res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/enb.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = "../../data/mtr-datasets/computed_data/enb.Rdata")

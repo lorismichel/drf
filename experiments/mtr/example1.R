@@ -1,26 +1,20 @@
 # example 1 dataset
-
-# EDM
-# The Electrical Discharge Machining dataset (Karalic and Bratko 1997) represents a two-target
-# regression problem. The task is to shorten the machining time by reproducing the behaviour
-# of a human operator that controls the values of two variables. Each of the target variables
-# takes 3 distinct numeric values ({−1, 0, 1}) and there are 16 continuous input variables.
-
+# example 1 dataset
 
 # repro
 set.seed(1)
 
 # libs
-require(mrf)
+require(drf)
 
 # params
 USE.RES <- TRUE
 
 # source
-source("./experiments/mtr/helpers.R")
+source("./helpers.R")
 
 # load the data
-d <- loadMTRdata(path = "~/Downloads/mtr-datasets/", dataset.name = "example1")
+d <- loadMTRdata(path = "../../data/mtr-datasets/downloaded_data/", dataset.name = "example1")
 
 if (USE.RES) {
   res <- ResRF(X = d$X, Y = d$Y)
@@ -42,14 +36,6 @@ res_pinball <- runRandomPinballAnalysis(param.knn = selected.k, param.gauss = se
                                         X=d$X, Y=Y, X.knn = d$X.knn, X.gauss = d$X.gauss, nb_random_directions = 100,
                                         num_features = 10)
 
-# # run pinball analysis (nl)
-# res_pinball_nl <- runRandomPinballNLAnalysis(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                              X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
-# 
-# # run coverage analysis 
-# res_coverage <- runNormalCoverage(param.knn = selected.k, param.gauss = selected.sigma, k = 2,
-#                                   X=d$X, Y=d$Y, X.knn = d$X.knn, X.gauss = d$X.gauss, num_features = 100)
 
 # save results
-#res_pinball_nl, res_coverage
-save(d, res_pinball, selected.k, selected.sigma, file = "./experiments/mtr/data/example1.Rdata")
+save(d, res_pinball, selected.k, selected.sigma, file = "../../data/mtr-datasets/computed_data/example1.Rdata")
