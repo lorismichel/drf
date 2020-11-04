@@ -410,12 +410,11 @@ predict.drf <- function(object,
         stop("when custom functional is called, transformation should be the identity.")
       }
 
-      custom <- t(apply(w, 1, function(ww) custom.functional(object$Y.orig, ww))
+      custom <- t(apply(w, 1, function(ww) custom.functional(object$Y.orig, ww)))
 
       return(list(custom = custom))
-    }
-    # if no quantiles provided then conditional mean or sd, possibly multi-dimensional
-    else if (functional == "mean") {
+    
+    } else if (functional == "mean") {
 
       functional.mean <- t(apply(w, 1, function(ww) ww%*%functional.t))
 
