@@ -413,7 +413,7 @@ predict.drf <- function(object,
       custom <- t(apply(w, 1, function(ww) custom.functional(object$Y.orig, ww)))
 
       return(list(custom = custom))
-    
+
     } else if (functional == "mean") {
 
       functional.mean <- t(apply(w, 1, function(ww) ww%*%functional.t))
@@ -538,5 +538,31 @@ predict.drf <- function(object,
     })
 
     return(list(cdf = funs))
+
+  } else if (functional == "multivariateQuantiles") {
+
+    # compute the functional on the training set
+    #functional.t <- t(apply(object$Y.orig,
+    #                        1,
+    #                        function(yy) transformation(yy)))
+
+    u <- list(...)$u
+
+    costm <- t(apply(object$Y.orig, 1, function(yy) apply(u, 1, function(uu) {
+      sum((yy-uu)^2)
+    })))
+
+    info.mq <- apply(w,
+                      1,
+                      function(ww) {
+                        ids.in <- which(ww!=0)
+                        tr <- transport(costm[ids.in,], a = ww[ids.in], b = rep(1/nrow(u),nrow(u)), fullreturn = TRUE)
+                        ids.u <- apply(tr$primal, 1, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
+                        return(list(ids.in=ids.in, ids.u=ids.u))
+                     })
+
+    uhat <- lapply(info.mq, function(info) {u.ind <- rep(NA, nrow(object$Y.orig)); u.ind[info$ids.in] <- info$ids.u; u[u.ind,]})
+    return(list(multvariateQuantiles = list(uhat = uhat)))
+
   }
 }

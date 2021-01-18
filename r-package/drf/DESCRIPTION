@@ -15,9 +15,8 @@ Imports:
     methods,
     Rcpp (>= 0.12.15),
     spatstat
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Suggests:
-    DiagrammeR,
-    testthat
+    DiagrammeR
 SystemRequirements: GNU make
 URL: https://github.com/lorismichel/drf

@@ -8,8 +8,8 @@
 
 args <- commandArgs(TRUE)
 library(Rcpp)
-library(devtools)
-library(testthat)
+#library(devtools)
+#library(testthat)
 library(roxygen2)
 
 package.name <- "drf"

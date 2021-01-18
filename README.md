@@ -17,8 +17,7 @@ install.packages("drf")
 The development version can be installed from github
 
 ```R
-library(devtools)
-install_github("lorismichel/drf")
+devtools::install_github("lorismichel/drf",subdir = "r-package/drf")
 ```
 
 Another installation possibility is to clone the repo, and then within the r-package folder run
