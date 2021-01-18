@@ -19,6 +19,7 @@ RoxygenNote: 7.1.1
 Suggests:
     DiagrammeR,
     httr,
+    gert,
     usethis,
     testthat
 SystemRequirements: GNU make
