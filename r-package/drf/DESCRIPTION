@@ -17,10 +17,6 @@ Imports:
     spatstat
 RoxygenNote: 7.1.1
 Suggests:
-    DiagrammeR,
-    httr,
-    gert,
-    usethis,
-    testthat
+    DiagrammeR
 SystemRequirements: GNU make
 URL: https://github.com/lorismichel/drf
