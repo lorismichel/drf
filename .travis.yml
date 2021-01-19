@@ -9,8 +9,8 @@ branches:
 
 r_packages:
   # build_package.R requirements.
-  - devtools
-  - testthat
+  #- devtools
+  #- testthat
   - roxygen2
   # Vignette requirements are installed in the `deploy` section. build
 
