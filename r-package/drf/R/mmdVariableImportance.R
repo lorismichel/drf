@@ -46,17 +46,3 @@ mmdVariableImportance <- function(object,
 
   return(perm.mmd)
 }
-
-# toy example
-
-n <- 300
-p <- 2
-X <- matrix(rnorm(n * p), n, p)
-Y <- X + matrix(rnorm(n * p, sd = 0.5), ncol=p)
-X <- cbind(X, matrix(rnorm(10 * n),ncol=10))
-object <- drf(X = X, Y = Y)
-
-
-# example of the MMD distance (position 0 corresponds to unpermuted), as expected you see an increase
-# when we permute variable one and two.
-mmdVariableImportance(object = object, h = 1, type = "raw")
