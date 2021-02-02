@@ -556,13 +556,13 @@ predict.drf <- function(object,
                       1,
                       function(ww) {
                         ids.in <- which(ww!=0)
-                        tr <- transport(costm[ids.in,], a = ww[ids.in], b = rep(1/nrow(u),nrow(u)), fullreturn = TRUE)
-                        ids.u <- apply(tr$primal, 1, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
-                        return(list(ids.in=ids.in, ids.u=ids.u))
+                        tr <- transport::transport(costm[ids.in,], a = ww[ids.in], b = rep(1/nrow(u),nrow(u)), fullreturn = TRUE)
+                        ids.y <- apply(tr$primal, 2, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
+                        return(list(ids.y=ids.y, ids.in=ids.in))
                      })
 
-    uhat <- lapply(info.mq, function(info) {u.ind <- rep(NA, nrow(object$Y.orig)); u.ind[info$ids.in] <- info$ids.u; u[u.ind,]})
-    return(list(multvariateQuantiles = list(uhat = uhat)))
+    yhat <- lapply(info.mq, function(info) {object$Y.orig[info$ids.in,,drop=F][info$ids.y,,drop=F]})
+    return(list(multvariateQuantiles = list(yhat = yhat)))
 
   }
 }

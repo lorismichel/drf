@@ -1,3 +1,11 @@
+#' MMD variable importance
+#' compute an mmd based variable importance
+#'
+#' @param object a drf object
+#' @param h the bandwidth parameter, default to 1.
+#' @param type the type of importance
+#'
+#' @export
 mmdVariableImportance <- function(object,
                                   h = 1,
                                   type = "raw") {

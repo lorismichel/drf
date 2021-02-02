@@ -88,9 +88,12 @@ class drf:
         newdata = convert_to_df(newdata)
         newdata_r = ro.conversion.py2rpy(newdata)
         r_output = drf_r_package.predict_drf(self.r_fit_object, newdata_r)
-
+        #print(len(r_output))
+        #print(type(rpy2.robjects.conversion.ri2py(r_output[0])))
+        #print(type(r_output))
         weights = base_r_package.as_matrix(r_output[0])
-        Y = pd.DataFrame(r_output[1])
+        
+        Y = pd.DataFrame(base_r_package.as_matrix(r_output[1]))
         
         if 'functional' not in predict_params.keys():
             functional = 'weights'
@@ -151,7 +154,7 @@ class drf:
                 quantiles = predict_params['quantiles']
             else:
                 quantiles = [0.1, 0.5, 0.9]
-            print(quantiles)
+            #print(quantiles)
             ret.quantile = np.zeros(
                 (newdata.shape[0], Y.shape[1], len(quantiles)))
             
@@ -160,4 +163,14 @@ class drf:
                     ret.quantile[i, j, :] = w_quantile(
                         Y.iloc[:, j], quantiles, sample_weight=weights[i, :])
 
+        elif functional == 'sample':
+          if 'n' in predict_params.keys():
+            n = predict_params['n']
+            ret.sample = np.zeros(
+                (newdata.shape[0], Y.shape[1], n))
+            for i in range(newdata.shape[0]):
+                for j in range(n): 
+                  ids = np.random.choice(range(Y.shape[0]), 1, p=weights[i, :])[0]
+                  ret.sample[i,:, j] = Y.iloc[ids,:]
+      
         return ret
