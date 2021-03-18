@@ -237,4 +237,11 @@ leaf_stats.drf <- function(forest, samples, ...){
   return(leaf_stats)
 }
 
+#' Compute the median heuristic for the MMD bandwidth choice
+#' @param Y the response matrix
+#'
+#' @return the median heuristic
+medianHeuristic <- function(Y) {
+  return(median(sqrt(dist(Y)/2)))
+}
 

@@ -171,7 +171,7 @@ create_data_matrices <- function(X, outcome = NULL, treatment = NULL,
     i <- i + 1
     out[["instrument.index"]] <- ncol(X) + i
   }
-  if (!isFALSE(sample.weights)) {
+  if (!identical(sample.weights, "FALSE")) {
     i <- i + 1
     out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + i
     if (is.null(sample.weights)) {

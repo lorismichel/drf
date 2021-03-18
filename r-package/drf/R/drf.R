@@ -9,7 +9,8 @@
 #' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule a character value. The type of splitting rule used, can be either "CART" or "FourierMMD".
 #' @param num.features a numeric value, in case of "FourierMMD", the number of random features to sample.
-#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD".
+#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", by default the value is NULL and the median heuristic is used.
+#' @param response.scaling a boolean value, should the reponses be globally scaled at first.
 #' @param node.scaling a boolean value, should the responses be scaled or not by node.
 #' @param sample.weights (experimental) Weights given to an observation in estimation.
 #'                       If NULL, each observation is given the same weight. Default is NULL.
@@ -95,7 +96,8 @@ drf <-               function(X, Y,
                               num.trees = 500,
                               splitting.rule = "FourierMMD",
                               num.features = 10,
-                              bandwidth = 1.0,
+                              bandwidth = NULL,
+                              response.scaling = TRUE,
                               node.scaling = FALSE,
                               sample.weights = NULL,
                               clusters = NULL,
@@ -155,8 +157,21 @@ drf <-               function(X, Y,
 
   all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
                           "honesty.prune.leaves", "alpha", "imbalance.penalty")
+  
+  # should we scale or not the data
+  if (response.scaling) {
+    Y.transformed <- scale(Y)
+  } else {
+    Y.transformed <- Y
+  }
 
-  data <- create_data_matrices(X.mat, outcome = scale(Y), sample.weights = sample.weights)
+  data <- create_data_matrices(X.mat, outcome = Y.transformed, sample.weights = sample.weights)
+  
+  # bandwidth using median heuristic by default
+  if (!is.null(bandwidth)) {
+    bandwidth <- medianHeuristic(Y.transformed)
+  }
+  
 
   args <- list(num.trees = num.trees,
                clusters = clusters,
