@@ -54,6 +54,7 @@
 #' @param num.threads Number of threads used in training. By default, the number of threads is set
 #'                    to the maximum hardware concurrency.
 #' @param seed The seed of the C++ random number generator.
+#' @param compute.variable.importance boolean, should the variable importance be computed in the object.
 #'
 #' @return A trained distributional random forest object.
 #'
@@ -113,7 +114,8 @@ drf <-               function(X, Y,
                               ci.group.size = 2,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
-                              seed = stats::runif(1, 0, .Machine$integer.max)) {
+                              seed = stats::runif(1, 0, .Machine$integer.max),
+                              compute.variable.importance = FALSE) {
 
   # initial checks for X and Y
   if (is.data.frame(X)) {
@@ -214,6 +216,10 @@ drf <-               function(X, Y,
    forest[["mat.col.names"]] <- mat.col.names
    forest[["mat.col.names.df"]] <- mat.col.names.df
    forest[["any.factor.or.character"]] <- any.factor.or.character
+   
+   if (compute.variable.importance) {
+     forest[['variable.importance']] <- variableImportance(forest, h = bandwidth)
+   }
 
    forest
 }

@@ -10,10 +10,10 @@
 #' @return a vector of variable importance values.
 #' 
 #' @export
-mmdVariableImportance <- function(object,
+variableImportance <- function(object,
                                   h = NULL,
                                   response.scaling = TRUE,
-                                  type = "raw") {
+                                  type = "difference") {
 
   # apply the response scaling if necessary  
   if (response.scaling) {
@@ -46,7 +46,7 @@ mmdVariableImportance <- function(object,
     preds <- predict(object, newdata = X.perm)
 
     # get the kernel on training
-    k.train <- exp(-dist(Y.transfored)/(2*h^2))
+    k.train <- exp(as.matrix(-dist(Y.transformed)/(2*h^2)))
 
     # three terms in the MMD
     simple.term <- apply(Y.transformed, 1, function(y) k(y,y))
