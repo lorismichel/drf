@@ -168,7 +168,7 @@ drf <-               function(X, Y,
   data <- create_data_matrices(X.mat, outcome = Y.transformed, sample.weights = sample.weights)
   
   # bandwidth using median heuristic by default
-  if (!is.null(bandwidth)) {
+  if (is.null(bandwidth)) {
     bandwidth <- medianHeuristic(Y.transformed)
   }
   
