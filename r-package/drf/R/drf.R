@@ -148,6 +148,10 @@ drf <-               function(X, Y,
     }
     Y <- as.matrix(Y)
   }
+  
+  if (is.vector(Y)) {
+    Y <- matrix(Y,nrow=1)
+  }
 
 
   validate_X(X.mat)
