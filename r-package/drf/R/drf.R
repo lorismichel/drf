@@ -278,7 +278,7 @@ drf <-               function(X, Y,
 #' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' cor.oob.pred <- predict(drf.forest,  functional = "cor")
 #'
 #' # Train a distributional random forest with "FourierMMD" splitting rule.
 #' n <- 100
