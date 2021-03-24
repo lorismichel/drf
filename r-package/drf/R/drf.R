@@ -150,7 +150,7 @@ drf <-               function(X, Y,
   }
   
   if (is.vector(Y)) {
-    Y <- matrix(Y,nrow=1)
+    Y <- matrix(Y,ncol=1)
   }
 
 
