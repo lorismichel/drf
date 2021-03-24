@@ -8,14 +8,6 @@
 #' @export
 print.drf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
   
-  var.importance <- variable_importance(x, decay.exponent, max.depth)
-  var.importance <- c(round(var.importance, 3))
-  if (is.null(x$mat.col.names)) {
-    names(var.importance) <- 1:length(var.importance)
-  } else {
-    names(var.importance) <- x$mat.col.names
-  }
-  
   main.class <- class(x)[1]
   num.samples <- nrow(x$X.orig)
 
@@ -23,8 +15,17 @@ print.drf <- function(x, decay.exponent = 2, max.depth = 4, ...) {
   cat("Number of trees:", x[["_num_trees"]], "\n")
   cat("Number of training samples:", num.samples, "\n")
 
-  cat("Variable importance:", "\n")
-  print(var.importance)
+  if (!is.null(x$variable.importance)) {
+    var.importance <- x$variable.importance
+    if (is.null(x$mat.col.names)) {
+      names(var.importance) <- 1:length(x$variable.importance)
+    } else {
+      names(var.importance) <- x$mat.col.names
+    }
+    cat("Variable importance:", "\n")
+    print(var.importance)
+  }
+  
 }
 
 #' Print a DRF tree object.

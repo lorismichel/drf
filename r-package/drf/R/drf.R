@@ -2,14 +2,14 @@
 #'
 #' Trains a distributional random forest that can be used to estimate
 #' statistical functional F(P(Y | X)) for possibly multivariate response Y.
-#'
 #' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter case,
 #'   one-hot-encoding will be implicitely used.
 #' @param Y The (multivariate) outcome. A matrix or data.frame of numeric values.
 #' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule a character value. The type of splitting rule used, can be either "CART" or "FourierMMD".
 #' @param num.features a numeric value, in case of "FourierMMD", the number of random features to sample.
-#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD".
+#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", by default the value is NULL and the median heuristic is used.
+#' @param response.scaling a boolean value, should the reponses be globally scaled at first.
 #' @param node.scaling a boolean value, should the responses be scaled or not by node.
 #' @param sample.weights (experimental) Weights given to an observation in estimation.
 #'                       If NULL, each observation is given the same weight. Default is NULL.
@@ -53,6 +53,7 @@
 #' @param num.threads Number of threads used in training. By default, the number of threads is set
 #'                    to the maximum hardware concurrency.
 #' @param seed The seed of the C++ random number generator.
+#' @param compute.variable.importance boolean, should the variable importance be computed in the object.
 #'
 #' @return A trained distributional random forest object.
 #'
@@ -95,7 +96,8 @@ drf <-               function(X, Y,
                               num.trees = 500,
                               splitting.rule = "FourierMMD",
                               num.features = 10,
-                              bandwidth = 1.0,
+                              bandwidth = NULL,
+                              response.scaling = TRUE,
                               node.scaling = FALSE,
                               sample.weights = NULL,
                               clusters = NULL,
@@ -111,7 +113,8 @@ drf <-               function(X, Y,
                               ci.group.size = 2,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
-                              seed = stats::runif(1, 0, .Machine$integer.max)) {
+                              seed = stats::runif(1, 0, .Machine$integer.max),
+                              compute.variable.importance = FALSE) {
 
   # initial checks for X and Y
   if (is.data.frame(X)) {
@@ -144,6 +147,10 @@ drf <-               function(X, Y,
     }
     Y <- as.matrix(Y)
   }
+  
+  if (is.vector(Y)) {
+    Y <- matrix(Y,ncol=1)
+  }
 
 
   validate_X(X.mat)
@@ -155,8 +162,21 @@ drf <-               function(X, Y,
 
   all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
                           "honesty.prune.leaves", "alpha", "imbalance.penalty")
+  
+  # should we scale or not the data
+  if (response.scaling) {
+    Y.transformed <- scale(Y)
+  } else {
+    Y.transformed <- Y
+  }
 
-  data <- create_data_matrices(X.mat, outcome = scale(Y), sample.weights = sample.weights)
+  data <- create_data_matrices(X.mat, outcome = Y.transformed, sample.weights = sample.weights)
+  
+  # bandwidth using median heuristic by default
+  if (is.null(bandwidth)) {
+    bandwidth <- medianHeuristic(Y.transformed)
+  }
+  
 
   args <- list(num.trees = num.trees,
                clusters = clusters,
@@ -199,6 +219,10 @@ drf <-               function(X, Y,
    forest[["mat.col.names"]] <- mat.col.names
    forest[["mat.col.names.df"]] <- mat.col.names.df
    forest[["any.factor.or.character"]] <- any.factor.or.character
+   
+   if (compute.variable.importance) {
+     forest[['variable.importance']] <- variableImportance(forest, h = bandwidth)
+   }
 
    forest
 }
@@ -254,7 +278,7 @@ drf <-               function(X, Y,
 #' cor.pred <- predict(drf.forest, X.test, functional = "cor")
 #'
 #' # Predict on out-of-bag training samples.
-#' cor.oob.pred <- predict(r.forest,  functional = "cor")
+#' cor.oob.pred <- predict(drf.forest,  functional = "cor")
 #'
 #' # Train a distributional random forest with "FourierMMD" splitting rule.
 #' n <- 100
@@ -383,7 +407,7 @@ predict.drf <- function(object,
       # in case of quantile regression
       if (!is.null(add.param$quantiles)) {
 
-        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j],
+        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) weighted.quantile(x = functional.t[ww!=0, j],
                                                                                                                           w = ww[ww!=0],
                                                                                                                           probs = add.param$quantiles))))
         quantile.array <- array(dim = c(nrow(w), ncol(functional.t), length(add.param$quantiles)),
@@ -534,12 +558,12 @@ predict.drf <- function(object,
     }
 
     funs <- lapply(1:nrow(w), function(i) {
-      return(function(y) spatstat::ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
+      return(function(y) ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
     })
 
     return(list(cdf = funs))
 
-  } else if (functional == "multivariateQuantiles") {
+  } else if (functional == "MQ") {
 
     # compute the functional on the training set
     #functional.t <- t(apply(object$Y.orig,
@@ -547,22 +571,31 @@ predict.drf <- function(object,
     #                        function(yy) transformation(yy)))
 
     u <- list(...)$u
+    
+    if (!is.matrix(u) || ncol(u)!=ncol(object$Y.orig)) {
+      stop("imcompatible u with the response y.")
+    }
 
+    # compute the cost between the provided u's and the y's
     costm <- t(apply(object$Y.orig, 1, function(yy) apply(u, 1, function(uu) {
       sum((yy-uu)^2)
     })))
 
+    # get the transport solution
     info.mq <- apply(w,
                       1,
                       function(ww) {
                         ids.in <- which(ww!=0)
-                        tr <- transport(costm[ids.in,], a = ww[ids.in], b = rep(1/nrow(u),nrow(u)), fullreturn = TRUE)
-                        ids.u <- apply(tr$primal, 1, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
-                        return(list(ids.in=ids.in, ids.u=ids.u))
+                        tr <- transport::transport(costm[ids.in,], a = ww[ids.in], b = rep(1/nrow(u),nrow(u)), fullreturn = TRUE)
+                        ids.y <- apply(tr$primal, 2, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
+                        return(list(ids.y=ids.y, ids.in=ids.in))
                      })
 
-    uhat <- lapply(info.mq, function(info) {u.ind <- rep(NA, nrow(object$Y.orig)); u.ind[info$ids.in] <- info$ids.u; u[u.ind,]})
-    return(list(multvariateQuantiles = list(uhat = uhat)))
+    # get one version of the multimap
+    yhat <- lapply(info.mq, function(info) {object$Y.orig[info$ids.in,,drop=F][info$ids.y,,drop=F]})
+    return(list(multvariateQuantiles = list(yhat = yhat, u = u)))
 
+  } else {
+    stop("functional not implemented!")
   }
 }

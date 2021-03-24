@@ -237,4 +237,130 @@ leaf_stats.drf <- function(forest, samples, ...){
   return(leaf_stats)
 }
 
+#' Compute the median heuristic for the MMD bandwidth choice
+#' @param Y the response matrix
+#'
+#' @return the median heuristic
+medianHeuristic <- function(Y) {
+  return(median(sqrt(dist(Y)/2)))
+}
+
+#' Compute the weighted quantile function
+#' @param x a vector of values
+#' @param w a vector of weights
+#' @param probs a vector of probabilities
+#' @param na.rm a boolean, should missing values be removed?
+#'
+#' @return the weighted quantiles
+weighted.quantile <- function(x, w, probs=seq(0,1,0.25), na.rm=TRUE) {
+  x <- as.numeric(as.vector(x))
+  w <- as.numeric(as.vector(w))
+  if(anyNA(x) || anyNA(w)) {
+    ok <- !(is.na(x) | is.na(w))
+    x <- x[ok]
+    w <- w[ok]
+  }
+  stopifnot(all(w >= 0))
+  if(all(w == 0)) stop("All weights are zero", call.=FALSE)
+  #'
+  oo <- order(x)
+  x <- x[oo]
+  w <- w[oo]
+  Fx <- cumsum(w)/sum(w)
+  #'
+  result <- numeric(length(probs))
+  for(i in seq_along(result)) {
+    p <- probs[i]
+    lefties <- which(Fx <= p)
+    if(length(lefties) == 0) {
+      result[i] <- x[1]
+    } else {
+      left <- max(lefties)
+      result[i] <- x[left]
+      if(Fx[left] < p && left < length(x)) {
+        right <- left+1
+        y <- x[left] + (x[right]-x[left]) * (p-Fx[left])/(Fx[right]-Fx[left])
+        if(is.finite(y)) result[i] <- y
+      }
+    }
+  }
+  names(result) <- paste0(format(100 * probs, trim = TRUE), "%")
+  return(result)
+}
+
+#' Compute the weighted cumulative distribution function
+#' @param x a vector of values
+#' @param weights a vector of weights
+#' @param normalise should the weights be normalized?
+#' @param adjust should they be adjusted?
+#'
+#' @return the cdf
+ewcdf <- function(x, weights=NULL, normalise=TRUE, adjust=1)
+{
+  nx <- length(x)
+  nw <- length(weights)
+  weighted <- (nw > 0)
+  
+  if(weighted) {
+    check.nvector(weights, things="entries of x", oneok=TRUE)
+    stopifnot(all(weights >= 0))
+    if(nw == 1) 
+      weights <- rep(weights, nx)
+  }
+  
+  ## remove NA's
+  nbg <- is.na(x) 
+  x <- x[!nbg]
+  if(weighted) weights <- weights[!nbg]
+  n <- length(x)
+  if (n < 1)
+    stop("'x' must have 1 or more non-missing values")
+  
+  ## sort in increasing order of x value
+  if(!weighted) {
+    x <- sort(x)
+    w <- rep(1, n)
+  } else {
+    ox <- fave.order(x)
+    x <- x[ox]
+    w <- weights[ox]
+  }
+  ## find jump locations and match
+  rl <- rle(x)
+  vals <- rl$values
+  if(!weighted) {
+    wmatch <- rl$lengths
+  } else {
+    nv <- length(vals)
+    wmatch <- .C(SG_tabsumweight,
+                 nx=as.integer(n),
+                 x=as.double(x),
+                 w=as.double(w),
+                 nv=as.integer(nv),
+                 v=as.double(vals),
+                 z=as.double(numeric(nv)),
+                 PACKAGE="spatstat.geom")$z
+  }
+  ## cumulative weight in each interval
+  cumwt <- cumsum(wmatch)
+  totwt <- sum(wmatch)
+  ## rescale ?
+  if(normalise) {
+    cumwt <- cumwt/totwt
+    totwt <- 1
+  } else if(adjust != 1) {
+    cumwt <- adjust * cumwt
+    totwt <- adjust * totwt
+  }
+  ## make function
+  rval <- approxfun(vals, cumwt,
+                    method = "constant", yleft = 0, yright = totwt,
+                    f = 0, ties = "ordered")
+  class(rval) <- c("ewcdf",
+                   if(normalise) "ecdf" else NULL,
+                   "stepfun", class(rval))
+  assign("w", w, envir=environment(rval))
+  attr(rval, "call") <- sys.call()
+  return(rval)
+}
 
