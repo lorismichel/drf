@@ -2,7 +2,6 @@
 #'
 #' Trains a distributional random forest that can be used to estimate
 #' statistical functional F(P(Y | X)) for possibly multivariate response Y.
-#'
 #' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter case,
 #'   one-hot-encoding will be implicitely used.
 #' @param Y The (multivariate) outcome. A matrix or data.frame of numeric values.
@@ -408,7 +407,7 @@ predict.drf <- function(object,
       # in case of quantile regression
       if (!is.null(add.param$quantiles)) {
 
-        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) spatstat::weighted.quantile(x = functional.t[ww!=0, j],
+        functional.val <- lapply(1:ncol(functional.t), function(j) t(apply(w, 1, function(ww) weighted.quantile(x = functional.t[ww!=0, j],
                                                                                                                           w = ww[ww!=0],
                                                                                                                           probs = add.param$quantiles))))
         quantile.array <- array(dim = c(nrow(w), ncol(functional.t), length(add.param$quantiles)),
@@ -559,12 +558,12 @@ predict.drf <- function(object,
     }
 
     funs <- lapply(1:nrow(w), function(i) {
-      return(function(y) spatstat::ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
+      return(function(y) ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
     })
 
     return(list(cdf = funs))
 
-  } else if (functional == "multivariateQuantiles") {
+  } else if (functional == "MQ") {
 
     # compute the functional on the training set
     #functional.t <- t(apply(object$Y.orig,
@@ -572,11 +571,17 @@ predict.drf <- function(object,
     #                        function(yy) transformation(yy)))
 
     u <- list(...)$u
+    
+    if (!is.matrix(u) || ncol(u)!=ncol(object$Y.orig)) {
+      stop("imcompatible u with the response y.")
+    }
 
+    # compute the cost between the provided u's and the y's
     costm <- t(apply(object$Y.orig, 1, function(yy) apply(u, 1, function(uu) {
       sum((yy-uu)^2)
     })))
 
+    # get the transport solution
     info.mq <- apply(w,
                       1,
                       function(ww) {
@@ -586,8 +591,9 @@ predict.drf <- function(object,
                         return(list(ids.y=ids.y, ids.in=ids.in))
                      })
 
+    # get one version of the multimap
     yhat <- lapply(info.mq, function(info) {object$Y.orig[info$ids.in,,drop=F][info$ids.y,,drop=F]})
-    return(list(multvariateQuantiles = list(yhat = yhat)))
+    return(list(multvariateQuantiles = list(yhat = yhat, u = u)))
 
   } else {
     stop("functional not implemented!")
