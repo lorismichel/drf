@@ -589,5 +589,7 @@ predict.drf <- function(object,
     yhat <- lapply(info.mq, function(info) {object$Y.orig[info$ids.in,,drop=F][info$ids.y,,drop=F]})
     return(list(multvariateQuantiles = list(yhat = yhat)))
 
+  } else {
+    stop("functional not implemented!")
   }
 }
