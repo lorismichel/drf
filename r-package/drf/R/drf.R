@@ -248,12 +248,11 @@ drf <-               function(X, Y,
 #'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \code{transformation}.}
 #' \item{"cov"}{the conditional covariance, the returned value is a list containing an array \code{cor} of size \code{n} x \code{f}  x \code{f},
 #'  where \code{n} denotes the number of observation in \code{newdata}, \code{f} the dimension of the \code{transformation}.}
-#'  \item{"cdf"}{the conditional cumulative distribution function, the returned value is a list containing a list of functions \code{cdf} of size \code{n},
-#'  where \code{n} denotes the number of observation in \code{newdata}.  Here the transformation should be uni-dimensional.}
 #'  \item{"normalPredictionScore"}{a prediction score based on an asymptotic normality assumption, the returned value is a list containing a list of functions \code{normalPredictionScore} of size \code{n},
 #'  where \code{n} denotes the number of observation in \code{newdata}. Here the transformation should be uni-dimensional.}
 #'  \item{"custom"}{a custom function provided by the user, the returned value is a list containing a matrix \code{custom} of size \code{n} x \code{f},
 #'  where \code{n} denotes the number of observation in \code{newdata} and \code{f} the dimension of the output of the function \code{custom.functional}.}
+#'  \item{"MQ"}{multivariate quantiles, return a list containing a matrix of the inputed ranks u (that should be provided as an argument of the predict function) along with a list of the different corresponding MQ (same size as u).}
 #' }
 #' @param transformation a function giving a transformation of the responses, by default if NULL, the identity \code{function(y) y} is used.
 #' @param num.threads Number of threads used in training. If set to NULL, the software
@@ -543,25 +542,6 @@ predict.drf <- function(object,
                   })
 
     return(list(normalPredictionScore = funs))
-
-  } else if (functional == "cdf") {
-
-    functional.t <- apply(object$Y.orig,
-                            1,
-                            function(yy) transformation(yy))
-
-    # check length one (R size management)
-    if (length(transformation(object$Y.ori[1,])) != 1) {
-      stop("multi-dimensional ecdf not available.")
-    } else {
-      functional.t <- t(functional.t)
-    }
-
-    funs <- lapply(1:nrow(w), function(i) {
-      return(function(y) ewcdf(x = functional.t, weights = as.numeric(w[i,]))(y))
-    })
-
-    return(list(cdf = funs))
 
   } else if (functional == "MQ") {
 

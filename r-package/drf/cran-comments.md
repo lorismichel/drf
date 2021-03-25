@@ -10,9 +10,6 @@ Ubuntu 16.04.6 LTS, R-release, 64 bit ok
 There were no ERRORs or WARNINGs. 
 
 There was 1 NOTE:
-  
-  * checking for GNU extensions in Makefiles ... NOTE
-GNU make is a SystemRequirements.
 
 ## Downstream dependencies
 New package, no downstream dependencies
