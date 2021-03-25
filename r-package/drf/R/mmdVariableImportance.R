@@ -46,7 +46,7 @@ variableImportance <- function(object,
     preds <- predict.drf(object, newdata = X.perm)
 
     # get the kernel on training
-    k.train <- exp(as.matrix(-dist(Y.transformed)/(2*h^2)))
+    k.train <- exp(as.matrix(-stats::dist(Y.transformed)/(2*h^2)))
 
     # three terms in the MMD
     simple.term <- apply(Y.transformed, 1, function(y) k(y,y))
