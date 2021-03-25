@@ -542,7 +542,6 @@ predict.drf <- function(object,
                   })
 
     return(list(normalPredictionScore = funs))
-
   } else if (functional == "MQ") {
 
     # compute the functional on the training set
