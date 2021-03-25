@@ -242,7 +242,7 @@ leaf_stats.drf <- function(forest, samples, ...){
 #'
 #' @return the median heuristic
 medianHeuristic <- function(Y) {
-  return(median(sqrt(dist(Y)/2)))
+  return(stats::median(sqrt(stats::dist(Y)/2)))
 }
 
 #' Weighted quantiles

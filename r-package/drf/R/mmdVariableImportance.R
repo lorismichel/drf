@@ -43,7 +43,7 @@ variableImportance <- function(object,
     }
 
     # get the weights
-    preds <- predict(object, newdata = X.perm)
+    preds <- predict.drf(object, newdata = X.perm)
 
     # get the kernel on training
     k.train <- exp(as.matrix(-dist(Y.transformed)/(2*h^2)))

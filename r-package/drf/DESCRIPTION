@@ -10,6 +10,7 @@ LinkingTo: Rcpp, RcppEigen
 Depends:
     R (>= 3.4.4)
 Imports:
+    stats,
     fastDummies,
     Matrix,
     methods,
