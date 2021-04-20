@@ -46,12 +46,12 @@ variableImportance <- function(object,
     preds <- predict.drf(object, newdata = X.perm)
 
     # get the kernel on training
-    k.train <- exp(as.matrix(-stats::dist(Y.transformed)/(2*h^2)))
+    k.train <- exp(as.matrix(-stats::dist(Y.transformed)^2/(2*h^2)))
 
     # three terms in the MMD
     simple.term <- apply(Y.transformed, 1, function(y) k(y,y))
     cross.term <- sapply(1:nrow(Y.transformed), function(i) sum(preds$weights[i,] * apply(Y.transformed,1,function(y) k(Y.transformed[i,],y))))
-    inner.term <- sapply(1:nrow(Y.transformed), function(i) t(preds$weights[i,]) %*% k.train %*% preds$weights[i,])
+    inner.term <- sapply(1:nrow(Y.transformed), function(i) sapply(1:nrow(Y.transformed), function(j) t(preds$weights[i,]) %*% k.train %*% preds$weights[j,]))
     # average across training points
     perm.mmd[j+1] <- mean(simple.term - 2 * cross.term + inner.term)
   }
