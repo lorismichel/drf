@@ -64,7 +64,7 @@ univariateComparison <- function(dataset = "synthetic1",
   
     if (dataset %in% c("synthetic1", "synthetic2", "synthetic3", "synthetic4", "friedman1", "friedman2", "friedman3")) {
       var_y <- numeric_var("y", support = c(-5, 5))
-      B_y <- Bernstein_basis(var_y, order = 5, ui = "increasing")
+      B_y <- Bernstein_basis(var_y, order = 2, ui = "increasing")
       m_y <- ctm(B_y)
       trf <- traforest(m_y, formula = y ~ ., data = data.frame(y = d$y[ids.train], x = d$X[ids.train,]),
                        ntree = 500,
@@ -353,8 +353,19 @@ univariateComparison <- function(dataset = "synthetic1",
 
   names(losses) <- quantiles.grid
 
-
-  return(list(d = d, 
+  #qTRF.test <- sapply(qTRF.test, unlist)
+  
+  #df <- data.frame()
+  #methods <- c("qrf","drf","grf")
+  #if (fit.trf) methods <- c(methods, "trf") 
+  #for (method in methods) {
+  #  q <- if (method == "qrf") qQRF.test$predictions else if (method == "grf") qGRF.test else if (method == "drf") qDRF.test[,1,] else if (method == "trf") qTRF.test
+  #  colnames(q) <- NULL
+  #  df <- rbind(df, data.frame(active = d$X[ids.test,1], method = method, q = q))
+  #}
+  
+  return(list(df, 
+              d = d, 
               ids.train = ids.train,
               ids.test = ids.test,
               q.losses = losses, 
@@ -363,6 +374,7 @@ univariateComparison <- function(dataset = "synthetic1",
               qGRF = qGRF, 
               qTRF = if (fit.trf) qTRF else NA))
   
+  #save(df, file = "~/Downloads/univariateQuantiles3.Rdata")
   # x_test (active) # quantile prediction, # mean, # method, # scenario 
   
 }

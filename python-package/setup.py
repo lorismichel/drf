@@ -15,7 +15,7 @@ def readme():
         return f.read()
 
 setup(name='drf',
-      version='0.1',
+      version='1.0.0',
       description='Distributional Random Forest python wrapper',
       long_description=readme(),
       url='https://github.com/lorismichel/drf/tree/master/python-package',

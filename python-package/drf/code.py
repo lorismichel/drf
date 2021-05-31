@@ -61,10 +61,10 @@ class predict_output:
     pass
 
 class drf:
-    def __init__(self, **fit_params):
+    def __init__(self, **fit_params): # ok
         self.fit_params = fit_params
 
-    def fit(self, X, Y):
+    def fit(self, X, Y): # ok
         X = convert_to_df(X)
         Y = convert_to_df(Y)
         
@@ -75,16 +75,19 @@ class drf:
         Y_r = ro.conversion.py2rpy(Y)
         self.r_fit_object = drf_r_package.drf(X_r, Y_r, **self.fit_params)
 
-    def info(self):
+    def info(self): # ok
         drf_r_package.print_drf(self.r_fit_object)
     
-    def variable_importance(self):
+    def variable_importance(self): # ok
         ro.r('sink("/dev/null")')
-        ret = drf_r_package.print_drf(self.r_fit_object)
+        if self.r_fit_object.variable_importance is None:
+          ret = drf_r_package.variableImportance(self.r_fit_object)
+        else:
+          ret = self.r_fit_object.variable_importance
         ro.r('sink()')
         return ret
     
-    def predict(self, newdata, **predict_params):
+    def predict(self, newdata, **predict_params): #ok
         newdata = convert_to_df(newdata)
         newdata_r = ro.conversion.py2rpy(newdata)
         r_output = drf_r_package.predict_drf(self.r_fit_object, newdata_r)
