@@ -8,7 +8,7 @@ This repository started as a fork from the [grf](https://github.com/grf-labs/grf
 
 ### Installation
 
-The latest release of the package can be installed through CRAN (soon):
+The latest release of the package can be installed through CRAN:
 
 ```R
 install.packages("drf")
