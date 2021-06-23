@@ -17,7 +17,7 @@ u <- as.matrix(expand.grid(seq(0.1,0.9,0.1),seq(0.1,0.9,0.1)))
 #u <- matrix(runif(100),ncol=2)
 getUhat <- function(d, u) {
   pred <- predict(d,
-                  functional = "multivariateQuantiles",
+                  functional = "MQ",
                   u = u)
   uhat <- t(sapply(1:nrow(d$Y.orig), function(i) {
     id <- which.min(apply(pred$multvariateQuantiles$yhat[[i]],1,function(x) sum((x-d$Y.orig[i,])^2)))
