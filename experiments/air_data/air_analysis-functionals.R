@@ -1,5 +1,5 @@
 library(ggplot2)
-library(drf)
+library(mrf)
 library(viridis)
 library(sf)
 library(maps)
@@ -36,7 +36,8 @@ airQuCat <- function(y) {
 }
 
 # loading data and subsampling
-load('../../data/air_data/computed_data/air_data.RData')
+#load('~/Downloads/air_data.RData')
+load('~/Documents/projects/heterogeneity/air_data/computed_data/air_data.RData')
 length(unique(air_data$Site.ID))
 
 #remove outliers
@@ -91,14 +92,14 @@ X <- dummy_cols(X, remove_selected_columns=TRUE)
 colnames(X)
 
 set.seed(22)
-dRF_fourier <- drf(X = X, Y = Y, num.trees = 2000, splitting.rule = "FourierMMD", num.features = 10, min.node.size = 20)
+mRF_fourier <- mrf(X = X, Y = Y, num.trees = 2000, splitting.rule = "fourier", num_features = 10, min.node.size = 20)
 
 #compute weights
 test = dummy_cols(site_data[,c('Longitude','Latitude',"Elevation","Land.Use","Location.Setting")], remove_selected_columns=TRUE)
-weights_fourier <- predict(dRF_fourier, newdata=test)$weights
+weights_fourier <- predict(mRF_fourier, newdata=test)$weights
 
-#save(dRF_fourier, weights_fourier, file="~/Documents/projects/heterogeneity/air_data/computed_data/functionals")
-load("../../data/air_data/computed_data/functionals.Rdata")
+#save(mRF_fourier, weights_fourier, file="~/Documents/projects/heterogeneity/air_data/computed_data/functionals")
+load("~/Documents/projects/heterogeneity/air_data/computed_data/functionals")
 
 ################################################################
 # Compute CDF estimate
@@ -124,7 +125,7 @@ p1 <- ggplot(site_data, aes(x=Longitude, y=Latitude, color=prob_good_fourier)) +
         legend.title=element_text(size=14))+
   facet_wrap(~title)
 plot(p1)
-ggsave('./cdf.png', width=13.3, height=6, units='cm')
+ggsave('~/Documents/projects/heterogeneity/paper/air_data/cdf.png', width=13.3, height=6, units='cm')
 
 qplot(Land.Use, prob_good_fourier, geom='boxplot', data=site_data)
 qplot(Location.Setting, prob_good_fourier, geom='boxplot', data=site_data)
@@ -134,7 +135,7 @@ qplot(Elevation, prob_good_fourier, color=Location.Setting, data=site_data)
 site_data$prob_good_indep = rep(1, nrow(site_data))
 for(i in 1:ncol(Y)){
   print(i)
-  fit <- drf(X = X, Y = Y[, i, drop=FALSE], num.trees = 2000, splitting.rule = "FourierMMD", num.features = 3, min.node.size = 20)
+  fit <- mrf(X = X, Y = Y[, i, drop=FALSE], num.trees = 2000, splitting.rule = "fourier", num_features = 3, min.node.size = 20)
   weights = predict(fit, newdata=test)$weights
   cat <- airQuCat(Y[, i, drop=FALSE])
   site_data[, paste("prob_good", pollutants[i], sep="_")] = rowSums(weights[, cat=="good"])
@@ -160,8 +161,8 @@ qplot(prob_good_indep, prob_good_fourier, data=site_data) + geom_abline(color='r
 
 ####
 cat = airQuCat(Y)
-fit <- drf(X = X, Y = (cat=="good"), num.trees = 2000, 
-           splitting.rule = "CART", min.node.size = 20)
+fit <- mrf(X = X, Y = (cat=="good"), num.trees = 2000, 
+           splitting.rule = "gini", min.node.size = 20)
 weights = predict(fit, newdata=test)$weights
 site_data$prob_good_indicator = rowSums(as.matrix(weights[, cat=="good"]))
 
@@ -181,7 +182,7 @@ qplot(prob_good_indicator, prob_good_fourier, data=site_data, alpha=I(0.4), size
   theme_light()+
   theme(axis.title.x=element_text(size=11),
         axis.title.y=element_text(size=9))
-ggsave('./comparison.png', width=13, height=5.5, units='cm')
+ggsave('~/Documents/projects/heterogeneity/paper/air_data/comparison.png', width=13, height=5.5, units='cm')
 
 
 ##
@@ -233,12 +234,12 @@ for(i in 1:length(grid)){
   threshold = grid[i]
   results_DRF[, i] = apply(weights_fourier[test_sites_idx, ], 1, function(w){sum(w * (target < threshold))})
   
-  fit <- drf(X = X, Y = matrix(target < threshold, ncol=1), num.trees = 2000, 
-               splitting.rule = "CART", min.node.size = 20)
+  fit <- mrf(X = X, Y = matrix(target < threshold, ncol=1), num.trees = 2000, 
+               splitting.rule = "gini", min.node.size = 20)
   weights = predict(fit, newdata=test[test_sites_idx, ])$weights
   results_indicator[, i] = apply(weights, 1, function(w){sum(w * (target < threshold))})
 }
-load(file = "../../data/air_data/computed_data/saved_data.Rdata")
+load(file = "~/Documents/projects/heterogeneity/air_data/saved_data")
 
 plotdf = data.frame(x=grid, prob1=results_DRF[43, ], prob2=results_indicator[43, ], label='P(O3 < threshold | test site)')
 ggplot(plotdf, aes(x=x, y=prob1)) +
@@ -253,7 +254,7 @@ ggplot(plotdf, aes(x=x, y=prob1)) +
         axis.title.y=element_text(size=11),
         strip.text.x = element_text(size = 10.5))+
   facet_wrap(~label)
-ggsave('./non-monotonicity.png', width=13, height=5.5, units='cm')
+ggsave('~/Documents/projects/heterogeneity/paper/air_data/non-monotonicity.png', width=13, height=5.5, units='cm')
 
 ggplot(data.frame(x=grid, prob=results_DRF[31, ]), aes(x=x, y=prob))+
   geom_line(color='red', linetype='dashed') + 
@@ -277,9 +278,9 @@ for(i in 1:length(test_sites_idx)){
   site_data$cor[test_sites_idx[i]] = sum(weights*Y[which, k]*Y[which, j]) / (sum(weights * Y[which, k]^2)^0.5 * sum(weights * Y[which, j]^2)^0.5)
 }
 #save(site_data, file = "~/Documents/projects/heterogeneity/air_data/computed_data/corr")
-load(file = "../../data/air_data/computed_data/corr.Rdata")
+load(file = "~/Documents/projects/heterogeneity/air_data/computed_data/corr")
 
-#out = predict(dRF_fourier, type='cor', newdata=test[i, , drop=FALSE])
+#out = predict(mRF_fourier, type='cor', newdata=test[i, , drop=FALSE])
 #site_data$cor = out$cor[1, 2, ]
 site_data$title = "Corr(SO2, PM2.5 | test_site)"
 ggplot(site_data[test_sites_idx,], aes(x=Longitude, y=Latitude, color=cor)) +
@@ -294,4 +295,4 @@ ggplot(site_data[test_sites_idx,], aes(x=Longitude, y=Latitude, color=cor)) +
         legend.text=element_text(size=12),
         legend.title=element_text(size=14))+
   facet_wrap(~title)
-ggsave('./corr.png', width=13, height=6, units='cm')
+ggsave('~/Documents/projects/heterogeneity/paper/air_data/corr.png', width=13, height=6, units='cm')
