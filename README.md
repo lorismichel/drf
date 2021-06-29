@@ -1,4 +1,4 @@
-# Distributional Random Forests <a href='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png'><img src='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png' align="right" height="160" /></a>
+# Distributional Random Forests <a href='https://github.com/lorismichel/drf/blob/master/experiments/DRFlogo.png'><img src='https://github.com/lorismichel/drf/blob/master/DRFlogo.png' align="right" height="160" /></a>
 
 [![Build Status](https://travis-ci.com/lorismichel/drf.svg?branch=master)](https://travis-ci.com/lorismichel/drf)
 

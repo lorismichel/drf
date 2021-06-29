@@ -1,3 +1,4 @@
+# setwd("~/Documents/projects/DRF/data/air_data/")
 # 
 # file_list = list.files(path="downloaded_data/measurements", pattern="", full.names=TRUE, recursive=FALSE)
 # measurements = data.frame()
@@ -8,7 +9,7 @@
 #   measurements = rbind(measurements, df)
 # }
 # 
-site_data = read.csv(file = "../../data/air_data/downloaded_data/aqs_sites.csv")
+site_data = read.csv(file = "downloaded_data/aqs_sites.csv")
 # fix altitudes
 library(httr)
 
@@ -25,7 +26,7 @@ for(i in 1:nrow(site_data)){
 #     request = paste("https://geocode.xyz/", as.character(site_data$Address[i]), ',', as.character(site_data$Zip.Code[i]), 
 #                     ',', as.character(site_data$City.Name[i]), ',', as.character(site_data$County.Name[i]), 
 #                     ',', as.character(site_data$State.Name[i]), ',USA?geoit=json', sep='')
-#     request = paste(request, "&auth=APIKEYHERE", sep='')
+#     request = paste(request, "&auth=573591305820653608942x4847", sep='')
 #     r <- GET(request)
 #     site_data$Longitude[i] = content(r)$longt
 #     site_data$Latitude[i] = content(r)$latt
@@ -33,7 +34,7 @@ for(i in 1:nrow(site_data)){
 # }
   
   request = paste("https://geocode.xyz/", as.character(site_data$Latitude[i]), ',', as.character(site_data$Longitude[i]), '?geoit=json', sep='')
-  request = paste(request, "&auth=APIKEYHERE", sep='')
+  request = paste(request, "&auth=573591305820653608942x4847", sep='')
   r <- GET(request)
   if(is.na(site_data$Zip.Code[i]) && length(content(r)$postal) > 0){
     site_data$Zip.Code[i] = content(r)$postal
@@ -41,7 +42,7 @@ for(i in 1:nrow(site_data)){
   if(length(content(r)$elevation) > 0){
      site_data$Elevation[i] = content(r)$elevation
   } else {
-    r <- GET(paste("https://maps.googleapis.com/maps/api/elevation/json?key=APIKEYHERE&locations=", as.character(site_data$Latitude[i]), ',', as.character(site_data$Longitude[i]), sep=''))
+    r <- GET(paste("https://maps.googleapis.com/maps/api/elevation/json?key=AIzaSyBGkVwUNgBo7bC0PKEIIenjkEkBUl6Vo6g&locations=", as.character(site_data$Latitude[i]), ',', as.character(site_data$Longitude[i]), sep=''))
     site_data$Elevation[i] = content(r)$results[[1]]$elevation
   }
 }
@@ -49,7 +50,9 @@ for(i in 1:nrow(site_data)){
 # #monitors_data = read.csv(file='downloaded_data/aqs_monitors.csv') #Not currently needed
 # 
 #save(measurements, site_data, file="computed_data/raw_data.RData")
-load(file="../../data/air_data/computed_data/raw_data.RData")
+
+setwd("~/Documents/projects/heterogeneity/air_data/")
+load(file="computed_data/raw_data.RData")
 
 ##################################################################
 # measurements
@@ -217,4 +220,4 @@ structable(~ Land.Use + Location.Setting, data = air_data)
 sapply(air_data, class)
 
 ###################################################################################################
-save(air_data, site_data, file="../../data/air_data/computed_data/air_data.RData")
+save(air_data, site_data, file="computed_data/air_data.RData")
