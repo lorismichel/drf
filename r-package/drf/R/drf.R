@@ -1,54 +1,40 @@
 #' Distributional Random Forests
 #'
-#' Trains a distributional random forest that can be used to estimate
-#' statistical functional F(P(Y | X)) for possibly multivariate response Y.
-#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data.frame with characters and factors. In the latter case,
-#'   one-hot-encoding will be implicitely used.
-#' @param Y The (multivariate) outcome. A matrix or data.frame of numeric values.
+#' Trains a Distributional Random Forest which estimates the full conditional distribution \eqn{P(Y | X)}
+#' for possibly multivariate response Y and predictors X. The conditional distribution estimate is represented
+#' as a weighted distribution of the training data. The weights can be conveniently used in the downstream analysis
+#' to estimate any quantity of interest \eqn{\tau(P(Y | X))}.
+#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data frame with columns of any data type.
+#' @param Y The (multivariate) outcome variable. Needs to be a matrix or a data frame consisting of numeric values.
 #' @param num.trees Number of trees grown in the forest. Default is 500.
-#' @param splitting.rule a character value. The type of splitting rule used, can be either "CART" or "FourierMMD".
-#' @param num.features a numeric value, in case of "FourierMMD", the number of random features to sample.
-#' @param bandwidth a numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", by default the value is NULL and the median heuristic is used.
-#' @param response.scaling a boolean value, should the reponses be globally scaled at first.
-#' @param node.scaling a boolean value, should the responses be scaled or not by node.
+#' @param splitting.rule A character value. The type of the splitting rule used, can be either "FourierMMD" (MMD splitting criterion with FastMMD approximation for speed) or "CART" (sum of standard CART criteria over the components of Y).
+#' @param num.features A numeric value, in case of "FourierMMD", the number of random features to sample.
+#' @param bandwidth A numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", the value is set to NULL by default and the median heuristic is used.
+#' @param response.scaling A boolean value, should the responses be standardized before fitting the forest.
+#' @param node.scaling A boolean value, should the responses be standardized in every node of every tree.
 #' @param sample.weights (experimental) Weights given to an observation in estimation.
 #'                       If NULL, each observation is given the same weight. Default is NULL.
-#' @param clusters Vector of integers or factors specifying which cluster each observation corresponds to.
-#'  Default is NULL (ignored).
-#' @param equalize.cluster.weights If FALSE, each unit is given the same weight (so that bigger
-#'  clusters get more weight). If TRUE, each cluster is given equal weight in the forest. In this case,
-#'  during training, each tree uses the same number of observations from each drawn cluster: If the
-#'  smallest cluster has K units, then when we sample a cluster during training, we only give a random
-#'  K elements of the cluster to the tree-growing procedure. When estimating average treatment effects,
-#'  each observation is given weight 1/cluster size, so that the total weight of each cluster is the
-#'  same. Note that, if this argument is FALSE, sample weights may also be directly adjusted via the
-#'  sample.weights argument. If this argument is TRUE, sample.weights must be set to NULL. Default is
-#'  FALSE.
 #' @param sample.fraction Fraction of the data used to build each tree.
 #'                        Note: If honesty = TRUE, these subsamples will
 #'                        further be cut by a factor of honesty.fraction. Default is 0.5.
 #' @param mtry Number of variables tried for each split. Default is
-#'             \eqn{\sqrt p + 20} where p is the number of variables.
+#'             \eqn{\sqrt p + 20}, where p is the number of predictors.
 #' @param min.node.size A target for the minimum number of observations in each tree leaf. Note that nodes
 #'                      with size smaller than min.node.size can occur, as in the original randomForest package.
 #'                      Default is 5.
 #' @param honesty Whether to use honest splitting (i.e., sub-sample splitting). Default is TRUE.
 #'  For a detailed description of honesty, honesty.fraction, honesty.prune.leaves, and recommendations for
-#'  parameter tuning, see the grf reference for more information (initial source)
-#'  \href{https://grf-labs.github.io/grf/REFERENCE.html#honesty-honesty-fraction-honesty-prune-leaves}{algorithm reference}.
-#' @param honesty.fraction The fraction of data that will be used for determining splits if honesty = TRUE. Corresponds
-#'                         to set J1 in the notation of the paper. Default is 0.5 (i.e. half of the data is used for
-#'                         determining splits).
+#'  parameter tuning, see the \href{https://grf-labs.github.io/grf/REFERENCE.html#honesty-honesty-fraction-honesty-prune-leaves}{GRF reference}
+#'  for more information (the original source).
+#' @param honesty.fraction The fraction of data that will be used for determining splits if honesty = TRUE. Default is 0.5 (i.e. half of the data is used for
+#'                         determining splits and the other half for populating the nodes of the tree).
 #' @param honesty.prune.leaves If TRUE, prunes the estimation sample tree such that no leaves
-#'  are empty. If FALSE, keep the same tree as determined in the splits sample (if an empty leave is encountered, that
+#'  are empty. If FALSE, keeps the same tree as determined in the splits sample (if an empty leave is encountered, that
 #'  tree is skipped and does not contribute to the estimate). Setting this to FALSE may improve performance on
 #'  small/marginally powered data, but requires more trees (note: tuning does not adjust the number of trees).
 #'  Only applies if honesty is enabled. Default is TRUE.
-#' @param alpha A tuning parameter that controls the maximum imbalance of a split. Default is 0.05.
+#' @param alpha A tuning parameter that controls the maximum imbalance of a split. Default is 0.05, meaning a child node will contain at most 5% of observations in the parent node.
 #' @param imbalance.penalty A tuning parameter that controls how harshly imbalanced splits are penalized. Default is 0.
-#' @param ci.group.size The forest will grow ci.group.size trees on each subsample.
-#'                      In order to provide confidence intervals, ci.group.size must
-#'                      be at least 2. Default is 2.
 #' @param compute.oob.predictions Whether OOB predictions on training set should be precomputed. Default is TRUE.
 #' @param num.threads Number of threads used in training. By default, the number of threads is set
 #'                    to the maximum hardware concurrency.
@@ -100,8 +86,6 @@ drf <-               function(X, Y,
                               response.scaling = TRUE,
                               node.scaling = FALSE,
                               sample.weights = NULL,
-                              clusters = NULL,
-                              equalize.cluster.weights = FALSE,
                               sample.fraction = 0.5,
                               mtry = min(ceiling(sqrt(ncol(X)) + 20), ncol(X)),
                               min.node.size = 15,
@@ -110,7 +94,6 @@ drf <-               function(X, Y,
                               honesty.prune.leaves = TRUE,
                               alpha = 0.05,
                               imbalance.penalty = 0,
-                              ci.group.size = 2,
                               compute.oob.predictions = TRUE,
                               num.threads = NULL,
                               seed = stats::runif(1, 0, .Machine$integer.max),
@@ -120,7 +103,7 @@ drf <-               function(X, Y,
   if (is.data.frame(X)) {
 
     if (is.null(names(X))) {
-      stop("the regressor should be named if provided under data.frame format.")
+      stop("The regressor should be named if provided in the data.frame format.")
     }
 
     if (any(apply(X, 2, class) %in% c("factor", "character"))) {
@@ -149,15 +132,13 @@ drf <-               function(X, Y,
   }
   
   if (is.vector(Y)) {
-    Y <- matrix(Y,ncol=1)
+    Y <- matrix(Y, ncol=1)
   }
 
 
   validate_X(X.mat)
   validate_sample_weights(sample.weights, X.mat)
   #Y <- validate_observations(Y, X)
-  clusters <- validate_clusters(clusters, X.mat)
-  samples.per.cluster <- validate_equalize_cluster_weights(equalize.cluster.weights, clusters, sample.weights)
   num.threads <- validate_num_threads(num.threads)
 
   all.tunable.params <- c("sample.fraction", "mtry", "min.node.size", "honesty.fraction",
@@ -179,8 +160,6 @@ drf <-               function(X, Y,
   
 
   args <- list(num.trees = num.trees,
-               clusters = clusters,
-               samples.per.cluster = samples.per.cluster,
                sample.fraction = sample.fraction,
                mtry = mtry,
                min.node.size = min.node.size,
@@ -189,7 +168,6 @@ drf <-               function(X, Y,
                honesty.prune.leaves = honesty.prune.leaves,
                alpha = alpha,
                imbalance.penalty = imbalance.penalty,
-               ci.group.size = ci.group.size,
                compute.oob.predictions = compute.oob.predictions,
                num.threads = num.threads,
                seed = seed,
@@ -208,13 +186,10 @@ drf <-               function(X, Y,
    }
 
    class(forest) <- c("drf")
-   forest[["ci.group.size"]] <- ci.group.size
    forest[["X.orig"]] <- X.mat
    forest[["is.df.X"]] <- is.data.frame(X)
    forest[["Y.orig"]] <- Y
    forest[["sample.weights"]] <- sample.weights
-   forest[["clusters"]] <- clusters
-   forest[["equalize.cluster.weights"]] <- equalize.cluster.weights
    forest[["tunable.params"]] <- args[all.tunable.params]
    forest[["mat.col.names"]] <- mat.col.names
    forest[["mat.col.names.df"]] <- mat.col.names.df
