@@ -11,11 +11,11 @@ validate_X <- function(X) {
   #     "https://grf-labs.github.io/grf/articles/categorical_inputs.html"
   #   ))
   # }
-
+  
   if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
     stop("Currently only sparse data of class 'dgCMatrix' is supported.")
   }
-
+  
   if (any(is.na(X))) {
     stop("The feature matrix X contains at least one NA.")
   }
@@ -27,18 +27,18 @@ validate_observations <- function(V, X) {
   } else if (!is.vector(V)) {
     stop(paste("Observations (W, Y, or Z) must be vectors."))
   }
-
+  
   if (!is.numeric(V) && !is.logical(V)) {
     stop(paste(
       "Observations (W, Y, or Z) must be numeric. DRF does not ",
       "currently support non-numeric observations."
     ))
   }
-
+  
   if (any(is.na(V))) {
     stop("The vector of observations (W, Y, or Z) contains at least one NA.")
   }
-
+  
   if (length(V) != nrow(X)) {
     stop("length of observation (W, Y, or Z) does not equal nrow(X).")
   }
@@ -52,44 +52,6 @@ validate_num_threads <- function(num.threads) {
     stop("Error: Invalid value for num.threads")
   }
   num.threads
-}
-
-validate_clusters <- function(clusters, X) {
-  if (is.null(clusters) || length(clusters) == 0) {
-    return(vector(mode = "numeric", length = 0))
-  }
-  if (mode(clusters) != "numeric") {
-    stop("Clusters must be able to be coerced to a numeric vector.")
-  }
-  clusters <- as.numeric(clusters)
-  if (!all(clusters == floor(clusters))) {
-    stop("Clusters vector cannot contain floating point values.")
-  } else if (length(clusters) != nrow(X)) {
-    stop("Clusters vector has incorrect length.")
-  } else {
-    # convert to integers between 0 and n clusters
-    clusters <- as.numeric(as.factor(clusters)) - 1
-  }
-  clusters
-}
-
-validate_equalize_cluster_weights <- function(equalize.cluster.weights, clusters, sample.weights) {
-  if (is.null(clusters) || length(clusters) == 0) {
-    return(0)
-  }
-  cluster_size_counts <- table(clusters)
-  if (equalize.cluster.weights == TRUE) {
-    samples.per.cluster <- min(cluster_size_counts)
-    if (!is.null(sample.weights)) {
-      stop("If equalize.cluster.weights is TRUE, sample.weights must be NULL.")
-    }
-  } else if (equalize.cluster.weights == FALSE) {
-    samples.per.cluster <- max(cluster_size_counts)
-  } else {
-    stop("equalize.cluster.weights must be either TRUE or FALSE.")
-  }
-
-  samples.per.cluster
 }
 
 validate_boost_error_reduction <- function(boost.error.reduction) {
@@ -108,7 +70,7 @@ validate_ll_vars <- function(linear.correction.variables, num.cols) {
   } else if (max(linear.correction.variables) > num.cols) {
     stop("Invalid range of correction variables.")
   } else if (!is.vector(linear.correction.variables) |
-    !all(linear.correction.variables == floor(linear.correction.variables))) {
+             !all(linear.correction.variables == floor(linear.correction.variables))) {
     stop("Linear correction variables must be a vector of integers.")
   }
   linear.correction.variables
@@ -154,22 +116,13 @@ validate_sample_weights <- function(sample.weights, X) {
 
 #' @importFrom Matrix Matrix cBind
 #' @importFrom methods new
-create_data_matrices <- function(X, outcome = NULL, treatment = NULL,
-                                 instrument = NULL, sample.weights = FALSE) {
+create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
   default.data <- matrix(nrow = 0, ncol = 0)
   sparse.data <- new("dgCMatrix", Dim = c(0L, 0L))
   out <- list()
   i <- 1
   if (!is.null(outcome)) {
     out[["outcome.index"]] <- ncol(X) + i:(i+ncol(outcome)-1)
-  }
-  if (!is.null(treatment)) {
-    i <- i + 1
-    out[["treatment.index"]] <- ncol(X) + i
-  }
-  if (!is.null(instrument)) {
-    i <- i + 1
-    out[["instrument.index"]] <- ncol(X) + i
   }
   if (!identical(sample.weights, "FALSE")) {
     i <- i + 1
@@ -182,43 +135,17 @@ create_data_matrices <- function(X, outcome = NULL, treatment = NULL,
   } else {
     sample.weights = NULL
   }
-
+  
   if (inherits(X, "dgCMatrix") && ncol(X) > 1) {
-    sparse.data <- cbind(X, outcome, treatment, instrument, sample.weights)
+    sparse.data <- cbind(X, outcome, sample.weights)
   } else {
     X <- as.matrix(X)
-    default.data <- as.matrix(cbind(X, outcome, treatment, instrument, sample.weights))
+    default.data <- as.matrix(cbind(X, outcome, sample.weights))
   }
   out[["train.matrix"]] <- default.data
   out[["sparse.train.matrix"]] <- sparse.data
-
+  
   out
-}
-
-observation_weights <- function(forest) {
-  # Case 1: No sample.weights
-  if (is.null(forest$sample.weights)) {
-    if (length(forest$clusters) == 0 || !forest$equalize.cluster.weights) {
-      raw.weights <- rep(1, length(forest$Y.orig))
-    } else {
-      # If clustering with no sample.weights provided and equalize.cluster.weights = TRUE, then
-      # give each observation weight 1/cluster size, so that the total weight of each cluster is the same.
-      clust.factor <- factor(forest$clusters)
-      inverse.counts <- 1 / as.numeric(Matrix::colSums(Matrix::sparse.model.matrix(~ clust.factor + 0)))
-      raw.weights <- inverse.counts[as.numeric(clust.factor)]
-    }
-  }
-
-  # Case 2: sample.weights provided
-  if (!is.null(forest$sample.weights)) {
-    if (length(forest$clusters) == 0 || !forest$equalize.cluster.weights) {
-      raw.weights <- forest$sample.weights
-    } else {
-      stop("Specifying non-null sample.weights is not allowed when equalize.cluster.weights = TRUE")
-    }
-  }
-
-  return (raw.weights / sum(raw.weights))
 }
 
 # Call the drf Rcpp bindings (argument_names) with R argument.names
