@@ -52,7 +52,7 @@ plotdf = rbind(plotdf,
 plotdf$method = factor(plotdf$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN", "CME"))
 
 gg1 = ggplot(plotdf, aes(x=x, y=y)) +
-  geom_point(size=0.05, aes(color=method)) +
+  geom_point(size=0.5, aes(color=method)) +
   #geom_smooth(aes(color=method)) +
   geom_abline(intercept=qunif(0.5), color='black', linetype='solid', size=0.5) +
   geom_abline(intercept=qunif(0.1), color='black', linetype='dashed', size=0.5) +
@@ -85,7 +85,7 @@ plotdf2 = rbind(plotdf2,
 plotdf2$method = factor(plotdf2$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN", "CME"))
 
 gg2 = ggplot(plotdf2, aes(x=x, y=y)) +
-  geom_point(size=0.05, aes(color=method)) +
+  geom_point(size=0.5, aes(color=method)) +
   #geom_smooth(aes(color=method)) +
   geom_abline(slope=qunif(0.5), color='black', linetype='solid', size=0.5) +
   geom_abline(slope=qunif(0.1), color='black', linetype='dashed', size=0.5) +
