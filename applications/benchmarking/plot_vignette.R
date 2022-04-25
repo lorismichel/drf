@@ -18,7 +18,20 @@ Y[,1] = Y[,1] + X[,1] #mean shift of Y1 based on X1
 Y[,2] = Y[,2] * X[,2] #variance shift of Y2 based on X2
 
 X_test = pickle_data$X_test
-pickle_data$ypred_cme_sample_test = ??
+
+## Fitting CME ##
+weights<-CME(x=X_test,Y=Y,X=X, prob=T )
+
+
+for (i in 1:n_test){
+  tmp<-Y[sample(1:n, size=10, replace=T, prob=c(weights[i,])),]
+  pickle_data$ypred_cme_sample_test[i,1,1:10] <- tmp[,1]
+  pickle_data$ypred_cme_sample_test[i,2,1:10] <- tmp[,2]
+  
+}
+
+
+##################
 
 
 n_test = 1000
