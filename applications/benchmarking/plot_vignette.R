@@ -7,20 +7,36 @@ setwd(dirname(rstudioapi::getSourceEditorContext()$path))
 source_python("read_pickle.py")
 pickle_data <- read_pickle_file("data/output/vignette.data")
 
+
+# TODO fit here CME
+n = 1000
+p = 10
+d = 2
+X <- matrix(runif(n*p), ncol=p)
+Y <- matrix(runif(n*d), ncol=d)
+Y[,1] = Y[,1] + X[,1] #mean shift of Y1 based on X1
+Y[,2] = Y[,2] * X[,2] #variance shift of Y2 based on X2
+
+X_test = pickle_data$X_test
+pickle_data$ypred_cme_sample_test = ??
+
+
 n_test = 1000
 plotdf = data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_drf_sample_test[1:n_test,1,10], method="DRF")
-plotdf = rbind(plotdf, 
+plotdf = rbind(plotdf,
                data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_gan_sample_test[1:n_test,1,10], method="CGAN"))
-plotdf = rbind(plotdf, 
+plotdf = rbind(plotdf,
                data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_cvae_sample_test[1:n_test,1,10], method="CVAE"))
-plotdf = rbind(plotdf, 
+plotdf = rbind(plotdf,
                data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_maf_sample_test[1:n_test,1,10], method="MAF"))
-plotdf = rbind(plotdf, 
+plotdf = rbind(plotdf,
                data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_knn_sample_test[1:n_test,1,10], method="k-NN"))
-#plotdf = rbind(plotdf, 
+plotdf = rbind(plotdf,
+               data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_cme_sample_test[1:n_test,1,10], method="CME"))
+#plotdf = rbind(plotdf,
 #               data.frame(x=pickle_data$X_test[1:n_test,1], y=pickle_data$ypred_rf_sample_test[1:n_test,1,10], method="RF"))
 
-plotdf$method = factor(plotdf$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN"))
+plotdf$method = factor(plotdf$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN", "CME"))
 
 gg1 = ggplot(plotdf, aes(x=x, y=y)) +
   geom_point(size=0.01, aes(color=method)) +
@@ -40,18 +56,20 @@ gg1
 
 
 plotdf2 = data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_drf_sample_test[1:n_test,2,10], method="DRF")
-plotdf2 = rbind(plotdf2, 
+plotdf2 = rbind(plotdf2,
                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_gan_sample_test[1:n_test,2,10], method="CGAN"))
-plotdf2 = rbind(plotdf2, 
+plotdf2 = rbind(plotdf2,
                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_cvae_sample_test[1:n_test,2,10], method="CVAE"))
-plotdf2 = rbind(plotdf2, 
+plotdf2 = rbind(plotdf2,
                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_maf_sample_test[1:n_test,2,10], method="MAF"))
-plotdf2 = rbind(plotdf2, 
+plotdf2 = rbind(plotdf2,
                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_knn_sample_test[1:n_test,2,10], method="k-NN"))
-#plotdf2 = rbind(plotdf2, 
+plotdf2 = rbind(plotdf2,
+                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_cme_sample_test[1:n_test,2,10], method="CME"))
+#plotdf2 = rbind(plotdf2,
 #                data.frame(x=pickle_data$X_test[1:n_test,2], y=pickle_data$ypred_rf_sample_test[1:n_test,2,10], method="RF"))
 
-plotdf2$method = factor(plotdf2$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN"))
+plotdf2$method = factor(plotdf2$method, levels = c("DRF", "CGAN", "CVAE", "MAF", "k-NN", "CME"))
 
 gg2 = ggplot(plotdf2, aes(x=x, y=y)) +
   geom_point(size=0.01, aes(color=method)) +
