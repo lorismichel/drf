@@ -1,0 +1,10 @@
+^.*\.Rproj$
+^.*\.md$
+^\.Rproj\.user$
+^bindings$
+^vignettes
+^tests/benchmarks
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^tests/testthat/test_((?!cran).).*

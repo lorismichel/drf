@@ -16,7 +16,7 @@ Imports:
     methods,
     Rcpp (>= 0.12.15),
     transport
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.1
 Suggests:
     DiagrammeR
 SystemRequirements: GNU make

@@ -38,7 +38,7 @@ get_tree <- function(forest, index) {
     stop(paste("The provided index,", index, "is not valid."))
   }
 
-  # Convert internal grf representation to adjacency list.
+  # Convert internal drf representation to adjacency list.
   # +1 from C++ to R index.
   root <- forest[["_root_nodes"]][[index]] + 1
   left <- forest[["_child_nodes"]][[index]][[1]]
