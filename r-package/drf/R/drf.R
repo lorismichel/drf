@@ -156,7 +156,12 @@ drf <-               function(X, Y,
   }
   
   
-  validate_X(X.mat)
+  #validate_X(X.mat)
+  
+  if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
+        stop("Currently only sparse data of class 'dgCMatrix' is supported.")
+    }
+  
   validate_sample_weights(sample.weights, X.mat)
   #Y <- validate_observations(Y, X)
   
