@@ -13,7 +13,7 @@
  
  You should have received a copy of the GNU General Public License
  along with drf. If not, see <http://www.gnu.org/licenses/>.
-#-------------------------------------------------------------------------------*/w
+#-------------------------------------------------------------------------------*/
 
 #ifndef DRF_SPLITFREQUENCYCOMPUTER_H
 #define DRF_SPLITFREQUENCYCOMPUTER_H
