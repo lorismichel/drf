@@ -242,6 +242,12 @@ leaf_stats.drf <- function(forest, samples, ...){
 #'
 #' @return the median heuristic
 medianHeuristic <- function(Y) {
+  
+  # use NROW instead of nrow in case Y is a vector
+  if(NROW(Y) > 5000){
+    rows <- sample(NROW(Y), size = 5000, replace = FALSE, prob = NULL)
+    Y <- Y[rows, ,drop=FALSE]
+  }
   return(stats::median(sqrt(stats::dist(Y)/2)))
 }
 
