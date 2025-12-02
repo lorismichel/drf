@@ -9,7 +9,7 @@
 #' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule A character value. The type of the splitting rule used, can be either "FourierMMD" (MMD splitting criterion with FastMMD approximation for speed) or "CART" (sum of standard CART criteria over the components of Y).
 #' @param num.features A numeric value, in case of "FourierMMD", the number of random features to sample.
-#' @param bandwidth A numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", the value is set to NULL by default and the median heuristic is used.
+#' @param bandwidth A numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", the value is set to NULL by default and the square root of the median heuristic is used.
 #' @param response.scaling A boolean value, should the responses be standardized before fitting the forest. Default is TRUE.
 #' @param node.scaling A boolean value, should the responses be standardized in every node of every tree. Default is FALSE.
 #' @param sample.weights (experimental) Weights given to an observation in estimation.
@@ -187,7 +187,7 @@ drf <-               function(X, Y,
   
   # bandwidth using median heuristic by default
   if (is.null(bandwidth)) {
-    bandwidth <- medianHeuristic(Y.transformed)
+    bandwidth <- sqrt(medianHeuristic(Y.transformed))
   }
   
   
