@@ -111,7 +111,7 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
   if (!is.null(outcome)) {
     out[["outcome.index"]] <- ncol(X) + i:(i+ncol(outcome)-1)
   }
-  if (!identical(sample.weights, "FALSE")) {
+  if (!identical(sample.weights, FALSE)) {
     i <- i + 1
     out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + i
     if (is.null(sample.weights)) {
