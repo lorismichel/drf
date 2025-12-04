@@ -107,12 +107,14 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
   default.data <- matrix(nrow = 0, ncol = 0)
   sparse.data <- new("dgCMatrix", Dim = c(0L, 0L))
   out <- list()
-  i <- 1
+  
   if (!is.null(outcome)) {
-    out[["outcome.index"]] <- ncol(X) + i:(i+ncol(outcome)-1)
+    out[["outcome.index"]] <- ncol(X) + 1:(1+ncol(outcome)-1)
   }
+  
   if (!identical(sample.weights, FALSE)) {
-    i <- i + 1
+    # sample.weight.index is required as input to gini/fourier_train, regardless
+    # of whether sample weights are specified or not
     out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + 1
     if (is.null(sample.weights)) {
       out[["use.sample.weights"]] <- FALSE
