@@ -109,13 +109,13 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
   out <- list()
   
   if (!is.null(outcome)) {
-    out[["outcome.index"]] <- ncol(X) + 1:(1+ncol(outcome)-1)
+    out[["outcome.index"]] <- NCOL(X) + 1:(1+NCOL(outcome)-1)
   }
   
   if (!identical(sample.weights, FALSE)) {
     # sample.weight.index is required as input to gini/fourier_train, regardless
     # of whether sample weights are specified or not
-    out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + 1
+    out[["sample.weight.index"]] <- NCOL(X) + NCOL(outcome) + 1
     if (is.null(sample.weights)) {
       out[["use.sample.weights"]] <- FALSE
     } else {
@@ -125,7 +125,7 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
     sample.weights = NULL
   }
   
-  if (inherits(X, "dgCMatrix") && ncol(X) > 1) {
+  if (inherits(X, "dgCMatrix") && NCOL(X) > 1) {
     sparse.data <- cbind(X, outcome, sample.weights)
   } else {
     X <- as.matrix(X)
