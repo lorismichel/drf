@@ -142,21 +142,14 @@ drf <-               function(X, Y,
     any.factor.or.character <- FALSE
   }
   
-  if (is.data.frame(Y)) {
-    
-    if (any(apply(Y, 2, class) %in% c("factor", "character"))) {
-      stop("Y should only contain numeric variables.")
-    }
-    Y <- as.matrix(Y)
-  }
   
-  if (is.vector(Y)) {
-    Y <- matrix(Y,ncol=1)
-  }
+  validate_Y(Y=Y, n=NROW(X.mat))
+  # At this point, Y is data.frame or matrix
+  Y <- as.matrix(Y)
   
   
   validate_sample_weights(sample.weights, X.mat)
-  #Y <- validate_observations(Y, X)
+  
   
   # set legacy GRF parameters
   clusters <- vector(mode = "numeric", length = 0)
