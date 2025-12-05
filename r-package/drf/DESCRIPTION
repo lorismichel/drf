@@ -6,7 +6,7 @@ Authors@R: c(
   person(given = "Loris", family = "Michel", role = "aut"),
   person(given = "Domagoj", family = "Cevid", role = "aut"))
 BugReports: https://github.com/lorismichel/drf/issues
-Description: An implementation of distributional random forests as introduced in Cevid & Michel & Meinshausen & Buhlmann (2020) <arXiv:2005.14458>.
+Description: An implementation of distributional random forests as introduced in Cevid & Michel & Meinshausen & Buhlmann (2020) <doi:10.48550/arXiv.2005.14458>.
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
 Depends:
