@@ -11,7 +11,7 @@
 #'                this point for tree construction). Can be either a data frame, matrix or a vector. Each row represents a data point of interest and 
 #'                the number and ordering of columns is assumed the be the same as in the training set.
 #' @param functional Optional. String indicating the statistical functional that we want to compute from the weights. One option between:
-#' \itemize{
+#' \describe{
 #'  \item{"mean"}{ - Conditional mean, the returned value is a matrix \code{mean} of dimension \code{n} x \code{f},
 #'  where \code{n} denotes the number of observations in \code{newdata} and \code{f} the dimension of the \code{transformation}.}
 #'  \item{"sd"}{ - Conditional standard deviation for each component of the (transformed) response, the returned value is
