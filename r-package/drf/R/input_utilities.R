@@ -95,8 +95,9 @@ validate_sample_weights <- function(sample.weights, X) {
     if (length(sample.weights) != nrow(X)) {
       stop("sample.weights has incorrect length")
     }
-    if (any(sample.weights < 0)) {
-      stop("sample.weights must be nonnegative")
+    # Checks from grf@4aaf2d510469c4f277f0293e241db62bca1d2892
+    if (anyNA(sample.weights) || any(sample.weights < 0) || any(is.infinite(sample.weights))) {
+      stop("sample.weights must be nonnegative and without missing values")
     }
   }
 }
@@ -107,13 +108,15 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
   default.data <- matrix(nrow = 0, ncol = 0)
   sparse.data <- new("dgCMatrix", Dim = c(0L, 0L))
   out <- list()
-  i <- 1
+  
   if (!is.null(outcome)) {
-    out[["outcome.index"]] <- ncol(X) + i:(i+ncol(outcome)-1)
+    out[["outcome.index"]] <- NCOL(X) + 1:(1+NCOL(outcome)-1)
   }
-  if (!identical(sample.weights, "FALSE")) {
-    i <- i + 1
-    out[["sample.weight.index"]] <- ncol(X) + ncol(outcome) + i
+  
+  if (!identical(sample.weights, FALSE)) {
+    # sample.weight.index is required as input to gini/fourier_train, regardless
+    # of whether sample weights are specified or not
+    out[["sample.weight.index"]] <- NCOL(X) + NCOL(outcome) + 1
     if (is.null(sample.weights)) {
       out[["use.sample.weights"]] <- FALSE
     } else {
@@ -123,7 +126,7 @@ create_data_matrices <- function(X, outcome = NULL, sample.weights = FALSE) {
     sample.weights = NULL
   }
   
-  if (inherits(X, "dgCMatrix") && ncol(X) > 1) {
+  if (inherits(X, "dgCMatrix") && NCOL(X) > 1) {
     sparse.data <- cbind(X, outcome, sample.weights)
   } else {
     X <- as.matrix(X)
