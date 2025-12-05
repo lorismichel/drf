@@ -1,11 +1,29 @@
 validate_X <- function(X) {
-  if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
-    stop("Currently only sparse data of class 'dgCMatrix' is supported.")
+  # vectors should be converted to matrix at this point
+  valid.classes <- c("matrix", "data.frame", "dgCMatrix")
+  
+  if (!inherits(X, valid.classes)) {
+    stop(paste(
+      "Currently the only supported data input types are:",
+      "`matrix`, `data.frame`, `dgCMatrix` (sparse Matrix)"
+    ))
+  }
+  if (any(0 %in% dim(X))) {
+    stop("Feature matrix X must have non-zero dimensions.")
   }
   
-  if (any(is.na(X))) {
-    stop("The feature matrix X contains at least one NA.")
+  # data.frame requires names
+  if(is.data.frame(X)){
+    if (any(colnames(X) == "")) {
+      stop("the regressor should be named if provided under data.frame format.")
+    }
   }
+  
+  # May contain NA 
+  # if (any(is.na(X))) {
+  #   stop("The feature matrix X contains at least one NA.")
+  # }
+  
 }
 
 validate_observations <- function(V, X) {

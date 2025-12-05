@@ -120,12 +120,10 @@ drf <-               function(X, Y,
                               compute.variable.importance = FALSE) {
   
   # initial checks for X and Y
+  
+  validate_X(X)
+  
   if (is.data.frame(X)) {
-    
-    if (is.null(names(X))) {
-      stop("the regressor should be named if provided under data.frame format.")
-    }
-    
     if (any(apply(X, 2, class) %in% c("factor", "character"))) {
       any.factor.or.character <- TRUE
       X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
@@ -137,6 +135,7 @@ drf <-               function(X, Y,
     mat.col.names.df <- names(X)
     mat.col.names <- colnames(X.mat)
   } else {
+    # X is matrix or dgCMatrix
     X.mat <- X
     mat.col.names <- NULL
     mat.col.names.df <- NULL
@@ -155,12 +154,6 @@ drf <-               function(X, Y,
     Y <- matrix(Y,ncol=1)
   }
   
-  
-  #validate_X(X.mat)
-  
-  if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
-        stop("Currently only sparse data of class 'dgCMatrix' is supported.")
-    }
   
   validate_sample_weights(sample.weights, X.mat)
   #Y <- validate_observations(Y, X)
