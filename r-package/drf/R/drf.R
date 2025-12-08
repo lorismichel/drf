@@ -140,7 +140,7 @@ drf <-               function(X, Y,
   validate_X(X)
   
   if (is.data.frame(X)) {
-    if (any(apply(X, 2, class) %in% c("factor", "character"))) {
+    if (any(sapply(X, function(x){ is.factor(x) || is.character(x) }))) {
       any.factor.or.character <- TRUE
       X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
     } else {
