@@ -1,6 +1,6 @@
 Package: drf
 Title: Distributional Random Forests
-Version: 1.1.0
+Version: 1.2.0
 Authors@R: c(
   person(given = "Jeffrey", family = "Naf", email = "jeffrey.naf@unige.ch", role = "cre"),
   person(given = "Loris", family = "Michel", role = "aut"),
