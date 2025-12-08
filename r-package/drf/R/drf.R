@@ -4,7 +4,7 @@
 #' for possibly multivariate response Y and predictors X. The conditional distribution estimate is represented
 #' as a weighted distribution of the training data. The weights can be conveniently used in the downstream analysis
 #' to estimate any quantity of interest \eqn{\tau(P(Y | X))}.
-#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data frame with columns of any data type.
+#' @param X The covariates used in the regression. Can be either a numeric matrix or a data.frame with numeric, factor, or character columns, where the last two will be one-hot-encoded.
 #' @param Y The (multivariate) outcome variable. Needs to be a matrix or a data frame consisting of numeric values.
 #' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule A character value. The type of the splitting rule used, can be either "FourierMMD" (MMD splitting criterion with FastMMD approximation for speed) or "CART" (sum of standard CART criteria over the components of Y).
@@ -98,6 +98,7 @@
 #' @useDynLib drf
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils modifyList
+#' @importFrom fastDummies dummy_cols
 drf <-               function(X, Y,
                               num.trees = 500,
                               splitting.rule = "FourierMMD",
