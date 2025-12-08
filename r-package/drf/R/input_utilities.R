@@ -14,8 +14,26 @@ validate_X <- function(X) {
   
   # data.frame requires names
   if(is.data.frame(X)){
+    
     if (any(colnames(X) == "")) {
-      stop("the regressor should be named if provided under data.frame format.")
+      stop("Feature matrix X should be named if provided as data.frame.")
+    }
+    
+    # Inputs have to be numeric, categorical (char, factor), or bool
+    if(!all(sapply(X, function(x){
+      is.numeric(x) || is.factor(x) || is.character(x)
+    }))){
+      stop(paste(
+        "Feature matrix X may only contain data of type `numeric`, `factor`, ",
+        "or `character` if provided as data.frame."))
+    }
+  }
+  
+  if(is.matrix(X)){
+    # Only accept numeric (not character matrices and such) because only for
+    # data.frame dummies will be made.
+    if(!is.numeric(X)){
+      stop("Feature matrix X has to be all numeric if provided as matrix.")
     }
   }
   
