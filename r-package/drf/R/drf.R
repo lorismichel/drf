@@ -119,7 +119,23 @@ drf <-               function(X, Y,
                               seed = stats::runif(1, 0, .Machine$integer.max),
                               compute.variable.importance = FALSE) {
   
-  # initial checks for X and Y
+  
+  
+  # Convert plain data to data.frame - before any input validation or processing.
+  # Don't convert to matrix because matrix has to be numeric.
+  # 
+  # Only worth to convert if it is a vector of accepted type
+  #  For Y: Only numeric allowed.
+  #  For X: Accept numeric or categorical (character or factor). `mode="numeric"` 
+  #  covers also pure "integer" and vectors containing NA (logical).
+  # 
+  if(is.vector(X, mode="numeric") || is.vector(X, mode = "character") || is.factor(X)){
+    X <- as.data.frame(X, row.names = names(X))
+  }
+  
+  if(is.vector(Y, mode="numeric")){
+    Y <- as.data.frame(Y, row.names = names(Y))
+  }
   
   validate_X(X)
   
