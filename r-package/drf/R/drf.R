@@ -4,7 +4,7 @@
 #' for possibly multivariate response Y and predictors X. The conditional distribution estimate is represented
 #' as a weighted distribution of the training data. The weights can be conveniently used in the downstream analysis
 #' to estimate any quantity of interest \eqn{\tau(P(Y | X))}.
-#' @param X The covariates used in the regression. Can be either a matrix of numerical values, or a data frame with columns of any data type.
+#' @param X The covariates used in the regression. Can be either a numeric matrix or a data.frame with numeric, factor, or character columns, where the last two will be one-hot-encoded.
 #' @param Y The (multivariate) outcome variable. Needs to be a matrix or a data frame consisting of numeric values.
 #' @param num.trees Number of trees grown in the forest. Default is 500.
 #' @param splitting.rule A character value. The type of the splitting rule used, can be either "FourierMMD" (MMD splitting criterion with FastMMD approximation for speed) or "CART" (sum of standard CART criteria over the components of Y).
@@ -98,6 +98,7 @@
 #' @useDynLib drf
 #' @importFrom Rcpp evalCpp
 #' @importFrom utils modifyList
+#' @importFrom fastDummies dummy_cols
 drf <-               function(X, Y,
                               num.trees = 500,
                               splitting.rule = "FourierMMD",
@@ -119,14 +120,28 @@ drf <-               function(X, Y,
                               seed = stats::runif(1, 0, .Machine$integer.max),
                               compute.variable.importance = FALSE) {
   
-  # initial checks for X and Y
+  
+  
+  # Convert plain data to data.frame - before any input validation or processing.
+  # Don't convert to matrix because matrix has to be numeric.
+  # 
+  # Only worth to convert if it is a vector of accepted type
+  #  For Y: Only numeric allowed.
+  #  For X: Accept numeric or categorical (character or factor). `mode="numeric"` 
+  #  covers also pure "integer" and vectors containing NA (logical).
+  # 
+  if(is.vector(X, mode="numeric") || is.vector(X, mode = "character") || is.factor(X)){
+    X <- as.data.frame(X, row.names = names(X))
+  }
+  
+  if(is.vector(Y, mode="numeric")){
+    Y <- as.data.frame(Y, row.names = names(Y))
+  }
+  
+  validate_X(X)
+  
   if (is.data.frame(X)) {
-    
-    if (is.null(names(X))) {
-      stop("the regressor should be named if provided under data.frame format.")
-    }
-    
-    if (any(apply(X, 2, class) %in% c("factor", "character"))) {
+    if (any(sapply(X, function(x){ is.factor(x) || is.character(x) }))) {
       any.factor.or.character <- TRUE
       X.mat <- as.matrix(fastDummies::dummy_cols(X, remove_selected_columns = TRUE))
     } else {
@@ -137,33 +152,21 @@ drf <-               function(X, Y,
     mat.col.names.df <- names(X)
     mat.col.names <- colnames(X.mat)
   } else {
+    # X is matrix or dgCMatrix
     X.mat <- X
     mat.col.names <- NULL
     mat.col.names.df <- NULL
     any.factor.or.character <- FALSE
   }
   
-  if (is.data.frame(Y)) {
-    
-    if (any(apply(Y, 2, class) %in% c("factor", "character"))) {
-      stop("Y should only contain numeric variables.")
-    }
-    Y <- as.matrix(Y)
-  }
   
-  if (is.vector(Y)) {
-    Y <- matrix(Y,ncol=1)
-  }
+  validate_Y(Y=Y, n=NROW(X.mat))
+  # At this point, Y is data.frame or matrix
+  Y <- as.matrix(Y)
   
-  
-  #validate_X(X.mat)
-  
-  if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
-        stop("Currently only sparse data of class 'dgCMatrix' is supported.")
-    }
   
   validate_sample_weights(sample.weights, X.mat)
-  #Y <- validate_observations(Y, X)
+  
   
   # set legacy GRF parameters
   clusters <- vector(mode = "numeric", length = 0)

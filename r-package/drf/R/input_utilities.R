@@ -1,35 +1,76 @@
 validate_X <- function(X) {
-  if (inherits(X, "Matrix") && !(inherits(X, "dgCMatrix"))) {
-    stop("Currently only sparse data of class 'dgCMatrix' is supported.")
+  # vectors should be converted to matrix at this point
+  valid.classes <- c("matrix", "data.frame", "dgCMatrix")
+  
+  if (!inherits(X, valid.classes)) {
+    stop(paste(
+      "For X, the only supported data input types are:",
+      "`matrix`, `data.frame`, `dgCMatrix` (sparse Matrix)"
+    ))
+  }
+  if (any(0 %in% dim(X))) {
+    stop("Feature matrix X must have non-zero dimensions.")
   }
   
-  if (any(is.na(X))) {
-    stop("The feature matrix X contains at least one NA.")
+  # data.frame requires names
+  if(is.data.frame(X)){
+    
+    if (any(colnames(X) == "")) {
+      stop("Feature matrix X should be named if provided as data.frame.")
+    }
+    
+    # Inputs have to be numeric, categorical (char, factor), or bool
+    if(!all(sapply(X, function(x){
+      is.numeric(x) || is.factor(x) || is.character(x)
+    }))){
+      stop(paste(
+        "Feature matrix X may only contain data of type `numeric`, `factor`, ",
+        "or `character` if provided as data.frame."))
+    }
   }
+  
+  if(is.matrix(X)){
+    # Only accept numeric (not character matrices and such) because only for
+    # data.frame dummies will be made.
+    if(!is.numeric(X)){
+      stop("Feature matrix X has to be all numeric if provided as matrix.")
+    }
+  }
+  
+  # May contain NA 
+  # if (any(is.na(X))) {
+  #   stop("The feature matrix X contains at least one NA.")
+  # }
+  
 }
 
-validate_observations <- function(V, X) {
-  if (is.matrix(V) && ncol(V) == 1) {
-    V <- as.vector(V)
-  } else if (!is.vector(V)) {
-    stop(paste("Observations (W, Y, or Z) must be vectors."))
+validate_Y <- function(Y, n) {
+  
+  # vectors should be converted to matrix at this point
+  if (!inherits(Y, c("matrix", "data.frame"))) {
+    stop("For outcome Y, the only supported types are: `matrix` or `data.frame`.")
   }
   
-  if (!is.numeric(V) && !is.logical(V)) {
+  if (any(0 %in% dim(Y))) {
+    stop("Outcome Y must have non-zero dimensions.")
+  }
+  
+  if (NROW(Y) != n) {
+    stop("Outcome Y does not have as many rows as X.")
+  }
+  
+  # sapply works for data.frame and matrix (over cols)
+  if(!all(sapply(Y, is.numeric))){
     stop(paste(
-      "Observations (W, Y, or Z) must be numeric. DRF does not ",
+      "Outcome Y must be numeric. DRF does not ",
       "currently support non-numeric observations."
     ))
   }
   
-  if (any(is.na(V))) {
-    stop("The vector of observations (W, Y, or Z) contains at least one NA.")
+  if (anyNA(Y)) {
+    stop("Outcome Y contains at least one NA value.")
   }
   
-  if (length(V) != nrow(X)) {
-    stop("length of observation (W, Y, or Z) does not equal nrow(X).")
-  }
-  V
 }
 
 validate_num_threads <- function(num.threads) {
