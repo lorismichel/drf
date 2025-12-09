@@ -39,6 +39,7 @@
 #' 
 #'
 #' @examples
+#' \donttest{
 #' library(drf)
 #'
 #' n = 10000
@@ -88,6 +89,7 @@
 #' # Compute E[Y_1, Y_2 | X] for all data in X_test by providing custom functional that
 #' # computes it from the weights
 #' out
+#' }
 #'
 #' @method predict drf
 #' @export

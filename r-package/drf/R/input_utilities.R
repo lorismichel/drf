@@ -15,8 +15,8 @@ validate_X <- function(X) {
   # data.frame requires names
   if(is.data.frame(X)){
     
-    if (any(colnames(X) == "")) {
-      stop("Feature matrix X should be named if provided as data.frame.")
+    if (any(colnames(X) == "") || is.null(colnames(X))) {
+      stop("Feature matrix X has to be named if provided as data.frame.")
     }
     
     # Inputs have to be numeric, categorical (char, factor), or bool

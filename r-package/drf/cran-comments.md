@@ -1,17 +1,24 @@
+# Comment from the authors
+In this version: 
+* the current CRAN notes are fixed
+* the input validations are improved
+* the broken sample weights are fixed
+* the default bandwidth is calculated correctly
+* an OOM issue is fixed
+
+IMPORTANT:
+* the maintainer is changed from Loris Michel (`michel@stat.math.ethz.ch`) to Jeffrey Naf (`jeffrey.naf@unige.ch`)
+
+
+
 ## Test environments
-
-Local, macOS Mojave 10.14.6, R-3.5.2
-
-Rhub,
-Windows Server 2008 R2 SP1, R-release, 32/64 bit ok
-Ubuntu 16.04.6 LTS, R-release, 64 bit ok
+local: R 4.5.1 on Ubuntu 24.04.3 LTS (rocker/rstudio image)
+win-builder: release, devel, old-release
 
 ## R CMD check results
-There were no ERRORs or WARNINGs. 
+There were 0 ERRORs, 1 WARNING, and 0 NOTEs:
 
-There was 1 NOTE:
-
-* checking for GNU extensions in Makefiles ... NOTE GNU make is a SystemRequirements.
+* Maintainer: 'Jeffrey Naf <jeffrey.naf@unige.ch>'
 
 ## Downstream dependencies
-New package, no downstream dependencies
+There are no downstream dependencies
