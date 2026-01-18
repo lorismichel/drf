@@ -112,6 +112,108 @@ Eigen::SparseMatrix<double> compute_weights_oob(Rcpp::List forest_object,
                                 test_matrix, sparse_test_matrix, num_threads, true);
 }
 
+
+std::vector<Eigen::SparseMatrix<double>> compute_sample_weights_uncertainty(Rcpp::List forest_object,
+                                                                            Rcpp::NumericMatrix train_matrix,
+                                                                            Eigen::SparseMatrix<double> sparse_train_matrix,
+                                                                            Rcpp::NumericMatrix test_matrix,
+                                                                            Eigen::SparseMatrix<double> sparse_test_matrix,
+                                                                            unsigned int num_threads) {
+  
+  // This is largely copy-pasta of compute_sample_weights(), only the for loop has been adapted 
+  // to loop over each CI group
+  
+  
+  const bool oob_prediction = false; // uncertainty weights not defined for OOB
+  
+  std::unique_ptr<Data> train_data = RcppUtilities::convert_data(train_matrix, sparse_train_matrix);
+  std::unique_ptr<Data> data = RcppUtilities::convert_data(test_matrix, sparse_test_matrix);
+  Forest forest = RcppUtilities::deserialize_forest(forest_object);
+  num_threads = ForestOptions::validate_num_threads(num_threads);
+  const size_t ci_group_size = forest.get_ci_group_size();
+  if (ci_group_size <= 1) {
+    throw std::runtime_error("To estimate uncertainty, the forest must be trained with ci.group.size greater than 1.");
+  }
+  
+  TreeTraverser tree_traverser(num_threads);
+  SampleWeightComputer weight_computer;
+  
+  std::vector<std::vector<size_t>> leaf_nodes_by_tree = tree_traverser.get_leaf_nodes(forest, *data, oob_prediction);
+  std::vector<std::vector<bool>> trees_by_sample = tree_traverser.get_valid_trees_by_sample(forest, *data, oob_prediction);
+  
+  size_t num_samples = data->get_num_rows();
+  size_t num_neighbors = train_data->get_num_rows();
+  
+  
+  // ceil(n / k): integer ceiling division trick for (n=num_trees) / (k=ci_group_size)
+  size_t num_ci_groups = (forest.get_trees().size() + ci_group_size - 1) / ci_group_size;
+  Eigen::SparseMatrix<double> res_i(num_ci_groups, num_neighbors);
+  
+  std::vector<Eigen::SparseMatrix<double>> results;
+  
+  for (size_t sample = 0; sample < num_samples; sample++) {
+    
+    // From http://eigen.tuxfamily.org/dox/group__TutorialSparse.html:
+    // Filling a sparse matrix effectively
+    
+    // Need to have fresh triplet list for each sample!
+    std::vector<Eigen::Triplet<double>> triplet_list;
+    triplet_list.reserve(num_neighbors);
+    
+    size_t matrix_row_i = 0; // to write result row for each CI group
+    
+    // Loop over each CI group: Calculate weights on tree groups of size `ci_group_size`
+    for(size_t tree_index = 0; tree_index < forest.get_trees().size(); tree_index += ci_group_size) {
+      
+      // Catch if writing beyond nrow of results matrix (should not happen)
+      // `>=` because comparing 0-vs-1-indexed 
+      if(matrix_row_i >= num_ci_groups){
+        throw std::runtime_error("Attempting to write beyond last row of result matrix (matrix_row_i >= num_ci_groups).");
+      }
+    
+      // Calculate weights only for this CI group: trees[tree_index, tree_index + ci_group_size)
+      std::unordered_map<size_t, double> weights = weight_computer.compute_weights(
+        sample, forest, leaf_nodes_by_tree, trees_by_sample, tree_index, tree_index + ci_group_size);
+        
+      
+      for (auto it = weights.begin(); it != weights.end(); it++) {
+        size_t neighbor = it->first;
+        double weight = it->second;
+        triplet_list.emplace_back(matrix_row_i, neighbor, weight);
+      }
+      
+      // Weights of next CI group are on a new row in the matrix
+      matrix_row_i++;
+    }
+    
+    // Create matrix 
+    res_i.setFromTriplets(triplet_list.begin(), triplet_list.end()); 
+    
+    // Add matrix of current sample to list of all samples
+    results.push_back(res_i);
+  }
+  
+  return results;
+}
+
+// [[Rcpp::export]]
+std::vector<Eigen::SparseMatrix<double>> compute_weights_uncertainty(Rcpp::List forest_object,
+                                                                     Rcpp::NumericMatrix train_matrix,
+                                                                     Eigen::SparseMatrix<double> sparse_train_matrix,
+                                                                     Rcpp::NumericMatrix test_matrix,
+                                                                     Eigen::SparseMatrix<double> sparse_test_matrix,
+                                                                     unsigned int num_threads) {
+  // For consistency, follow the sampe pattern as for `compute_weights`, 
+  // even if no OOB is possible
+  
+  return compute_sample_weights_uncertainty(forest_object, 
+                                            train_matrix, 
+                                            sparse_train_matrix,
+                                            test_matrix, 
+                                            sparse_test_matrix,
+                                            num_threads);
+}
+
 // [[Rcpp::export]]
 Rcpp::List merge(const Rcpp::List forest_objects) {
  std::vector<Forest> forests;
