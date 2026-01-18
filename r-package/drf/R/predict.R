@@ -4,6 +4,19 @@
 #' \eqn{P(Y | X=x)} represented as a weighted distribution \eqn{\sum_i w_i y_i} of the training observations \eqn{{y_i}}. 
 #' Additionally, this function also provides support to directly obtain estimates of certain target quantities \eqn{\tau(P(Y | X))}, 
 #' such as e.g. conditional quantiles, variances or correlations.
+#' 
+#' 
+#' To estimate the uncertainty, a set of \code{B=(num.trees)/(ci.group.size)} 
+#' weights is produced for each sample when \code{estimate.uncertainty=TRUE}. 
+#' These \code{B} weights arise from \code{B} subforests (CI groups)
+#' inside the estimation routine and may be seen as bootstrap 
+#' approximation to the estimation uncertainty of the DRF estimator. As such, they 
+#' can be used to build confidence intervals for functionals. For instance, for 
+#' univariate functionals, one may calculate one functional per weight to obtain
+#' \code{B} estimates, with which the variance can be calculated. Then the usual
+#' normal approximation can be used to construct confidence intervals for said functional.
+#' Uncertainty weights are not available OOB.
+#' 
 #'
 #' @param object Trained DRF forest object.
 #' @param newdata Points at which predictions should be made. If NULL, returns out-of-bag
@@ -32,10 +45,22 @@
 #'                          takes the \code{n} x \code{f} matrix \code{y} and the corresponding \code{n}-dimensional vector of weights \code{w} and returns the quantity of interest given as a list of values.
 #'                          \code{n} denotes the number of training observations and \code{f} the dimension of the \code{transformation}.
 #' @param num.threads Number of threads used for computing. If set to NULL, the software automatically selects an appropriate amount.
+#' @param estimate.uncertainty Whether to additionally return B weight vectors calculated on B CI groups for each sample. See Details and return value docu.
 #' @param ... additional parameters.
 #'
-#' @return If functional equals NULL, returns a list containing the matrix of training responses as well as the matrix of weights, whose number of rows corresponds the number of rows of "newdata" and the number of columns corresponds to the number of training data points.
-#' If functional is specified, the desired quantity is returned, in the format described above.
+#'
+#' @return If \code{functional} is NULL, returns a list containing 
+#' \item{y}{the matrix of training responses}
+#' \item{weights}{the matrix of weights, whose number of rows corresponds 
+#' the number of rows of \code{newdata} and the number of columns corresponds to the 
+#' number of training  data points.}
+#' 
+#' If \code{estimate.uncertainty=TRUE}, additionally 
+#' \item{weights.uncertainty}{a list of length \code{nrow(newdata)} where each item is a \code{B x w} 
+#' sparse matrix, where \code{B} is the number of CI groups and \code{w=nrow(Y)}.
+#' This matrix essentially contains \code{B} separate weight vectors, one in each row.}
+#' 
+#' If \code{functional} is specified, the desired quantity is returned, in the format described above.
 #' 
 #'
 #' @examples
@@ -89,6 +114,82 @@
 #' # Compute E[Y_1, Y_2 | X] for all data in X_test by providing custom functional that
 #' # computes it from the weights
 #' out
+#' 
+#' ## UNCERTAINTY WEIGHTS ######################################################
+#' 
+#' # Simulate Data that experiences both a mean as well as sd shift
+#' set.seed(10)
+#' n<-1000
+#' 
+#' # Simulate from X
+#' x1 <- runif(n,-1,1)
+#' x2 <- runif(n,-1,1)
+#' x3 <- x1+ runif(n,-1,1)
+#' X0 <- matrix(runif(7*n,-1,1), nrow=n, ncol=7)
+#' X <- cbind(x1,x2, x3, X0)
+#' colnames(X)<-NULL
+#' 
+#' # Simulate dependent variable Y
+#' Y <- as.matrix(rnorm(n,mean = 0.8*(x1 > 0), sd = 1 + 1*(x2 > 0)))
+#' 
+#' # Fit DRF with 50 CI groups, each 20 trees large. This results in 50 uncertainty weights 
+#' DRF <- drf(X=X, Y=Y,num.trees=1000, min.node.size = 5, ci.group.size=1000/50)
+#' 
+#' # Obtain Test point
+#' x<-matrix(c(0.2, 0.4, runif(8,-1,1)), nrow=1, ncol=10)
+#' DRFpred<-predict(DRF, newdata=x, estimate.uncertainty=TRUE)
+#' 
+#' ## Sample from P_{Y| X=x}
+#' Yxs<-Y[sample(1:n, size=n, replace = T, DRFpred$weights[1,])]
+#' 
+#' # Calculate quantile prediction as weighted quantiles from Y
+#' qx <- quantile(Yxs, probs = c(0.05,0.95))
+#' 
+#' # Calculate conditional mean prediction
+#' mux <- mean(Yxs)
+#' 
+#' # True quantiles
+#' q1<-qnorm(0.05, mean=0.8 * (x[1] > 0), sd=(1+(x[2] > 0)))
+#' q2<-qnorm(0.95, mean=0.8 * (x[1] > 0), sd=(1+(x[2] > 0)))
+#' mu<-0.8 * (x[1] > 0)
+#' 
+#' # Calculate uncertainty
+#' alpha<-0.05
+#' B<-nrow(DRFpred$weights.uncertainty[[1]])
+#' qxb<-matrix(NaN, nrow=B, ncol=2)
+#' muxb<-matrix(NaN, nrow=B, ncol=1)
+#' for (b in 1:B){
+#'   Yxsb<-Y[sample(1:n, size=n, replace = T, DRFpred$weights.uncertainty[[1]][b,])]
+#'   qxb[b,] <- quantile(Yxsb, probs = c(0.05,0.95))
+#'   muxb[b] <- mean(Yxsb)
+#' }
+#' 
+#' CI.lower.q1 <- qx[1] - qnorm(1-alpha/2)*sqrt(var(qxb[,1]))
+#' CI.upper.q1 <- qx[1] + qnorm(1-alpha/2)*sqrt(var(qxb[,1]))
+#' 
+#' CI.lower.q2 <- qx[2] - qnorm(1-alpha/2)*sqrt(var(qxb[,2]))
+#' CI.upper.q2 <- qx[2] + qnorm(1-alpha/2)*sqrt(var(qxb[,2]))
+#' 
+#' CI.lower.mu <- mux - qnorm(1-alpha/2)*sqrt(var(muxb))
+#' CI.upper.mu <- mux + qnorm(1-alpha/2)*sqrt(var(muxb))
+#' 
+#' hist(Yxs, prob=T)
+#' z<-seq(-6,7,by=0.01)
+#' d<-dnorm(z, mean=0.8 * (x[1] > 0), sd=(1+(x[2] > 0)))
+#' lines(z,d, col="darkred"  )
+#' abline(v=q1,col="darkred" )
+#' abline(v=q2, col="darkred" )
+#' abline(v=qx[1], col="darkblue")
+#' abline(v=qx[2], col="darkblue")
+#' abline(v=mu, col="darkred")
+#' abline(v=mux, col="darkblue")
+#' abline(v=CI.lower.q1, col="darkblue", lty=2)
+#' abline(v=CI.upper.q1, col="darkblue", lty=2)
+#' abline(v=CI.lower.q2, col="darkblue", lty=2)
+#' abline(v=CI.upper.q2, col="darkblue", lty=2)
+#' abline(v=CI.lower.mu, col="darkblue", lty=2)
+#' abline(v=CI.upper.mu, col="darkblue", lty=2)
+#' 
 #' }
 #'
 #' @method predict drf
@@ -100,6 +201,7 @@ predict.drf <- function(object,
                         transformation = NULL,
                         custom.functional = NULL,
                         num.threads = NULL,
+                        estimate.uncertainty = FALSE,
                         ...) {
   
   # if the newdata is a data.frame we should be careful about the non existing levels
@@ -171,12 +273,21 @@ predict.drf <- function(object,
   # get the weights which are used in the second step
   w <- get_sample_weights(forest = object,
                           newdata = newdata.mat,
-                          num.threads = num.threads)
+                          num.threads = num.threads, 
+                          estimate.uncertainty = FALSE)
   
   
   if (is.null(functional)) {
-    # return the weights
-    return(list(weights = w, y = object$Y.orig))
+    if(!estimate.uncertainty){
+      return(list(weights = w, y = object$Y.orig))
+    }else{
+      # Same + uncertainty weights
+      w.uncertainty <- get_sample_weights(forest = object,
+                                          newdata = newdata.mat,
+                                          num.threads = num.threads, 
+                                          estimate.uncertainty = TRUE)
+      return(list(weights = w, y = object$Y.orig, weights.uncertainty = w.uncertainty))
+    }
   }
   
   if (functional == "quantile") {
@@ -271,40 +382,41 @@ predict.drf <- function(object,
     if (length(transformation(object$Y.orig[1,])) == 1) {
       stop("cor available only for multi-dimensional transformation.")
     }
-    
+
     means <- t(apply(w, 1, function(ww) ww %*% Y_transformed))
-    
+
     covs <- array(1, dim = c(nrow(w), ncol(Y_transformed), ncol(Y_transformed)))
     
+
     for (i in 1:nrow(w)) {
       covs[i,,] <- stats::cov.wt(x = Y_transformed, wt = as.numeric(w[i,]))$cov
     }
-    
+
     # dims
     n <- nrow(object$Y.orig)
     d <- ncol(object$Y.orig)
-    
+
     funs <- lapply(1:nrow(w), function(i) {
       inv.cov <- solve(covs[i,,])
-      
+
       return(function(y) (n/(n+1))*((n-d)/(d*(n-1)))*as.numeric((y-means[i,])%*%inv.cov%*%(y-means[i,])))
     })
-    
+
     return(funs)
   }
-  
+
   if (functional == "MQ") {
     u <- list(...)$u
-    
+
     if (!is.matrix(u) || ncol(u)!=ncol(object$Y.orig)) {
       stop("Incompatible u with the response y.")
     }
-    
+
     # compute the cost between the provided u's and the y's
     costm <- t(apply(object$Y.orig, 1, function(yy) apply(u, 1, function(uu) {
       sum((yy-uu)^2)
     })))
-    
+
     # get the transport solution
     info.mq <- apply(w,
                      1,
@@ -314,12 +426,12 @@ predict.drf <- function(object,
                        ids.y <- apply(tr$primal, 2, function(x) sample(1:length(x), size = 1, replace = FALSE, prob = x))
                        return(list(ids.y=ids.y, ids.in=ids.in))
                      })
-    
+
     # get one version of the multimap
     yhat <- lapply(info.mq, function(info) {object$Y.orig[info$ids.in,,drop=F][info$ids.y,,drop=F]})
     return(list(yhat = yhat, u = u))
-    
-  } 
+
+  }
   
   stop("Functional not implemented!")
 }
