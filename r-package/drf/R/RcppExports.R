@@ -13,6 +13,10 @@ compute_weights_oob <- function(forest_object, test_matrix, sparse_test_matrix, 
     .Call('_drf_compute_weights_oob', PACKAGE = 'drf', forest_object, test_matrix, sparse_test_matrix, num_threads)
 }
 
+compute_weights_uncertainty <- function(forest_object, train_matrix, sparse_train_matrix, test_matrix, sparse_test_matrix, num_threads) {
+    .Call('_drf_compute_weights_uncertainty', PACKAGE = 'drf', forest_object, train_matrix, sparse_train_matrix, test_matrix, sparse_test_matrix, num_threads)
+}
+
 merge <- function(forest_objects) {
     .Call('_drf_merge', PACKAGE = 'drf', forest_objects)
 }
