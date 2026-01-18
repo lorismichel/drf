@@ -35,11 +35,16 @@
 #'  Only applies if honesty is enabled. Default is TRUE.
 #' @param alpha A tuning parameter that controls the maximum imbalance of a split. Default is 0.05, meaning a child node will contain at most 5\% of observations in the parent node.
 #' @param imbalance.penalty A tuning parameter that controls how harshly imbalanced splits are penalized. Default is 0.
-#' @param compute.oob.predictions Whether OOB predictions on training set should be precomputed. Default is TRUE.
+#' @param compute.oob.predictions Whether OOB predictions on training set should be precomputed.
 #' @param num.threads Number of threads used in training. By default, the number of threads is set
 #'                    to the maximum hardware concurrency.
 #' @param seed The seed of the C++ random number generator.
 #' @param compute.variable.importance boolean, should the variable importance be computed in the object.
+#' @param ci.group.size The forest will grow ci.group.size trees on each subsample. 
+#' In order to provide confidence intervals, ci.group.size must be at least 2. 
+#' Defaults to \code{num.trees/30} which yields 30 CI groups.
+#' 
+#' @seealso See \code{\link{predict.drf}} for how to make predictions, including uncertainty weights.
 #'
 #' @return A trained Distributional Random Forest object.
 #'
@@ -102,7 +107,7 @@
 #' @importFrom utils modifyList
 #' @importFrom fastDummies dummy_cols
 drf <-               function(X, Y,
-                              num.trees = 500,
+                              num.trees = 3000,
                               splitting.rule = "FourierMMD",
                               num.features = 10,
                               bandwidth = NULL,
@@ -117,10 +122,11 @@ drf <-               function(X, Y,
                               honesty.prune.leaves = TRUE,
                               alpha = 0.05,
                               imbalance.penalty = 0,
-                              compute.oob.predictions = TRUE,
+                              compute.oob.predictions = FALSE,
                               num.threads = NULL,
                               seed = stats::runif(1, 0, .Machine$integer.max),
-                              compute.variable.importance = FALSE) {
+                              compute.variable.importance = FALSE,
+                              ci.group.size = as.integer(num.trees / 30)) {
   
   
   
@@ -174,7 +180,6 @@ drf <-               function(X, Y,
   clusters <- vector(mode = "numeric", length = 0)
   samples.per.cluster <- 0
   equalize.cluster.weights <- FALSE
-  ci.group.size <- 1
   
   num.threads <- validate_num_threads(num.threads)
   
