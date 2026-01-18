@@ -24,11 +24,20 @@ namespace drf {
 std::unordered_map<size_t, double> SampleWeightComputer::compute_weights(size_t sample,
                                                                          const Forest& forest,
                                                                          const std::vector<std::vector<size_t>>& leaf_nodes_by_tree,
-                                                                         const std::vector<std::vector<bool>>& valid_trees_by_sample) const {
+                                                                         const std::vector<std::vector<bool>>& valid_trees_by_sample, 
+                                                                         const size_t tree_index_start, 
+                                                                         const size_t tree_index_end) const {
   std::unordered_map<size_t, double> weights_by_sample;
 
+  const size_t n_trees = forest.get_trees().size();
+  const size_t index_max = std::min(tree_index_end, n_trees);
+  // if(tree_index_start >= n_trees){
+  //   throw std::runtime_error("tree_index_start >= n_trees");
+  // }
+  
   // Create a list of weighted neighbors for this sample.
-  for (size_t tree_index = 0; tree_index < forest.get_trees().size(); ++tree_index) {
+  for (size_t tree_index = tree_index_start; tree_index < index_max; ++tree_index) {
+    
     if (!valid_trees_by_sample[sample][tree_index]) {
       continue;
     }

@@ -77,8 +77,10 @@ Eigen::SparseMatrix<double> compute_sample_weights(Rcpp::List forest_object,
   Eigen::SparseMatrix<double> result(num_samples, num_neighbors);
 
   for (size_t sample = 0; sample < num_samples; sample++) {
+    // Calculate weights over full forest (all trees)
     std::unordered_map<size_t, double> weights = weight_computer.compute_weights(
-        sample, forest, leaf_nodes_by_tree, trees_by_sample);
+        sample, forest, leaf_nodes_by_tree, trees_by_sample, 
+        0, forest.get_trees().size());
     for (auto it = weights.begin(); it != weights.end(); it++) {
       size_t neighbor = it->first;
       double weight = it->second;
