@@ -6,7 +6,7 @@
 #' to estimate any quantity of interest \eqn{\tau(P(Y | X))}.
 #' @param X The covariates used in the regression. Can be either a numeric matrix or a data.frame with numeric, factor, or character columns, where the last two will be one-hot-encoded.
 #' @param Y The (multivariate) outcome variable. Needs to be a matrix or a data frame consisting of numeric values.
-#' @param num.trees Number of trees grown in the forest. Default is 500.
+#' @param num.trees Number of trees grown in the forest. Default is 3000.
 #' @param splitting.rule A character value. The type of the splitting rule used, can be either "FourierMMD" (MMD splitting criterion with FastMMD approximation for speed) or "CART" (sum of standard CART criteria over the components of Y).
 #' @param num.features A numeric value, in case of "FourierMMD", the number of random features to sample.
 #' @param bandwidth A numeric value, the bandwidth of the Gaussian kernel used in case of "FourierMMD", the value is set to NULL by default and the square root of the median heuristic is used.
@@ -52,7 +52,7 @@
 #' \donttest{
 #' library(drf)
 #'
-#' n = 10000
+#' n = 1000
 #' p = 20
 #' d = 3
 #' 
