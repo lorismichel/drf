@@ -1,12 +1,12 @@
 Package: drf
 Title: Distributional Random Forests
-Version: 1.2.0
+Version: 1.3.0
 Authors@R: c(
   person(given = "Jeffrey", family = "Naf", email = "jeffrey.naf@unige.ch", role = "cre"),
   person(given = "Loris", family = "Michel", role = "aut"),
   person(given = "Domagoj", family = "Cevid", role = "aut"))
 BugReports: https://github.com/lorismichel/drf/issues
-Description: An implementation of distributional random forests as introduced in Cevid & Michel & Meinshausen & Buhlmann (2020) <doi:10.48550/arXiv.2005.14458>.
+Description: An implementation of distributional random forests as introduced in Cevid & Michel & Naf & Meinshausen & Buhlmann (2022) <doi:10.48550/arXiv.2005.14458>.
 License: GPL-3
 LinkingTo: Rcpp, RcppEigen
 Depends:
